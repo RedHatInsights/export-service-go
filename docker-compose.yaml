@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  db:
+    container_name: export-db
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 15433:5432
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data

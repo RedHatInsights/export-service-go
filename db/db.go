@@ -16,10 +16,9 @@ var cfg = config.ExportCfg.DBConfig
 var log = logging.Log
 
 func init() {
-
 	dburl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.User, cfg.Password, cfg.Hostname, cfg.Port, cfg.Name)
 	var err error
-	DB, err := gorm.Open(postgres.Open(dburl), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(dburl), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -28,5 +27,6 @@ func init() {
 	DB.Raw("select 'Hello, from Postgres!!'").Scan(&greeting)
 	log.Infof(greeting)
 
+	// all models go here for migration
 	DB.AutoMigrate(&models.ExportPayload{})
 }

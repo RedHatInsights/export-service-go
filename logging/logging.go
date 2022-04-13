@@ -8,7 +8,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
-	"github.com/maskarb/export-service-go/config"
+	"github.com/redhatinsights/export-service-go/config"
 )
 
 var Log *zap.SugaredLogger

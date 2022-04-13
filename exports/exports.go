@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	"github.com/maskarb/export-service-go/db"
-	"github.com/maskarb/export-service-go/logging"
-	"github.com/maskarb/export-service-go/models"
+	"github.com/redhatinsights/export-service-go/db"
+	"github.com/redhatinsights/export-service-go/logging"
+	"github.com/redhatinsights/export-service-go/models"
 )
 
 var log = logging.Log

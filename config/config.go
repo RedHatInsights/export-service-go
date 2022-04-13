@@ -16,13 +16,15 @@ const (
 
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
-	Hostname      string
-	DBConfig      DBConfig
-	KafkaConfig   KafkaCfg
-	WebPort       int
-	MetricsPort   int
-	StorageConfig StorageCfg
-	LoggingConfig LoggingCfg
+	Hostname        string
+	Auth            bool
+	DBConfig        DBConfig
+	KafkaConfig     KafkaCfg
+	WebPort         int
+	MetricsPort     int
+	StorageConfig   StorageCfg
+	LoggingConfig   *LoggingCfg
+	OpenAPIFilePath string
 }
 
 type DBConfig struct {
@@ -61,11 +63,11 @@ type StorageCfg struct {
 }
 
 type LoggingCfg struct {
-	LogGroup           string
-	LogLevel           string
-	AwsRegion          string
-	AwsAccessKeyId     string
-	AwsSecretAccessKey string
+	LogLevel        string
+	LogGroup        string
+	Region          string
+	AccessKeyID     string
+	SecretAccessKey string
 }
 
 var ExportCfg *ExportConfig
@@ -191,12 +193,12 @@ func init() {
 			StorageSecretKey: options.GetString("MinioSecretKey"),
 			UseSSL:           options.GetBool("UseSSL"),
 		},
-		LoggingConfig: LoggingCfg{
-			LogGroup:           options.GetString("logGroup"),
-			LogLevel:           options.GetString("logLevel"),
-			AwsRegion:          options.GetString("AwsRegion"),
-			AwsAccessKeyId:     options.GetString("AwsAccessKeyId"),
-			AwsSecretAccessKey: options.GetString("AwsSecretAccessKey"),
+		LoggingConfig: &LoggingCfg{
+			LogGroup:        options.GetString("logGroup"),
+			LogLevel:        options.GetString("logLevel"),
+			Region:          options.GetString("Region"),
+			AccessKeyID:     options.GetString("AccessKeyId"),
+			SecretAccessKey: options.GetString("SecretAccessKey"),
 		},
 	}
 

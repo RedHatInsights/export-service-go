@@ -6,9 +6,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/maskarb/export-service-go/config"
-	"github.com/maskarb/export-service-go/logging"
-	"github.com/maskarb/export-service-go/models"
+	"github.com/redhatinsights/export-service-go/config"
+	"github.com/redhatinsights/export-service-go/logging"
+	"github.com/redhatinsights/export-service-go/models"
 )
 
 var DB *gorm.DB

@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/redhatinsights/export-service-go/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
 	log "github.com/sirupsen/logrus"
 
@@ -25,7 +24,7 @@ func init() {
 
 	cfg = config.ExportCfg
 
-	switch cfg.LoggingConfig.LogLevel {
+	switch cfg.LogLevel {
 	case "DEBUG":
 		logLevel = log.DebugLevel
 	case "ERROR":
@@ -34,10 +33,10 @@ func init() {
 		logLevel = log.InfoLevel
 	}
 
-	if cfg.LoggingConfig != nil && cfg.LoggingConfig.Region != "" {
-		cred := credentials.NewStaticCredentials(cfg.LoggingConfig.AccessKeyID, cfg.LoggingConfig.SecretAccessKey, "")
-		awsconf := aws.NewConfig().WithRegion(cfg.LoggingConfig.Region).WithCredentials(cred)
-		hook, err := lc.NewBatchingHook(cfg.LoggingConfig.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
+	if cfg.Logging != nil && cfg.Logging.Region != "" {
+		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
+		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
+		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
 			log.Info(err)
 		}

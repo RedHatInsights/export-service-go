@@ -2,10 +2,8 @@ package config
 
 import (
 	"fmt"
-	"os"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-
 	"github.com/spf13/viper"
 )
 
@@ -14,26 +12,34 @@ const (
 	AnnounceTopic string = "platform.export.announce"
 )
 
+var ExportCfg *ExportConfig
+
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
 	Hostname        string
 	Auth            bool
-	DBConfig        DBConfig
-	KafkaConfig     KafkaCfg
 	WebPort         int
 	MetricsPort     int
-	StorageConfig   StorageCfg
-	LoggingConfig   *LoggingCfg
+	Logging         *loggingConfig
+	LogLevel        string
+	Debug           bool
+	DBConfig        dbConfig
 	OpenAPIFilePath string
 }
 
-type DBConfig struct {
-	Type     string `json:"type,omitempty"`
-	User     string `json:"user,omitempty"`
-	Password string `json:"-"`
-	Hostname string `json:"hostname,omitempty"`
-	Port     string `json:"port,omitempty"`
-	Name     string `json:"name,omitempty"`
+type dbConfig struct {
+	User     string
+	Password string
+	Hostname string
+	Port     string
+	Name     string
+}
+
+type loggingConfig struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	LogGroup        string
+	Region          string
 }
 
 type KafkaCfg struct {
@@ -55,158 +61,75 @@ type KafkaSSLCfg struct {
 }
 
 type StorageCfg struct {
-	StageBucket      string
+	StorageBucket    string
 	StorageEndpoint  string
 	StorageAccessKey string
 	StorageSecretKey string
 	UseSSL           bool
 }
 
-type LoggingCfg struct {
-	LogLevel        string
-	LogGroup        string
-	Region          string
-	AccessKeyID     string
-	SecretAccessKey string
-}
+var config *ExportConfig
 
-var ExportCfg *ExportConfig
-
+// initialize the configuration for service
 func init() {
-
 	options := viper.New()
+	options.SetDefault("WebPort", 8000)
+	options.SetDefault("MetricsPort", 9000)
+	options.SetDefault("LogLevel", "INFO")
+	options.SetDefault("Auth", true)
+	options.SetDefault("Debug", false)
+	options.SetDefault("OpenAPIFilePath", "./static/spec/openapi.json")
+	options.SetDefault("Database", "pgsql")
+	options.AutomaticEnv()
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
+	if options.GetBool("Debug") {
+		options.Set("LogLevel", "DEBUG")
 	}
 
-	// global logging
-	options.SetDefault("logLevel", "INFO")
-	options.SetDefault("Hostname", hostname)
-
-	// Kafka config
-	options.SetDefault("KafkaGroupID", "export")
-	options.SetDefault("KafkaDeliveryReports", true)
-	options.SetDefault("KafkaStatusTopic", StatusTopic)
-	options.SetDefault("KafakAnnounceTopic", AnnounceTopic)
-
-	// Global defaults
-	options.SetEnvPrefix("EXPORT")
-	options.AutomaticEnv()
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
+
+	config = &ExportConfig{
+		Hostname:        kubenv.GetString("Hostname"),
+		Auth:            options.GetBool("Auth"),
+		WebPort:         options.GetInt("WebPort"),
+		MetricsPort:     options.GetInt("MetricsPort"),
+		Debug:           options.GetBool("Debug"),
+		LogLevel:        options.GetString("LogLevel"),
+		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+	}
+
+	database := options.GetString("database")
+
+	if database == "pgsql" {
+		config.DBConfig = dbConfig{
+			User:     options.GetString("PGSQL_USER"),
+			Password: options.GetString("PGSQL_PASSWORD"),
+			Hostname: options.GetString("PGSQL_HOSTNAME"),
+			Port:     options.GetString("PGSQL_PORT"),
+			Name:     options.GetString("PGSQL_DATABASE"),
+		}
+	}
 
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
 
-		// DB
-		options.SetDefault("PSQLUser", cfg.Database.Username)
-		options.SetDefault("PSQLPassword", cfg.Database.Password)
-		options.SetDefault("PSQLHostname", cfg.Database.Hostname)
-		options.SetDefault("PSQLPort", cfg.Database.Port)
-		options.SetDefault("PSQLDatabase", cfg.Database.Name)
+		config.WebPort = *cfg.PublicPort
+		config.MetricsPort = cfg.MetricsPort
 
-		sb := os.Getenv("INGRESS_STAGEBUCKET")
-		bucket := clowder.ObjectBuckets[sb]
-		broker := cfg.Kafka.Brokers[0]
-
-		// Kafka
-		options.SetDefault("KafkaBrokers", clowder.KafkaServers)
-		options.SetDefault("KafkaStatusTopic", clowder.KafkaTopics[StatusTopic].Name)
-		// Kafka SSL Config
-		if broker.Authtype != nil {
-			options.Set("KafkaUsername", *broker.Sasl.Username)
-			options.Set("KafkaPassword", *broker.Sasl.Password)
-			options.Set("SASLMechanism", "SCRAM-SHA-512")
-			options.Set("Protocol", "sasl_ssl")
-			caPath, err := cfg.KafkaCa(broker)
-			if err != nil {
-				panic("Kafka CA failed to write")
-			}
-			options.Set("KafkaCA", caPath)
+		config.DBConfig = dbConfig{
+			User:     cfg.Database.Username,
+			Password: cfg.Database.Password,
+			Hostname: cfg.Database.Hostname,
+			Port:     fmt.Sprint(cfg.Database.Port),
+			Name:     cfg.Database.Name,
 		}
-		// Ports
-		options.SetDefault("WebPort", cfg.PublicPort)
-		options.SetDefault("MetricsPort", cfg.MetricsPort)
-		// Storage
-		options.SetDefault("StageBucket", bucket.RequestedName)
-		options.SetDefault("MinioEndpoint", fmt.Sprintf("%s:%d", cfg.ObjectStore.Hostname, cfg.ObjectStore.Port))
-		options.SetDefault("MinioAccessKey", cfg.ObjectStore.Buckets[0].AccessKey)
-		options.SetDefault("MinioSecretKey", cfg.ObjectStore.Buckets[0].SecretKey)
-		options.SetDefault("UseSSL", cfg.ObjectStore.Tls)
-		// Cloudwatch
-		options.SetDefault("logGroup", cfg.Logging.Cloudwatch.LogGroup)
-		options.SetDefault("AwsRegion", cfg.Logging.Cloudwatch.Region)
-		options.SetDefault("AwsAccessKeyId", cfg.Logging.Cloudwatch.AccessKeyId)
-		options.SetDefault("AwsSecretAccessKey", cfg.Logging.Cloudwatch.SecretAccessKey)
-	} else {
-		// DB
-		options.SetDefault("PSQLUser", "postgres")
-		options.SetDefault("PSQLPassword", "postgres")
-		options.SetDefault("PSQLHostname", "localhost")
-		options.SetDefault("PSQLPort", "15433")
-		options.SetDefault("PSQLDatabase", "postgres")
-		// Kafka
-		defaultBrokers := os.Getenv("INGRESS_KAFKA_BROKERS")
-		if len(defaultBrokers) == 0 {
-			defaultBrokers = "kafka:29092"
+
+		config.Logging = &loggingConfig{
+			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
+			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
+			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
+			Region:          cfg.Logging.Cloudwatch.Region,
 		}
-		options.SetDefault("KafkaBrokers", []string{defaultBrokers})
-		options.SetDefault("KafkaStatusTopic", "platform.payload-status")
-		// Ports
-		options.SetDefault("WebPort", 8080)
-		options.SetDefault("MetricsPort", 9000)
-		// Storage
-		options.SetDefault("StageBucket", "available")
-		// Cloudwatch
-		options.SetDefault("LogGroup", "platform-dev")
-		options.SetDefault("AwsRegion", "us-east-1")
-		options.SetDefault("UseSSL", false)
-		options.SetDefault("AwsAccessKeyId", os.Getenv("CW_AWS_ACCESS_KEY_ID"))
-		options.SetDefault("AwsSecretAccessKey", os.Getenv("CW_AWS_SECRET_ACCESS_KEY"))
-	}
-
-	ExportCfg = &ExportConfig{
-		Hostname:    options.GetString("Hostname"),
-		WebPort:     options.GetInt("WebPort"),
-		MetricsPort: options.GetInt("MetricsPort"),
-		DBConfig: DBConfig{
-			Type:     "psql",
-			User:     options.GetString("PSQLUser"),
-			Password: options.GetString("PSQLPassword"),
-			Hostname: options.GetString("PSQLHostname"),
-			Port:     options.GetString("PSQLPort"),
-			Name:     options.GetString("PSQLDatabase"),
-		},
-		KafkaConfig: KafkaCfg{
-			KafkaBrokers:         options.GetStringSlice("KafkaBrokers"),
-			KafkaGroupID:         options.GetString("KafkaGroupID"),
-			KafkaStatusTopic:     options.GetString("KafkaStatusTopic"),
-			KafkaDeliveryReports: options.GetBool("KafkaDeliveryReports"),
-			KafkaAnnounceTopic:   options.GetString("KafakAnnounceTopic"),
-		},
-		StorageConfig: StorageCfg{
-			StageBucket:      options.GetString("StageBucket"),
-			StorageEndpoint:  options.GetString("MinioEndpoint"),
-			StorageAccessKey: options.GetString("MinioAccessKey"),
-			StorageSecretKey: options.GetString("MinioSecretKey"),
-			UseSSL:           options.GetBool("UseSSL"),
-		},
-		LoggingConfig: &LoggingCfg{
-			LogGroup:        options.GetString("logGroup"),
-			LogLevel:        options.GetString("logLevel"),
-			Region:          options.GetString("Region"),
-			AccessKeyID:     options.GetString("AccessKeyId"),
-			SecretAccessKey: options.GetString("SecretAccessKey"),
-		},
-	}
-
-	if options.IsSet("KafkaUsername") {
-		ExportCfg.KafkaConfig.KafkaSSLConfig.KafkaUsername = options.GetString("KafkaUsername")
-		ExportCfg.KafkaConfig.KafkaSSLConfig.KafkaPassword = options.GetString("KafkaPassword")
-		ExportCfg.KafkaConfig.KafkaSSLConfig.SASLMechanism = options.GetString("SASLMechanism")
-		ExportCfg.KafkaConfig.KafkaSSLConfig.Protocol = options.GetString("Protocol")
-		ExportCfg.KafkaConfig.KafkaSSLConfig.KafkaCA = options.GetString("KafkaCA")
 	}
 }

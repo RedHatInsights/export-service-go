@@ -1,54 +1,88 @@
-// Copyright Red Hat
-
 package logger
 
 import (
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/go-chi/chi/middleware"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
-	log "github.com/sirupsen/logrus"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/redhatinsights/export-service-go/config"
 )
 
-// Log is an instance of the global logrus.Logger
-var logLevel log.Level
+var Log *zap.SugaredLogger
+var cfg = config.ExportCfg
 
-var cfg *config.ExportConfig
-
-// init initializes the API logger upon import
 func init() {
+	loggerConfig := zap.NewProductionConfig()
+	fn := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+		return true
+	})
+	loggerConfig.EncoderConfig.TimeKey = "@timestamp"
+	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.999Z")
 
-	cfg = config.ExportCfg
+	consoleOutput := zapcore.Lock(os.Stdout)
+	consoleEncoder := zapcore.NewJSONEncoder(loggerConfig.EncoderConfig)
 
 	switch cfg.LogLevel {
 	case "DEBUG":
-		logLevel = log.DebugLevel
+		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 	case "ERROR":
-		logLevel = log.ErrorLevel
+		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.ErrorLevel)
 	default:
-		logLevel = log.InfoLevel
+		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	}
 
+	core := zapcore.NewTee(zapcore.NewCore(consoleEncoder, consoleOutput, fn))
+
+	// configure cloudwatch
 	if cfg.Logging != nil && cfg.Logging.Region != "" {
 		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
 		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
 		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
-			log.Info(err)
+			Log.Info(err)
 		}
-		log.AddHook(hook)
-		log.SetFormatter(&log.JSONFormatter{
-			TimestampFormat: time.Now().Format("2006-01-02T15:04:05.999Z"),
-			FieldMap: log.FieldMap{
-				log.FieldKeyTime: "@timestamp",
-			},
-		})
+		core = zapcore.NewTee(
+			zapcore.NewCore(consoleEncoder, consoleOutput, fn),
+			zapcore.NewCore(consoleEncoder, hook, fn),
+		)
 	}
 
-	log.SetOutput(os.Stdout)
-	log.SetLevel(logLevel)
+	logger, err := loggerConfig.Build(zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }))
+	if err != nil {
+		Log.Info(err)
+	}
+
+	Log = logger.Sugar()
+
+}
+
+func Logger(l *zap.SugaredLogger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			t1 := time.Now()
+			defer func() {
+				l.Infow("",
+					"protocol", r.Proto,
+					"request", r.Method,
+					"path", r.URL.Path,
+					"latency", time.Since(t1),
+					"status", ww.Status(),
+					"size", ww.BytesWritten(),
+					"reqId", request_id.GetReqID(r.Context()))
+			}()
+
+			next.ServeHTTP(ww, r)
+		}
+		return http.HandlerFunc(fn)
+	}
 }

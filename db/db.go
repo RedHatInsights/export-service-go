@@ -7,13 +7,13 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/logging"
+	"github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
 var DB *gorm.DB
 var cfg = config.ExportCfg.DBConfig
-var log = logging.Log
+var log = logger.Log
 
 func init() {
 	dburl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.User, cfg.Password, cfg.Hostname, cfg.Port, cfg.Name)

@@ -26,7 +26,8 @@ import (
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
-	"github.com/redhatinsights/export-service-go/logging"
+	"github.com/redhatinsights/export-service-go/logger"
+	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 )
 
 var log *zap.SugaredLogger
@@ -34,14 +35,39 @@ var cfg *config.ExportConfig
 
 func init() {
 	cfg = config.ExportCfg
-	log = logging.Log
+	log = logger.Log
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func serveWeb(cfg *config.ExportConfig) *http.Server {
+func createWebServer(cfg *config.ExportConfig) *http.Server {
+	// Initialize router
+	router := chi.NewRouter()
+
+	// setup middleware
+	router.Use(
+		request_id.RequestID,
+		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
+		render.SetContentType(render.ContentTypeJSON), // Set content-Type headers as application/json
+		logger.Logger(log),
+		emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Auth is False.
+		identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+		emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+		setupDocsMiddleware,
+		metrics.PrometheusMiddleware,
+		middleware.Recoverer,
+	)
+
+	router.Get("/", statusOK)
+
+	router.Route("/api/export/v1", func(r chi.Router) {
+		r.Get("/openapi.json", serveOpenAPISpec) // OpenAPI Spec
+		r.Get("/api/export/v1/ping", helloWorld) // Hello World endpoint
+		r.Route("/exports", exports.ExportRouter)
+	})
+
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.WebPort),
-		Handler:      webRoutes(),
+		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
@@ -52,47 +78,22 @@ func serveWeb(cfg *config.ExportConfig) *http.Server {
 		// 	}
 		// }
 	})
-	go func() {
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Panicf("web service stopped unexpectedly: %v", err)
-		}
-	}()
-	log.Info("web service started")
 	return &server
 }
 
-func webRoutes() *chi.Mux {
-	router := chi.NewRouter()
-	router.Use(
-		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
-		render.SetContentType(render.ContentTypeJSON), // Set content-Type headers as application/json
-		logging.Logger(log),
-		middleware.Recoverer,
-	)
+func createMetricsServer(cfg *config.ExportConfig) *http.Server {
+	// Router for metrics
+	mr := chi.NewRouter()
+	mr.Get("/", statusOK)
+	mr.Get("/readyz", statusOK)  // for readiness probe
+	mr.Get("/healthz", statusOK) // for liveness probe
+	mr.Handle("/metrics", promhttp.Handler())
 
-	router.Route("/api/export/v1", func(r chi.Router) {
-		r.Route("/exports", exports.ExportRouter)
-	})
-
-	router.HandleFunc("/hello/{name}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "hello, %s!\n", chi.URLParam(r, "name"))
-	})
-
-	return router
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.MetricsPort),
+		Handler: mr,
+	}
 }
-
-// func main() {
-// 	interruptSignal := make(chan os.Signal, 1)
-// 	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
-
-// 	serveWeb(cfg)
-
-// 	// block here and shut things down on interrupt
-// 	<-interruptSignal
-// 	log.Info("Shutting down gracefully...")
-// 	// temporarily adding a sleep to help troubleshoot interrupts
-
-// }
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
@@ -118,53 +119,19 @@ func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// log.WithFields(log.Fields{
-	// 	"Hostname":         cfg.Hostname,
-	// 	"Auth":             cfg.Auth,
-	// 	"WebPort":          cfg.WebPort,
-	// 	"MetricsPort":      cfg.MetricsPort,
-	// 	"LogLevel":         cfg.LogLevel,
-	// 	"Debug":            cfg.Debug,
-	// 	"OpenAPIFilePath ": cfg.OpenAPIFilePath,
-	// }).Info("Configuration Values:")
-
-	// Initialize router
-	r := chi.NewRouter()
-
-	r.Use(
-		middleware.Logger,
-		setupDocsMiddleware,
-		metrics.PrometheusMiddleware,
+	log.Infow("configuration values",
+		"hostname", cfg.Hostname,
+		"auth", cfg.Auth,
+		"webport", cfg.WebPort,
+		"metricsport", cfg.MetricsPort,
+		"loglevel", cfg.LogLevel,
+		"debug", cfg.Debug,
+		"openapifilepath", cfg.OpenAPIFilePath,
 	)
 
-	// Register handler functions on server routes
+	srv := createWebServer(cfg)
 
-	// Unauthenticated routes
-	r.Get("/", statusOK)                                   // Health check
-	r.Get("/api/export/v1/openapi.json", serveOpenAPISpec) // OpenAPI Spec
-
-	// Authenticated routes
-	ar := r.Group(nil)
-	if cfg.Auth {
-		ar.Use(identity.EnforceIdentity) // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-	}
-
-	ar.Get("/api/export/v1/ping", helloWorld) // Hello World endpoint
-
-	// Router for metrics
-	mr := chi.NewRouter()
-	mr.Get("/", statusOK)
-	mr.Handle("/metrics", promhttp.Handler())
-
-	srv := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.WebPort),
-		Handler: r,
-	}
-
-	msrv := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.MetricsPort),
-		Handler: mr,
-	}
+	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
@@ -182,14 +149,18 @@ func main() {
 
 	go func() {
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Errorw("metrics service stopped", "error", err)
+			log.Errorw("metrics server stopped", "error", err)
 		}
 	}()
+	log.Info("metrics server started")
 
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.Errorw("service stopped", "error", err)
-	}
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Panicw("web server stopped unexpectedly", "error", err)
+		}
+	}()
+	log.Info("web server started")
 
 	<-idleConnsClosed
-	log.Info("Everything has shut down, goodbye")
+	log.Info("everything has shut down, goodbye")
 }

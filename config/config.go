@@ -79,7 +79,15 @@ func init() {
 	options.SetDefault("Auth", true)
 	options.SetDefault("Debug", false)
 	options.SetDefault("OpenAPIFilePath", "./static/spec/openapi.json")
+
+	// DB defaults
 	options.SetDefault("Database", "pgsql")
+	options.SetDefault("PGSQL_USER", "postgres")
+	options.SetDefault("PGSQL_PASSWORD", "postgres")
+	options.SetDefault("PGSQL_HOSTNAME", "localhost")
+	options.SetDefault("PGSQL_PORT", "15433")
+	options.SetDefault("PGSQL_DATABASE", "postgres")
+
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -132,4 +140,6 @@ func init() {
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
 	}
+
+	ExportCfg = config
 }

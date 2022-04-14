@@ -1,0 +1,516 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "consoledot Export Service",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "development server"
+    },
+    {
+      "url": "https://console.redhat.com",
+      "description": "production server"
+    }
+  ],
+  "paths": {
+    "/api/export/v1/exports": {
+      "post": {
+        "operationId": "createExport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export scheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportStatus"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "3ScaleIdentity": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "getExports",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "created",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "expires",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "application",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "subscriptions"
+            }
+          },
+          {
+            "name": "resource",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "systems"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "created",
+                "expires",
+                "application",
+                "resource"
+              ]
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching Exports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "3ScaleIdentity": []
+          }
+        ]
+      }
+    },
+    "/api/export/v1/exports/{uuid}": {
+      "get": {
+        "operationId": "downloadExport",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export data",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "3ScaleIdentity": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteExport",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Export deleted (if it existed)"
+          }
+        },
+        "security": [
+          {
+            "3ScaleIdentity": []
+          }
+        ]
+      }
+    },
+    "/api/export/v1/exports/{uuid}/status": {
+      "get": {
+        "operationId": "getExportStatus",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportStatus"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "3ScaleIdentity": []
+          }
+        ]
+      }
+    },
+    "/app/export/v1/upload/{uuid}/{application}/{resource}": {
+      "post": {
+        "operationId": "downloadExportUpload",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          },
+          {
+            "name": "application",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "resource",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "psk": []
+          }
+        ],
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/app/export/v1/error/{uuid}/{application}/{resource}": {
+      "post": {
+        "operationId": "downloadExportError",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          },
+          {
+            "name": "application",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "resource",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "psk": []
+          }
+        ],
+        "tags": [
+          "internal"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Format": {
+        "type": "string",
+        "enum": [
+          "json",
+          "csv"
+        ]
+      },
+      "UUID": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "minLength": 36,
+        "maxLength": 36
+      },
+      "ExportResource": {
+        "type": "object",
+        "required": [
+          "resource"
+        ],
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "filters": {
+            "type": "object"
+          }
+        }
+      },
+      "ExportRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "application",
+          "sources"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "application": {
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/Format"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportResource"
+            }
+          }
+        }
+      },
+      "ExportStatus": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "created",
+          "format",
+          "status"
+        ],
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "format": {
+            "$ref": "#/components/schemas/Format"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "running",
+              "complete",
+              "failed"
+            ]
+          }
+        }
+      },
+      "PageLinks": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "string"
+          },
+          "last": {
+            "type": "string"
+          },
+          "previous": {
+            "type": "string"
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "first",
+          "last"
+        ]
+      },
+      "ExportList": {
+        "type": "object",
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportStatus"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/PageLinks"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "number",
+                "format": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "psk": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-rh-export-psk"
+      },
+      "3ScaleIdentity": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-rh-identity",
+        "description": "Base64-encoded JSON identity header provided by 3Scale. Contains an\naccount number of the user issuing the request. Format of the JSON:\n```\n{\n    \"identity\": {\n        \"account_number\": \"account123\",\n        \"type\": \"User\",\n        \"user\" : {\n            \"is_org_admin\": true\n        },\n        \"internal\" : {\n            \"org_id\": \"org123\"\n        }\n    }\n}\n```\nEncoded (via `base64 -w0`):\n`eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6ImFjY291bnQxMjMiLCJ0eXBlIjoiVXNlciIsInVzZXIiOnsiaXNfb3JnX2FkbWluIjp0cnVlfSwiaW50ZXJuYWwiOnsib3JnX2lkIjoib3JnMTIzIn19fQo=`\n"
+      }
+    }
+  }
+}

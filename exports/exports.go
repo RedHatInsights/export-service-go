@@ -2,6 +2,7 @@ package exports
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -9,11 +10,13 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/redhatinsights/export-service-go/db"
-	"github.com/redhatinsights/export-service-go/logging"
+	"github.com/redhatinsights/export-service-go/errors"
+	"github.com/redhatinsights/export-service-go/logger"
+	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
-var log = logging.Log
+var log = logger.Log
 
 type APIExport struct {
 	ID          string     `json:"id"`
@@ -41,41 +44,78 @@ func ExportRouter(r chi.Router) {
 }
 
 func PostExport(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserIdentity(r.Context())
+
 	var payload models.ExportPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		JSONError(w, err.Error(), http.StatusBadRequest)
+		errors.JSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	payload.User = user
 	tx := db.DB.Create(&payload)
 	if tx.Error != nil {
 		log.Error(tx.Error)
+		errors.JSONError(w, tx.Error, http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(&payload); err != nil {
 		log.Error("Error while trying to encode")
+		errors.JSONError(w, err.Error(), http.StatusBadRequest)
 	}
-
 }
 
 func ListExports(w http.ResponseWriter, r *http.Request) {
 	exports := []*APIExport{}
 	result := db.DB.Model(&models.ExportPayload{}).Find(&exports)
 	if result.Error != nil {
-		JSONError(w, result.Error, http.StatusBadRequest)
+		errors.JSONError(w, result.Error, http.StatusBadRequest)
 		return
 	}
 	if err := render.RenderList(w, r, NewExportListResponse(exports)); err != nil {
-		JSONError(w, err.Error(), http.StatusBadRequest)
+		errors.JSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
 
-func GetExport(w http.ResponseWriter, r *http.Request) {}
+func GetExport(w http.ResponseWriter, r *http.Request) {
+	// func responsible for downloading from s3
+}
 
-func DeleteExport(w http.ResponseWriter, r *http.Request) {}
+func DeleteExport(w http.ResponseWriter, r *http.Request) {
+	if exportUUID := chi.URLParam(r, "exportUUID"); exportUUID != "" {
+		result := db.DB.Delete(&models.ExportPayload{}, "id = ?", exportUUID)
+		if result.Error != nil {
+			log.Error(result.Error)
+			errors.JSONError(w, result.Error, http.StatusBadRequest)
+			return
+		}
+		if result.RowsAffected == 0 {
+			errors.JSONError(w, fmt.Sprintf("record %s not found", exportUUID), http.StatusNotFound)
+			return
+		}
+	}
+}
 
-func GetExportStatus(w http.ResponseWriter, r *http.Request) {}
+func GetExportStatus(w http.ResponseWriter, r *http.Request) {
+	export := APIExport{}
+	if exportUUID := chi.URLParam(r, "exportUUID"); exportUUID != "" {
+		result := db.DB.Model(&models.ExportPayload{}).Find(&export, "id = ?", exportUUID)
+		if result.Error != nil {
+			log.Error(result.Error)
+			errors.JSONError(w, result.Error, http.StatusBadRequest)
+			return
+		}
+		if result.RowsAffected == 0 {
+			errors.JSONError(w, fmt.Sprintf("record %s not found", exportUUID), http.StatusNotFound)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(&export); err != nil {
+			log.Error("Error while trying to encode")
+			errors.JSONError(w, err.Error(), http.StatusBadRequest)
+		}
+	}
+}
 
 func (e *APIExport) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
@@ -87,11 +127,4 @@ func NewExportListResponse(exports []*APIExport) []render.Renderer {
 		list = append(list, export)
 	}
 	return list
-}
-
-func JSONError(w http.ResponseWriter, err interface{}, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(err)
 }

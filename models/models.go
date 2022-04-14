@@ -34,15 +34,20 @@ type ExportPayload struct {
 	Format         PayloadFormat `gorm:"type:string" json:"format"`
 	Status         PayloadStatus `gorm:"type:string" json:"status"`
 	Sources        []*Source     `gorm:"type:json" json:"sources"`
-	AccountID      string        `json:"-"`
-	OrganizationID string        `json:"-"`
-	Username       string        `json:"-"`
+	S3DownloadLink string        `json:"-"`
+	User
 }
 
 type Source struct {
 	ID       string         `json:"id"`
 	Resource string         `json:"resource"`
 	Filters  datatypes.JSON `json:"filters"`
+}
+
+type User struct {
+	AccountID      string `json:"-"`
+	OrganizationID string `json:"-"`
+	Username       string `json:"-"`
 }
 
 func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {

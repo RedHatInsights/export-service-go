@@ -509,7 +509,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-rh-identity",
-        "description": "Base64-encoded JSON identity header provided by 3Scale. Contains an\naccount number of the user issuing the request. Format of the JSON:\n```\n{\n    \"identity\": {\n        \"account_number\": \"account123\",\n        \"type\": \"User\",\n        \"user\" : {\n            \"is_org_admin\": true\n        },\n        \"internal\" : {\n            \"org_id\": \"org123\"\n        }\n    }\n}\n```\nEncoded (via `base64 -w0`):\n`eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6ImFjY291bnQxMjMiLCJ0eXBlIjoiVXNlciIsInVzZXIiOnsiaXNfb3JnX2FkbWluIjp0cnVlfSwiaW50ZXJuYWwiOnsib3JnX2lkIjoib3JnMTIzIn19fQo=`\n"
+        "description": "Base64-encoded JSON identity header provided by 3Scale. Contains an\naccount number of the user issuing the request. Format of the JSON:\n```\n{\n    \"identity\": {\n        \"account_number\": \"account123\",\n        \"org_id\": \"org123\",\n        \"type\": \"User\",\n        \"user\" : {\n            \"is_org_admin\": true\n        },\n        \"internal\" : {\n            \"org_id\": \"org123\"\n        }\n    }\n}\n```\nEncoded (via `base64 -w0`):\n`eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K`\n"
       }
     }
   }

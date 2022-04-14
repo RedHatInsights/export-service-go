@@ -28,11 +28,6 @@ type APIExport struct {
 	Status      string     `json:"status"`
 }
 
-type IError struct {
-	Field string
-	Msg   string
-}
-
 func ExportRouter(r chi.Router) {
 	r.Post("/", PostExport)
 	r.Get("/", ListExports)

@@ -13,7 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/go-chi/chi/middleware"
+	middleware "github.com/go-chi/chi/v5/middleware"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
@@ -31,10 +31,11 @@ func init() {
 		return true
 	})
 	loggerConfig.EncoderConfig.TimeKey = "@timestamp"
+	loggerConfig.EncoderConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
 	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.999Z")
 
 	consoleOutput := zapcore.Lock(os.Stdout)
-	consoleEncoder := zapcore.NewJSONEncoder(loggerConfig.EncoderConfig)
+	consoleEncoder := zapcore.NewConsoleEncoder(loggerConfig.EncoderConfig)
 
 	switch cfg.LogLevel {
 	case "DEBUG":
@@ -70,11 +71,14 @@ func init() {
 
 }
 
-func Logger(l *zap.SugaredLogger) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+func ResponseLogger(next http.Handler) http.Handler {
+	return SetResponseLogger(Log)(next)
+}
 
+func SetResponseLogger(l *zap.SugaredLogger) func(next http.Handler) http.Handler {
+	fn1 := func(next http.Handler) http.Handler {
+		fn2 := func(w http.ResponseWriter, r *http.Request) {
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			t1 := time.Now()
 			defer func() {
 				l.Infow("",
@@ -84,11 +88,12 @@ func Logger(l *zap.SugaredLogger) func(next http.Handler) http.Handler {
 					"latency", time.Since(t1),
 					"status", ww.Status(),
 					"size", ww.BytesWritten(),
-					"reqId", request_id.GetReqID(r.Context()))
+					"reqId", request_id.GetReqID(r.Context()),
+				)
 			}()
-
 			next.ServeHTTP(ww, r)
 		}
-		return http.HandlerFunc(fn)
+		return http.HandlerFunc(fn2)
 	}
+	return fn1
 }

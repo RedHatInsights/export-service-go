@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/aws/aws-sdk-go v1.43.38
-	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/render v1.0.1
 	github.com/go-openapi/runtime v0.23.3
@@ -12,7 +11,6 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
-	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.11.0
 	go.uber.org/zap v1.21.0
 	gorm.io/datatypes v1.0.6
@@ -62,6 +60,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

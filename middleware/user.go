@@ -49,7 +49,7 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 		id := identity.Get(r.Context())
 
 		if id.Identity.Type != "User" {
-			errors.JSONError(w, fmt.Sprintf("'%s' is not a valid user type", id.Identity.Type), http.StatusBadRequest)
+			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid user type", id.Identity.Type))
 			return
 		}
 

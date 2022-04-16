@@ -455,13 +455,13 @@
           "first": {
             "type": "string"
           },
-          "last": {
+          "next": {
             "type": "string"
           },
           "previous": {
             "type": "string"
           },
-          "next": {
+          "last": {
             "type": "string"
           }
         },

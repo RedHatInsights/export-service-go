@@ -8,6 +8,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -26,11 +28,13 @@ type ExportConfig struct {
 	Auth            bool
 	WebPort         int
 	MetricsPort     int
+	PrivatePort     int
 	Logging         *loggingConfig
 	LogLevel        string
 	Debug           bool
 	DBConfig        dbConfig
 	OpenAPIFilePath string
+	Psks            []string
 }
 
 type dbConfig struct {
@@ -81,10 +85,12 @@ func init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 8000)
 	options.SetDefault("MetricsPort", 9000)
+	options.SetDefault("PrivatePort", 10000)
 	options.SetDefault("LogLevel", "INFO")
 	options.SetDefault("Auth", true)
 	options.SetDefault("Debug", false)
 	options.SetDefault("OpenAPIFilePath", "./static/spec/openapi.json")
+	options.SetDefault("psks", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
 
 	// DB defaults
 	options.SetDefault("Database", "pgsql")
@@ -108,9 +114,11 @@ func init() {
 		Auth:            options.GetBool("Auth"),
 		WebPort:         options.GetInt("WebPort"),
 		MetricsPort:     options.GetInt("MetricsPort"),
+		PrivatePort:     options.GetInt("PrivatePort"),
 		Debug:           options.GetBool("Debug"),
 		LogLevel:        options.GetString("LogLevel"),
 		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Psks:            options.GetStringSlice("psks"),
 	}
 
 	database := options.GetString("database")
@@ -130,6 +138,7 @@ func init() {
 
 		config.WebPort = *cfg.PublicPort
 		config.MetricsPort = cfg.MetricsPort
+		config.PrivatePort = *cfg.PrivatePort
 
 		config.DBConfig = dbConfig{
 			User:     cfg.Database.Username,

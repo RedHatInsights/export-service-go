@@ -13,6 +13,7 @@
 
 # VSCode
 .vscode/
+__debug_bin
 
 tmp/
 .env

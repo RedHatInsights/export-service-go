@@ -35,6 +35,7 @@ type ExportPayload struct {
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 	CompletedAt    *time.Time    `json:"completed_at,omitempty"`
 	Expires        *time.Time    `json:"expires,omitempty"`
+	RequestID      string        `json:"request_id"`
 	Name           string        `json:"name"`
 	Application    string        `json:"application"`
 	Format         PayloadFormat `gorm:"type:string" json:"format"`

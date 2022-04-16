@@ -16,7 +16,6 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	metrics "github.com/redhatinsights/export-service-go/metrics"
@@ -46,12 +45,8 @@ func createWebServer(cfg *config.ExportConfig) *http.Server {
 	// setup middleware
 	router.Use(
 		request_id.RequestID,
-		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
-		render.SetContentType(render.ContentTypeJSON), // Set content-Type headers as application/json
-		logger.Logger(log),
-		emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Auth is False.
-		identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-		emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+		emiddleware.JSONContentType, // Set content-Type headers as application/json
+		logger.ResponseLogger,
 		setupDocsMiddleware,
 		metrics.PrometheusMiddleware,
 		middleware.Recoverer,
@@ -60,8 +55,16 @@ func createWebServer(cfg *config.ExportConfig) *http.Server {
 	router.Get("/", statusOK)
 
 	router.Route("/api/export/v1", func(r chi.Router) {
+		// add authentication middleware
+		r.Use(
+			emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Auth is False.
+			identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+			emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+		)
+
+		// add external routes
 		r.Get("/openapi.json", serveOpenAPISpec) // OpenAPI Spec
-		r.Get("/api/export/v1/ping", helloWorld) // Hello World endpoint
+		r.Get("/ping", helloWorld)               // Hello World endpoint
 		r.Route("/exports", exports.ExportRouter)
 	})
 
@@ -79,6 +82,37 @@ func createWebServer(cfg *config.ExportConfig) *http.Server {
 		// }
 	})
 	return &server
+}
+
+func createPrivateServer(cfg *config.ExportConfig) *http.Server {
+	// Initialize router
+	router := chi.NewRouter()
+
+	// setup middleware
+	router.Use(
+		emiddleware.JSONContentType, // Set content-Type headers as application/json
+		logger.ResponseLogger,
+		metrics.PrometheusMiddleware,
+		middleware.Recoverer,
+	)
+
+	router.Get("/", statusOK)
+
+	router.Route("/app/export/v1", func(r chi.Router) {
+		r.Use(emiddleware.EnforcePSK)
+		// add internal routes
+		r.Get("/ping", helloWorld) // Hello World endpoint
+		r.Route("/", exports.InternalRouter)
+	})
+
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.PrivatePort),
+		Handler: router,
+		// TODO: tune these timeouts. This server is repsonsible for writing to s3.
+		// It is possible these values are way too low depending on the dataset received.
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
 }
 
 func createMetricsServer(cfg *config.ExportConfig) *http.Server {
@@ -127,9 +161,12 @@ func main() {
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
 		"openapifilepath", cfg.OpenAPIFilePath,
+		"psks", cfg.Psks, // TODO: remove this
 	)
 
-	srv := createWebServer(cfg)
+	wsrv := createWebServer(cfg)
+
+	psrv := createPrivateServer(cfg)
 
 	msrv := createMetricsServer(cfg)
 
@@ -138,12 +175,18 @@ func main() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := wsrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
 		}
+		log.Info("web server shutdown")
+		if err := psrv.Shutdown(context.Background()); err != nil {
+			log.Errorw("http server shutdown failed", "error", err)
+		}
+		log.Info("private server shutdown")
 		if err := msrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
 		}
+		log.Info("metrics server shutdown")
 		close(idleConnsClosed)
 	}()
 
@@ -152,14 +195,21 @@ func main() {
 			log.Errorw("metrics server stopped", "error", err)
 		}
 	}()
-	log.Info("metrics server started")
+	log.Infof("metrics server started on %s", msrv.Addr)
 
 	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		if err := wsrv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Panicw("web server stopped unexpectedly", "error", err)
 		}
 	}()
-	log.Info("web server started")
+	log.Infof("web server started on %s", wsrv.Addr)
+
+	go func() {
+		if err := psrv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Panicw("private server stopped unexpectedly", "error", err)
+		}
+	}()
+	log.Infof("private server started on %s", psrv.Addr)
 
 	<-idleConnsClosed
 	log.Info("everything has shut down, goodbye")

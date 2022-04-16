@@ -1,18 +1,24 @@
-############################
+################################
 # STEP 1 build executable binary
-############################
+################################
 FROM registry.redhat.io/rhel8/go-toolset:latest AS builder
 
-WORKDIR /workspace
-COPY . .
-# Use go mod
-ENV GO111MODULE=on
-# Fetch dependencies.
-# Using go get requires root.
 USER root
-RUN go get -d -v
-# Build the binary.
-RUN CGO_ENABLED=0 go build -o export-service
+
+WORKDIR /workspace
+# Cache deps before copying source so that we do not need to re-download for every build
+COPY go.mod go.mod
+COPY go.sum go.sum
+# Fetch dependencies
+RUN go mod download
+
+# -x flag for more verbose download logging
+# RUN go mod download -x
+
+# Now copy the rest of the files for build
+COPY . .
+# Build the binary
+RUN GO111MODULE=on CGO_ENABLED=0 go build -ldflags "-w -s" -o export-service
 ############################
 # STEP 2 build a small image
 ############################

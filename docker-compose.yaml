@@ -12,8 +12,9 @@ services:
       - AUTH=false
       - OPENAPIFILEPATH=/var/tmp/openapi.json
     ports:
-      - 8000:8000
-      - 9000:9000
+      - 8765:8000
+      - 9876:9000
+      - 10987:10000
 
   db:
     container_name: export-db
@@ -25,3 +26,13 @@ services:
       - 15433:5432
     volumes:
       - ./tmp/db:/var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+      - -c
+      - ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+      - -c
+      - pg_stat_statements.save=off

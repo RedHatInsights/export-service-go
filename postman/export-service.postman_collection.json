@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "d5fa5902-4522-485e-84d0-bd53b030a17b",
+		"_postman_id": "d6a83413-3818-4660-8fdb-0284dc3b10cf",
 		"name": "export-service",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -53,12 +53,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/exports",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -116,12 +116,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/exports?limit=100&offset=0",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports?limit=100&offset=0",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -186,12 +186,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/exports/{{exportUUID}}",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports/{{exportUUID}}",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -250,12 +250,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/exports/{{exportUUID}}",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports/{{exportUUID}}",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -314,12 +314,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/exports/{{exportUUID}}/status",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports/{{exportUUID}}/status",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -356,12 +356,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/openapi.json",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/openapi.json",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -396,12 +396,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/api/export/v1/ping",
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/ping",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						"api",
 						"export",
@@ -430,12 +430,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/",
+					"raw": "http://localhost:{{publicPort}}/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "{{publicPort}}",
 					"path": [
 						""
 					]
@@ -461,14 +461,45 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:9000/",
+					"raw": "http://localhost:{{metricsPort}}/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "9000",
+					"port": "{{metricsPort}}",
 					"path": [
 						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics - /healthz",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{metricsPort}}/healthz",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{metricsPort}}",
+					"path": [
+						"healthz"
 					]
 				}
 			},
@@ -492,14 +523,45 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:9000/metrics",
+					"raw": "http://localhost:{{metricsPort}}/metrics",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "9000",
+					"port": "{{metricsPort}}",
 					"path": [
 						"metrics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics - /readyz",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{metricsPort}}/readyz",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{metricsPort}}",
+					"path": [
+						"readyz"
 					]
 				}
 			},
@@ -523,12 +585,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:10000/app/export/v1/ping",
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/ping",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "10000",
+					"port": "{{privatePort}}",
 					"path": [
 						"app",
 						"export",
@@ -560,12 +622,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:10000/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/upload",
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/upload",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "10000",
+					"port": "{{privatePort}}",
 					"path": [
 						"app",
 						"export",
@@ -600,12 +662,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:10000/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/error",
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/error",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "10000",
+					"port": "{{privatePort}}",
 					"path": [
 						"app",
 						"export",
@@ -648,6 +710,18 @@
 		{
 			"key": "exports-psk",
 			"value": "testing-a-psk"
+		},
+		{
+			"key": "publicPort",
+			"value": "8000"
+		},
+		{
+			"key": "metricsPort",
+			"value": "9000"
+		},
+		{
+			"key": "privatePort",
+			"value": "10000"
 		}
 	]
 }

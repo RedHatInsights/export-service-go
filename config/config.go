@@ -20,12 +20,12 @@ const (
 	AnnounceTopic string = "platform.export.announce"
 )
 
+// ExportCfg is the global variable containing the runtime configuration
 var ExportCfg *ExportConfig
 
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
 	Hostname        string
-	Auth            bool
 	WebPort         int
 	MetricsPort     int
 	PrivatePort     int
@@ -43,6 +43,12 @@ type dbConfig struct {
 	Hostname string
 	Port     string
 	Name     string
+	SSLCfg   dbSSLConfig
+}
+
+type dbSSLConfig struct {
+	RdsCa   *string
+	SSLMode string
 }
 
 type loggingConfig struct {
@@ -87,7 +93,6 @@ func init() {
 	options.SetDefault("MetricsPort", 9000)
 	options.SetDefault("PrivatePort", 10000)
 	options.SetDefault("LogLevel", "INFO")
-	options.SetDefault("Auth", true)
 	options.SetDefault("Debug", false)
 	options.SetDefault("OpenAPIFilePath", "./static/spec/openapi.json")
 	options.SetDefault("psks", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
@@ -111,7 +116,6 @@ func init() {
 
 	config = &ExportConfig{
 		Hostname:        kubenv.GetString("Hostname"),
-		Auth:            options.GetBool("Auth"),
 		WebPort:         options.GetInt("WebPort"),
 		MetricsPort:     options.GetInt("MetricsPort"),
 		PrivatePort:     options.GetInt("PrivatePort"),
@@ -130,6 +134,9 @@ func init() {
 			Hostname: options.GetString("PGSQL_HOSTNAME"),
 			Port:     options.GetString("PGSQL_PORT"),
 			Name:     options.GetString("PGSQL_DATABASE"),
+			SSLCfg: dbSSLConfig{
+				SSLMode: "prefer",
+			},
 		}
 	}
 
@@ -146,6 +153,10 @@ func init() {
 			Hostname: cfg.Database.Hostname,
 			Port:     fmt.Sprint(cfg.Database.Port),
 			Name:     cfg.Database.Name,
+			SSLCfg: dbSSLConfig{
+				SSLMode: cfg.Database.SslMode,
+				RdsCa:   cfg.Database.RdsCa,
+			},
 		}
 
 		config.Logging = &loggingConfig{

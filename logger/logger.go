@@ -22,20 +22,25 @@ import (
 	"github.com/redhatinsights/export-service-go/config"
 )
 
+// Log is a global variable that carries the Sugared logger
 var Log *zap.SugaredLogger
+
 var cfg = config.ExportCfg
 
 func init() {
+	tmpLogger := zap.NewExample()
 	loggerConfig := zap.NewProductionConfig()
-	fn := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return true
-	})
 	loggerConfig.EncoderConfig.TimeKey = "@timestamp"
-	loggerConfig.EncoderConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
-	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.999Z")
+	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.9999Z")
 
 	consoleOutput := zapcore.Lock(os.Stdout)
-	consoleEncoder := zapcore.NewConsoleEncoder(loggerConfig.EncoderConfig)
+	consoleEncoder := zapcore.NewJSONEncoder(loggerConfig.EncoderConfig)
+	if cfg.Debug {
+		// use color and non-JSON logging in DEBUG mode
+		loggerConfig.Development = true
+		loggerConfig.EncoderConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
+		consoleEncoder = zapcore.NewConsoleEncoder(loggerConfig.EncoderConfig)
+	}
 
 	switch cfg.LogLevel {
 	case "DEBUG":
@@ -46,6 +51,7 @@ func init() {
 		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	}
 
+	fn := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool { return true })
 	core := zapcore.NewTee(zapcore.NewCore(consoleEncoder, consoleOutput, fn))
 
 	// configure cloudwatch
@@ -54,7 +60,7 @@ func init() {
 		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
 		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
-			Log.Info(err)
+			tmpLogger.Info(err.Error())
 		}
 		core = zapcore.NewTee(
 			zapcore.NewCore(consoleEncoder, consoleOutput, fn),
@@ -64,11 +70,12 @@ func init() {
 
 	logger, err := loggerConfig.Build(zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }))
 	if err != nil {
-		Log.Info(err)
+		tmpLogger.Info(err.Error())
 	}
+	defer logger.Sync()
 
 	Log = logger.Sugar()
-
+	Log.Infof("log level set to %s", cfg.LogLevel)
 }
 
 func ResponseLogger(next http.Handler) http.Handler {

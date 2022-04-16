@@ -17,14 +17,19 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
+// DB is a global variable containing the gorm.DB
 var DB *gorm.DB
-var cfg = config.ExportCfg.DBConfig
+var cfg = config.ExportCfg
 var log = logger.Log
 
 func init() {
-	dburl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.User, cfg.Password, cfg.Hostname, cfg.Port, cfg.Name)
+	dbcfg := cfg.DBConfig
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", dbcfg.User, dbcfg.Password, dbcfg.Hostname, dbcfg.Port, dbcfg.Name, dbcfg.SSLCfg.SSLMode)
+	if dbcfg.SSLCfg.RdsCa != nil && *dbcfg.SSLCfg.RdsCa != "" {
+		dsn += fmt.Sprintf("&sslrootcert=%s", *dbcfg.SSLCfg.RdsCa)
+	}
 	var err error
-	DB, err = gorm.Open(postgres.Open(dburl), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}

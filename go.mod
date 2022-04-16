@@ -68,7 +68,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	go.mongodb.org/mongo-driver v1.8.3 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect

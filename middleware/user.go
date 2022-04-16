@@ -29,7 +29,7 @@ var log = logger.Log
 
 func InjectDebugUserIdentity(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !cfg.Auth {
+		if cfg.Debug {
 			rawHeaders := r.Header["X-Rh-Identity"]
 
 			// request does not have the x-rh-id header

@@ -9,7 +9,7 @@ services:
     environment:
       - PGSQL_PORT=5432
       - PGSQL_HOSTNAME=export-db
-      - AUTH=false
+      - DEBUG=true
       - OPENAPIFILEPATH=/var/tmp/openapi.json
     ports:
       - 8765:8000
@@ -22,6 +22,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    privileged: true
     ports:
       - 15433:5432
     volumes:
@@ -29,10 +30,4 @@ services:
     command:
       - postgres
       - -c
-      - ssl=on
-      - -c
-      - ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
-      - -c
-      - ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
-      - -c
-      - pg_stat_statements.save=off
+      - log_statement=all

@@ -29,8 +29,8 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 )
 
-var log *zap.SugaredLogger
 var cfg *config.ExportConfig
+var log *zap.SugaredLogger
 
 func init() {
 	cfg = config.ExportCfg
@@ -57,7 +57,7 @@ func createWebServer(cfg *config.ExportConfig) *http.Server {
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
 		r.Use(
-			emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Auth is False.
+			emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Debug is true.
 			identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
 			emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
 		)
@@ -75,6 +75,7 @@ func createWebServer(cfg *config.ExportConfig) *http.Server {
 		WriteTimeout: 10 * time.Second,
 	}
 	server.RegisterOnShutdown(func() {
+		// initialize Kafka producers/consumers here
 		// for _, consumer := range consumers {
 		// 	if consumer != nil {
 		// 		consumer.Close()
@@ -155,7 +156,6 @@ func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 func main() {
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
-		"auth", cfg.Auth,
 		"webport", cfg.WebPort,
 		"metricsport", cfg.MetricsPort,
 		"loglevel", cfg.LogLevel,

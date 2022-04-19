@@ -4,7 +4,7 @@ Copyright 2022 Red Hat Inc.
 SPDX-License-Identifier: Apache-2.0
 
 */
-package exports
+package middleware
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/export-service-go/errors"
+	"github.com/redhatinsights/export-service-go/models"
 )
 
 type internalKey int
@@ -26,9 +27,9 @@ func IsValidUUID(id string) bool {
 	return err == nil
 }
 
-// URLParams is a middleware that pulls `exportUUID`, `resourceUUID`, and `application`
+// URLParamsCtx is a middleware that pulls `exportUUID`, `resourceUUID`, and `application`
 // from the url and puts them into a `urlParams` object in the request context.
-func URLParams(next http.Handler) http.Handler {
+func URLParamsCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		exportUUID := chi.URLParam(r, "exportUUID")
 		if !IsValidUUID(exportUUID) {
@@ -43,13 +44,18 @@ func URLParams(next http.Handler) http.Handler {
 
 		application := chi.URLParam(r, "application")
 
-		params := &urlParams{
-			exportUUID:   exportUUID,
-			application:  application,
-			resourceUUID: resourceUUID,
+		params := &models.URLParams{
+			ExportUUID:   exportUUID,
+			Application:  application,
+			ResourceUUID: resourceUUID,
 		}
 
 		ctx := context.WithValue(r.Context(), urlParamsKey, params)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// GetURLParams fetches the urlParams from the context.
+func GetURLParams(ctx context.Context) *models.URLParams {
+	return ctx.Value(urlParamsKey).(*models.URLParams)
 }

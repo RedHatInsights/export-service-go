@@ -25,11 +25,3 @@ type APIExport struct {
 func (e *APIExport) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
-
-// urlParams represent the `exportUUID`, `resourceUUID`, and `application` found in
-// the url. These are added to the request context using the URLParams middleware.
-type urlParams struct {
-	exportUUID   string
-	application  string
-	resourceUUID string
-}

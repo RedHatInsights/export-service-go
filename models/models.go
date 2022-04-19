@@ -29,6 +29,14 @@ const (
 	Complete PayloadStatus = "complete"
 )
 
+// URLParams represent the `exportUUID`, `resourceUUID`, and `application` found in
+// the url. These are added to the request context using the URLParams middleware.
+type URLParams struct {
+	ExportUUID   string
+	Application  string
+	ResourceUUID string
+}
+
 type ExportPayload struct {
 	ID             string        `gorm:"type:uuid;primarykey" json:"id"`
 	CreatedAt      time.Time     `gorm:"autoCreateTime" json:"created_at"`

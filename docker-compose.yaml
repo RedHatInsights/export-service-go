@@ -9,8 +9,9 @@ services:
     environment:
       - PGSQL_PORT=5432
       - PGSQL_HOSTNAME=export-db
-      - DEBUG=true
+      - DEBUG=false
       - OPENAPIFILEPATH=/var/tmp/openapi.json
+      - PSKS=testing-a-psk
     ports:
       - 8765:8000
       - 9876:9000

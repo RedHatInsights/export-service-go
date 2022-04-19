@@ -120,7 +120,7 @@ func GetExport(w http.ResponseWriter, r *http.Request) {
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
 func DeleteExport(w http.ResponseWriter, r *http.Request) {
 	exportUUID := chi.URLParam(r, "exportUUID")
-	if !IsValidUUID(exportUUID) {
+	if !middleware.IsValidUUID(exportUUID) {
 		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
 		return
 	}
@@ -143,7 +143,7 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	exportUUID := chi.URLParam(r, "exportUUID")
-	if !IsValidUUID(exportUUID) {
+	if !middleware.IsValidUUID(exportUUID) {
 		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
 		return
 	}

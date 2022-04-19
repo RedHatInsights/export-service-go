@@ -1,4 +1,9 @@
-// Copyright Red Hat
+/*
+
+Copyright 2022 Red Hat Inc.
+SPDX-License-Identifier: Apache-2.0
+
+*/
 package main
 
 import (
@@ -7,17 +12,123 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redhatinsights/export-service-go/config"
-	l "github.com/redhatinsights/export-service-go/logger"
 	metrics "github.com/redhatinsights/export-service-go/metrics"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
-	log "github.com/sirupsen/logrus"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"go.uber.org/zap"
+
+	"github.com/redhatinsights/export-service-go/config"
+	"github.com/redhatinsights/export-service-go/exports"
+	"github.com/redhatinsights/export-service-go/logger"
+	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 )
+
+var cfg *config.ExportConfig
+var log *zap.SugaredLogger
+
+func init() {
+	cfg = config.ExportCfg
+	log = logger.Log
+}
+
+// func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
+func createWebServer(cfg *config.ExportConfig) *http.Server {
+	// Initialize router
+	router := chi.NewRouter()
+
+	// setup middleware
+	router.Use(
+		request_id.RequestID,
+		emiddleware.JSONContentType, // Set content-Type headers as application/json
+		logger.ResponseLogger,
+		setupDocsMiddleware,
+		metrics.PrometheusMiddleware,
+		middleware.Recoverer,
+	)
+
+	router.Get("/", statusOK)
+
+	router.Route("/api/export/v1", func(r chi.Router) {
+		// add authentication middleware
+		r.Use(
+			emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Debug is true.
+			identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+			emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+		)
+
+		// add external routes
+		r.Get("/openapi.json", serveOpenAPISpec) // OpenAPI Spec
+		r.Get("/ping", helloWorld)               // Hello World endpoint
+		r.Route("/exports", exports.ExportRouter)
+	})
+
+	server := http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.WebPort),
+		Handler:      router,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	server.RegisterOnShutdown(func() {
+		// initialize Kafka producers/consumers here
+		// for _, consumer := range consumers {
+		// 	if consumer != nil {
+		// 		consumer.Close()
+		// 	}
+		// }
+	})
+	return &server
+}
+
+func createPrivateServer(cfg *config.ExportConfig) *http.Server {
+	// Initialize router
+	router := chi.NewRouter()
+
+	// setup middleware
+	router.Use(
+		emiddleware.JSONContentType, // Set content-Type headers as application/json
+		logger.ResponseLogger,
+		metrics.PrometheusMiddleware,
+		middleware.Recoverer,
+	)
+
+	router.Get("/", statusOK)
+
+	router.Route("/app/export/v1", func(r chi.Router) {
+		r.Use(emiddleware.EnforcePSK)
+		// add internal routes
+		r.Get("/ping", helloWorld) // Hello World endpoint
+		r.Route("/", exports.InternalRouter)
+	})
+
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.PrivatePort),
+		Handler: router,
+		// TODO: tune these timeouts. This server is repsonsible for writing to s3.
+		// It is possible these values are way too low depending on the dataset received.
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+}
+
+func createMetricsServer(cfg *config.ExportConfig) *http.Server {
+	// Router for metrics
+	mr := chi.NewRouter()
+	mr.Get("/", statusOK)
+	mr.Get("/readyz", statusOK)  // for readiness probe
+	mr.Get("/healthz", statusOK) // for liveness probe
+	mr.Handle("/metrics", promhttp.Handler())
+
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.MetricsPort),
+		Handler: mr,
+	}
+}
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
@@ -39,90 +150,67 @@ func statusOK(w http.ResponseWriter, r *http.Request) {
 
 // Serve OpenAPI spec json
 func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
-	cfg := config.Get()
 	http.ServeFile(w, r, cfg.OpenAPIFilePath)
 }
 
-func initDependencies() {
-	config.Init()
-	l.InitLogger()
-}
-
 func main() {
-	initDependencies()
-	cfg := config.Get()
-	log.WithFields(log.Fields{
-		"Hostname":         cfg.Hostname,
-		"Auth":             cfg.Auth,
-		"WebPort":          cfg.WebPort,
-		"MetricsPort":      cfg.MetricsPort,
-		"LogLevel":         cfg.LogLevel,
-		"Debug":            cfg.Debug,
-		"OpenAPIFilePath ": cfg.OpenAPIFilePath,
-	}).Info("Configuration Values:")
-
-	// Initialize router
-	r := chi.NewRouter()
-
-	r.Use(
-		middleware.Logger,
-		setupDocsMiddleware,
-		metrics.PrometheusMiddleware,
+	log.Infow("configuration values",
+		"hostname", cfg.Hostname,
+		"webport", cfg.WebPort,
+		"metricsport", cfg.MetricsPort,
+		"loglevel", cfg.LogLevel,
+		"debug", cfg.Debug,
+		"openapifilepath", cfg.OpenAPIFilePath,
+		"psks", cfg.Psks, // TODO: remove this
 	)
 
-	// Register handler functions on server routes
+	wsrv := createWebServer(cfg)
 
-	// Unauthenticated routes
-	r.Get("/", statusOK)                                   // Health check
-	r.Get("/api/export/v1/openapi.json", serveOpenAPISpec) // OpenAPI Spec
+	psrv := createPrivateServer(cfg)
 
-	// Authenticated routes
-	ar := r.Group(nil)
-	if cfg.Auth {
-		ar.Use(identity.EnforceIdentity) // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-	}
-
-	ar.Get("/api/export/v1/ping", helloWorld) // Hello World endpoint
-
-	// Router for metrics
-	mr := chi.NewRouter()
-	mr.Get("/", statusOK)
-	mr.Handle("/metrics", promhttp.Handler())
-
-	srv := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.WebPort),
-		Handler: r,
-	}
-
-	msrv := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.MetricsPort),
-		Handler: mr,
-	}
+	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
-		if err := srv.Shutdown(context.Background()); err != nil {
-			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
+		if err := wsrv.Shutdown(context.Background()); err != nil {
+			log.Errorw("http server shutdown failed", "error", err)
 		}
+		log.Info("web server shutdown")
+		if err := psrv.Shutdown(context.Background()); err != nil {
+			log.Errorw("http server shutdown failed", "error", err)
+		}
+		log.Info("private server shutdown")
 		if err := msrv.Shutdown(context.Background()); err != nil {
-			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
+			log.Errorw("http server shutdown failed", "error", err)
 		}
+		log.Info("metrics server shutdown")
 		close(idleConnsClosed)
 	}()
 
 	go func() {
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
-			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
+			log.Errorw("metrics server stopped", "error", err)
 		}
 	}()
+	log.Infof("metrics server started on %s", msrv.Addr)
 
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.WithFields(log.Fields{"error": err}).Fatal("Service Stopped")
-	}
+	go func() {
+		if err := wsrv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Panicw("web server stopped unexpectedly", "error", err)
+		}
+	}()
+	log.Infof("web server started on %s", wsrv.Addr)
+
+	go func() {
+		if err := psrv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Panicw("private server stopped unexpectedly", "error", err)
+		}
+	}()
+	log.Infof("private server started on %s", psrv.Addr)
 
 	<-idleConnsClosed
-	log.Info("Everything has shut down, goodbye")
+	log.Info("everything has shut down, goodbye")
 }

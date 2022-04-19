@@ -38,7 +38,7 @@ func init() {
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func createWebServer(cfg *config.ExportConfig) *http.Server {
+func createPublicServer(cfg *config.ExportConfig) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -69,7 +69,7 @@ func createWebServer(cfg *config.ExportConfig) *http.Server {
 	})
 
 	server := http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.WebPort),
+		Addr:         fmt.Sprintf(":%d", cfg.PublicPort),
 		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -156,7 +156,7 @@ func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 func main() {
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
-		"webport", cfg.WebPort,
+		"publicport", cfg.PublicPort,
 		"metricsport", cfg.MetricsPort,
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
@@ -164,7 +164,7 @@ func main() {
 		"psks", cfg.Psks, // TODO: remove this
 	)
 
-	wsrv := createWebServer(cfg)
+	wsrv := createPublicServer(cfg)
 
 	psrv := createPrivateServer(cfg)
 
@@ -178,7 +178,7 @@ func main() {
 		if err := wsrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
 		}
-		log.Info("web server shutdown")
+		log.Info("public server shutdown")
 		if err := psrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
 		}
@@ -199,10 +199,10 @@ func main() {
 
 	go func() {
 		if err := wsrv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Panicw("web server stopped unexpectedly", "error", err)
+			log.Panicw("public server stopped unexpectedly", "error", err)
 		}
 	}()
-	log.Infof("web server started on %s", wsrv.Addr)
+	log.Infof("public server started on %s", wsrv.Addr)
 
 	go func() {
 		if err := psrv.ListenAndServe(); err != http.ErrServerClosed {

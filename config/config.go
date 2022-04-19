@@ -58,17 +58,17 @@ type loggingConfig struct {
 	Region          string
 }
 
-type KafkaCfg struct {
+type kafkaCfg struct {
 	KafkaBrokers         []string
 	KafkaGroupID         string
 	KafkaStatusTopic     string
 	KafkaDeliveryReports bool
 	KafkaAnnounceTopic   string
 	ValidTopics          []string
-	KafkaSSLConfig       KafkaSSLCfg
+	KafkaSSLConfig       kafkaSSLCfg
 }
 
-type KafkaSSLCfg struct {
+type kafkaSSLCfg struct {
 	KafkaCA       string
 	KafkaUsername string
 	KafkaPassword string

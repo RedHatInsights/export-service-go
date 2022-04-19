@@ -29,7 +29,7 @@ func ExportRouter(r chi.Router) {
 	r.Post("/", PostExport)
 	r.With(middleware.PaginationCtx).Get("/", ListExports)
 	r.Route("/{exportUUID}", func(sub chi.Router) {
-		sub.Get("/", GetExport)
+		sub.With(middleware.GZIPContentType).Get("/", GetExport) // TODO: will this middleware work correctly?
 		sub.Delete("/", DeleteExport)
 		sub.Get("/status", GetExportStatus)
 	})

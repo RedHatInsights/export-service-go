@@ -25,15 +25,22 @@ const (
 	defaultOffset int           = 0
 )
 
+// Pagination represents pagination parameters.
 type Paginate struct {
-	Limit  int
+	// Limit represents the number of items returned in the response.
+	Limit int
+	// Offset represents the starting index of the returned list of items.
 	Offset int
 }
 
+// PaginatedResponse contains the paginated response data.
 type PaginatedResponse struct {
-	Meta  Meta        `json:"meta"`
-	Links Links       `json:"links"`
-	Data  interface{} `json:"data"`
+	// Meta contains the response metadata.
+	Meta Meta `json:"meta"`
+	// Links contains the first, next, previous, and last links for the paginated data.
+	Links Links `json:"links"`
+	// Data is the paginated data
+	Data interface{} `json:"data"`
 }
 
 func lenSlice(data interface{}) int {
@@ -64,6 +71,8 @@ func indexSlice(data interface{}, start, stop int) interface{} {
 	return -1
 }
 
+// GetPaginatedResponse accepts the pagination settings and full data list and returns
+// the paginated data.
 func GetPaginatedResponse(url *url.URL, p Paginate, data interface{}) (*PaginatedResponse, error) {
 	// use lenSlice as error checker. lenSlice returns -1 if the data is not a slice.
 	// Paginated data must be a slice
@@ -77,7 +86,9 @@ func GetPaginatedResponse(url *url.URL, p Paginate, data interface{}) (*Paginate
 	}, nil
 }
 
+// Meta represents the response metadata.
 type Meta struct {
+	// Count represents the number of total items the query generated.
 	Count int `json:"count"`
 }
 
@@ -85,11 +96,16 @@ func getMeta(data interface{}) Meta {
 	return Meta{Count: lenSlice(data)}
 }
 
+// Links represents the first, next, previous, and last links of the paginated response.
 type Links struct {
-	First    string  `json:"first"`
-	Next     *string `json:"next"`
+	// First is the link that represents the start of the paginated data (offset=0).
+	First string `json:"first"`
+	// Next represents the next page of paginated data.
+	Next *string `json:"next"`
+	// Previous represents the previous page of paginated data.
 	Previous *string `json:"previous"`
-	Last     *string `json:"last"`
+	// Last represents the last page of paginated data.
+	Last *string `json:"last"`
 }
 
 func getFirstLink(url *url.URL) string {
@@ -161,6 +177,8 @@ func getLinks(url *url.URL, p Paginate, data interface{}) Links {
 	return result
 }
 
+// PaginationCtx is a middleware that parses the pagination settings from the url query
+// and injects them as a Paginate object in the request context.
 func PaginationCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pagination := Paginate{
@@ -192,6 +210,8 @@ func PaginationCtx(next http.Handler) http.Handler {
 	})
 }
 
+// GetPagination is a helper function that returns the Paginate
+// object stored in the request context.
 func GetPagination(ctx context.Context) Paginate {
 	return ctx.Value(PaginateKey).(Paginate)
 }

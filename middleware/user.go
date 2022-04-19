@@ -27,6 +27,8 @@ const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwi
 var cfg = config.ExportCfg
 var log = logger.Log
 
+// InjectDebugUserIdentity is a middleware that set a valid x-rh-identity header
+// when operating in DEBUG mode. ** Only used during testing.
 func InjectDebugUserIdentity(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if cfg.Debug {
@@ -44,6 +46,8 @@ func InjectDebugUserIdentity(next http.Handler) http.Handler {
 	})
 }
 
+// EnforeUserIdentity is a middleware that checks for a valid x-rh-identity
+// header and adds the id to the request context.
 func EnforceUserIdentity(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := identity.Get(r.Context())
@@ -64,6 +68,8 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 	})
 }
 
+// GetUserIdentity is a helper function that return the x-rh-identity
+// stored in the request context.
 func GetUserIdentity(ctx context.Context) models.User {
 	return ctx.Value(UserIdentityKey).(models.User)
 }

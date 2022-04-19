@@ -76,13 +76,13 @@ type kafkaSSLCfg struct {
 	Protocol      string
 }
 
-type StorageCfg struct {
-	StorageBucket    string
-	StorageEndpoint  string
-	StorageAccessKey string
-	StorageSecretKey string
-	UseSSL           bool
-}
+// type StorageCfg struct {
+// 	StorageBucket    string
+// 	StorageEndpoint  string
+// 	StorageAccessKey string
+// 	StorageSecretKey string
+// 	UseSSL           bool
+// }
 
 var config *ExportConfig
 

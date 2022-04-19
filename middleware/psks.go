@@ -13,6 +13,7 @@ import (
 )
 
 // SliceContainsString returns true if the specified target is present in the given slice.
+// TODO: if this function is needed elsewhere, it should be moved to a separate package.
 func SliceContainsString(slice []string, target string) bool {
 	for _, element := range slice {
 		if element == target {
@@ -22,6 +23,7 @@ func SliceContainsString(slice []string, target string) bool {
 	return false
 }
 
+// EnforcePSK is a middleware that checks for a valid x-rh-exports-psk header.
 func EnforcePSK(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		psk := r.Header["X-Rh-Exports-Psk"]

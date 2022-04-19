@@ -78,10 +78,13 @@ func init() {
 	Log.Infof("log level set to %s", cfg.LogLevel)
 }
 
+// ResponseLogger is a middleware that sets the ResponseLogger to the global default.
 func ResponseLogger(next http.Handler) http.Handler {
 	return SetResponseLogger(Log)(next)
 }
 
+// SetResponseLogger is a middleware helper that accepts a configured zap.SugaredLogger
+// and logs response information for each API response.
 func SetResponseLogger(l *zap.SugaredLogger) func(next http.Handler) http.Handler {
 	fn1 := func(next http.Handler) http.Handler {
 		fn2 := func(w http.ResponseWriter, r *http.Request) {

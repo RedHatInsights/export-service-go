@@ -13,7 +13,6 @@ import (
 	"net/url"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
 	"github.com/redhatinsights/export-service-go/db"
@@ -25,6 +24,7 @@ import (
 
 var log = logger.Log
 
+// ExportRouter is a router for all of the external routes for the /exports endpoint.
 func ExportRouter(r chi.Router) {
 	r.Post("/", PostExport)
 	r.With(middleware.PaginationCtx).Get("/", ListExports)
@@ -35,6 +35,7 @@ func ExportRouter(r chi.Router) {
 	})
 }
 
+// PostExport handles POST requests to the /exports endpoint.
 func PostExport(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
 	user := middleware.GetUserIdentity(r.Context())
@@ -71,6 +72,7 @@ func buildQuery(q url.Values) (map[string]interface{}, error) {
 	return result, nil
 }
 
+// ListExports handle GET requests to the /exports endpoint.
 func ListExports(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUserIdentity(r.Context())
 	page := middleware.GetPagination(r.Context())
@@ -108,11 +110,14 @@ func ListExports(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetExport handles GET requests to the /exports/{exportUUID} endpoint.
+// This function is responsible for returning the S3 object.
 func GetExport(w http.ResponseWriter, r *http.Request) {
 	// func responsible for downloading from s3
 	errors.NotImplementedError(w)
 }
 
+// DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
 func DeleteExport(w http.ResponseWriter, r *http.Request) {
 	exportUUID := chi.URLParam(r, "exportUUID")
 	if !IsValidUUID(exportUUID) {
@@ -135,6 +140,7 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	exportUUID := chi.URLParam(r, "exportUUID")
 	if !IsValidUUID(exportUUID) {
@@ -159,12 +165,4 @@ func GetExportStatus(w http.ResponseWriter, r *http.Request) {
 		log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
-}
-
-func NewExportListResponse(exports []*APIExport) []render.Renderer {
-	list := []render.Renderer{}
-	for _, export := range exports {
-		list = append(list, export)
-	}
-	return list
 }

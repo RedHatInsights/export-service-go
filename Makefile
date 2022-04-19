@@ -19,6 +19,7 @@ help:
 	@echo "lint                     runs go lint on the project"
 	@echo "vet                      runs go vet on the project"
 	@echo "build                    builds the container image"
+	@echo "spec                     convert the openapi spec yaml to json"
 	@echo "docker-up-db             start the export-service postgres db"
 	@echo ""
 
@@ -31,6 +32,13 @@ lint:
 
 build:
 	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
+
+spec:
+ifeq (, $(shell which yq))
+	echo "yq is not installed"
+else
+	yq -o=json eval static/spec/openapi.yaml > static/spec/openapi.json
+endif
 
 docker-up-db:
 	$(DOCKER_COMPOSE) up -d db

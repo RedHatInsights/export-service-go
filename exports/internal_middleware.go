@@ -20,11 +20,14 @@ type internalKey int
 
 const urlParamsKey internalKey = iota
 
+// IsValidUUID is a helper function that checks if the given string is a valid uuid.
 func IsValidUUID(id string) bool {
 	_, err := uuid.Parse(id)
 	return err == nil
 }
 
+// URLParams is a middleware that pulls `exportUUID`, `resourceUUID`, and `application`
+// from the url and puts them into a `urlParams` object in the request context.
 func URLParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		exportUUID := chi.URLParam(r, "exportUUID")

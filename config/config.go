@@ -26,7 +26,7 @@ var ExportCfg *ExportConfig
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
 	Hostname        string
-	WebPort         int
+	PublicPort      int
 	MetricsPort     int
 	PrivatePort     int
 	Logging         *loggingConfig
@@ -89,7 +89,7 @@ var config *ExportConfig
 // initialize the configuration for service
 func init() {
 	options := viper.New()
-	options.SetDefault("WebPort", 8000)
+	options.SetDefault("PublicPort", 8000)
 	options.SetDefault("MetricsPort", 9000)
 	options.SetDefault("PrivatePort", 10000)
 	options.SetDefault("LogLevel", "INFO")
@@ -116,7 +116,7 @@ func init() {
 
 	config = &ExportConfig{
 		Hostname:        kubenv.GetString("Hostname"),
-		WebPort:         options.GetInt("WebPort"),
+		PublicPort:      options.GetInt("PublicPort"),
 		MetricsPort:     options.GetInt("MetricsPort"),
 		PrivatePort:     options.GetInt("PrivatePort"),
 		Debug:           options.GetBool("Debug"),
@@ -143,7 +143,7 @@ func init() {
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
 
-		config.WebPort = *cfg.PublicPort
+		config.PublicPort = *cfg.PublicPort
 		config.MetricsPort = cfg.MetricsPort
 		config.PrivatePort = *cfg.PrivatePort
 

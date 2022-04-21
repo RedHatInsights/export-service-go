@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/aws/aws-sdk-go v1.43.38
+	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/go-chi/render v1.0.1
 	github.com/go-openapi/runtime v0.23.3
 	github.com/google/uuid v1.3.0
 	github.com/prometheus/client_golang v1.12.1

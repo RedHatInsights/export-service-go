@@ -1,0 +1,727 @@
+{
+	"info": {
+		"_postman_id": "d6a83413-3818-4660-8fdb-0284dc3b10cf",
+		"name": "export-service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "/api/export/v1/exports",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"exportUUID\", jsonData.id);",
+							"postman.setEnvironmentVariable(\"resourceUUID\", jsonData.sources[0].id);",
+							"postman.setEnvironmentVariable(\"application\", jsonData.application);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-2}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-invalid}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"sources\": [{\n        \"resource\": \"resource-name\",\n        \"filters\": {\n            \"order_by\": \"filter\"\n        }\n    }],\n    \"name\": \"export-name\",\n    \"format\": \"csv\",\n    \"application\": \"application-name\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"exports"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/exports",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-2}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-invalid}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports?limit=100&offset=0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"exports"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "100"
+						},
+						{
+							"key": "offset",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/exports/{UUID}",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-2}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-invalid}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports/{{exportUUID}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"exports",
+						"{{exportUUID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/exports/{UUID}",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header}}",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-2}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-invalid}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports/{{exportUUID}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"exports",
+						"{{exportUUID}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/exports/{UUID}/status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-2}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-invalid}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports/{{exportUUID}}/status",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"exports",
+						"{{exportUUID}}",
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/openapi.json",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/openapi.json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"openapi.json"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/ping",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/ping",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"ping"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics - /",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{metricsPort}}/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{metricsPort}}",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics - /healthz",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{metricsPort}}/healthz",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{metricsPort}}",
+					"path": [
+						"healthz"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics - /metrics",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{metricsPort}}/metrics",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{metricsPort}}",
+					"path": [
+						"metrics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics - /readyz",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{metricsPort}}/readyz",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{metricsPort}}",
+					"path": [
+						"readyz"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/app/export/v1/ping",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/ping",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{privatePort}}",
+					"path": [
+						"app",
+						"export",
+						"v1",
+						"ping"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/app/export/v1/upload",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-rh-exports-psk",
+						"value": "{{exports-psk}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{privatePort}}",
+					"path": [
+						"app",
+						"export",
+						"v1",
+						"{{exportUUID}}",
+						"{{application}}",
+						"{{resourceUUID}}",
+						"upload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/app/export/v1/error",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-rh-exports-psk",
+						"value": "{{exports-psk}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"stuff\": \"in the body\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/error",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{privatePort}}",
+					"path": [
+						"app",
+						"export",
+						"v1",
+						"{{exportUUID}}",
+						"{{application}}",
+						"{{resourceUUID}}",
+						"error"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "exportUUID",
+			"value": ""
+		},
+		{
+			"key": "application",
+			"value": ""
+		},
+		{
+			"key": "resourceUUID",
+			"value": ""
+		},
+		{
+			"key": "id-header-1",
+			"value": "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+		},
+		{
+			"key": "id-header-2",
+			"value": "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAyIiwib3JnX2lkIjoiMTAwMDAwMDIiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMiJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+		},
+		{
+			"key": "id-header-invalid",
+			"value": "eyJlbnRpdGxlbWVudHMiOnt9LCJpZGVudGl0eSI6eyJpbnRlcm5hbCI6eyJhdXRoX3RpbWUiOjAsIm9yZ19pZCI6IjEwMDAwMDAxIn0sImFjY291bnRfbnVtYmVyIjoiMTAwMDEiLCJhdXRoX3R5cGUiOiJ1aGMtYXV0aCIsInN5c3RlbSI6eyJjbHVzdGVyX2lkIjoiMTExMTExMTEtMjIyMi00NDQ0LWJiYmItOTk5OTk5OTk5OTk5In0sInR5cGUiOiJTeXN0ZW0ifX0K"
+		},
+		{
+			"key": "exports-psk",
+			"value": "testing-a-psk"
+		},
+		{
+			"key": "publicPort",
+			"value": "8000"
+		},
+		{
+			"key": "metricsPort",
+			"value": "9000"
+		},
+		{
+			"key": "privatePort",
+			"value": "10000"
+		}
+	]
+}

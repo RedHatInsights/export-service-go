@@ -167,14 +167,11 @@ func main() {
 		"psks", cfg.Psks, // TODO: remove this
 	)
 
-	// create the kafka producer and messages channel
-	// add the messages channel to the global config for use in the exports router
-
 	producer, err := ekafka.NewProducer()
 	if err != nil {
 		log.Panic("failed to create kafka producer", "error", err)
 	}
-	log.Infof("started kafka producer: %s", producer.String())
+	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer()
 
 	wsrv := createPublicServer(cfg)

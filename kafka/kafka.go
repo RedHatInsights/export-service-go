@@ -45,6 +45,7 @@ type Producer struct {
 }
 
 func (p *Producer) StartProducer() {
+	log.Infof("started kafka producer: %+v", p)
 	topic := cfg.KafkaConfig.KafkaAnnounceTopic
 	for v := range cfg.ProducerMessagesChan {
 		go func(v *kafka.Message) {
@@ -74,16 +75,22 @@ func (p *Producer) StartProducer() {
 }
 
 func NewProducer() (*Producer, error) {
+	brokers := strings.Join(cfg.KafkaConfig.KafkaBrokers, ",")
+	log.Infow("kakfa configuration values",
+		"client.id", cfg.Hostname,
+		"bootstrap.servers", brokers,
+		"topic", cfg.KafkaConfig.KafkaAnnounceTopic,
+		"loglevel", cfg.LogLevel,
+		"debug", cfg.Debug,
+	)
 	kcfg := &kafka.ConfigMap{
-		"bootstrap.servers": cfg.KafkaConfig.KafkaBrokers[0],
-		// "group.id":          cfg.KafkaConfig.KafkaGroupID,
-		"client.id": cfg.Hostname,
+		"bootstrap.servers": brokers,
+		"client.id":         cfg.Hostname,
 	}
 	if cfg.KafkaConfig.KafkaSSLConfig.SASLMechanism != "" {
 		ssl := cfg.KafkaConfig.KafkaSSLConfig
 		kcfg = &kafka.ConfigMap{
-			"bootstrap.servers": strings.Join(cfg.KafkaConfig.KafkaBrokers, ","),
-			// "group.id":          cfg.KafkaConfig.KafkaGroupID,
+			"bootstrap.servers": brokers,
 			"client.id":         cfg.Hostname,
 			"security.protocol": ssl.Protocol,
 			"sasl.mechanism":    ssl.SASLMechanism,

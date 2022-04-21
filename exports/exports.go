@@ -15,14 +15,17 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
+	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/errors"
+	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
 var log = logger.Log
+var messagesChan = config.ExportCfg.ProducerMessagesChan
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
 func ExportRouter(r chi.Router) {
@@ -33,6 +36,35 @@ func ExportRouter(r chi.Router) {
 		sub.Delete("/", DeleteExport)
 		sub.Get("/status", GetExportStatus)
 	})
+}
+
+func sendPayload(payload models.ExportPayload, r *http.Request) {
+	headers := ekafka.KafkaHeader{
+		Application: payload.Application,
+		IDheader:    r.Header["X-Rh-Identity"][0],
+	}
+	for _, source := range payload.Sources {
+		kpayload := ekafka.KafkaMessage{
+			ExportUUID:   payload.ID,
+			Application:  payload.Application,
+			Format:       string(payload.Format),
+			ResourceName: source.Resource,
+			ResourceUUID: source.ID,
+			Filters:      source.Filters,
+			IDHeader:     r.Header["X-Rh-Identity"][0],
+		}
+		msg, err := kpayload.ToMessage(headers)
+		if err != nil {
+			log.Errorw("failed to create kafka message", "error", err)
+			return
+		}
+		select {
+		case messagesChan <- msg:
+			log.Infof("sent message: %+v", msg)
+		default:
+			log.Error("kafka message not sent to the producer", "kmsg", msg)
+		}
+	}
 }
 
 // PostExport handles POST requests to the /exports endpoint.
@@ -57,6 +89,9 @@ func PostExport(w http.ResponseWriter, r *http.Request) {
 		log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
+
+	sendPayload(payload, r)
+
 }
 
 func buildQuery(q url.Values) (map[string]interface{}, error) {

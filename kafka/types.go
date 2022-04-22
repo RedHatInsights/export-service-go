@@ -14,6 +14,8 @@ type KafkaHeader struct {
 	IDheader    string `json:"x-rh-identity"`
 }
 
+// ToHeader converts the KafkaHeader into a confluent kafka
+// header
 func (kh KafkaHeader) ToHeader() []kafka.Header {
 	result := []kafka.Header{}
 	result = append(result, kafka.Header{
@@ -37,14 +39,19 @@ type KafkaMessage struct {
 	IDHeader     string `json:"x-rh-identity"`
 }
 
+// ToMessage converts the KafkaMessage struct to a confluent kafka.Message
+// ready to be sent through the kafka producer
 func (km KafkaMessage) ToMessage(header KafkaHeader) (*kafka.Message, error) {
 	val, err := json.Marshal(km)
 	if err != nil {
 		return nil, err
 	}
 	return &kafka.Message{
-		Headers:        header.ToHeader(),
-		TopicPartition: kafka.TopicPartition{Topic: &kcfg.KafkaAnnounceTopic, Partition: kafka.PartitionAny},
-		Value:          []byte(val),
+		Headers: header.ToHeader(),
+		TopicPartition: kafka.TopicPartition{
+			Topic:     &kcfg.ExportsTopic,
+			Partition: kafka.PartitionAny,
+		},
+		Value: []byte(val),
 	}, nil
 }

@@ -38,35 +38,6 @@ func ExportRouter(r chi.Router) {
 	})
 }
 
-func sendPayload(payload models.ExportPayload, r *http.Request) {
-	headers := ekafka.KafkaHeader{
-		Application: payload.Application,
-		IDheader:    r.Header["X-Rh-Identity"][0],
-	}
-	for _, source := range payload.Sources {
-		kpayload := ekafka.KafkaMessage{
-			ExportUUID:   payload.ID,
-			Application:  payload.Application,
-			Format:       string(payload.Format),
-			ResourceName: source.Resource,
-			ResourceUUID: source.ID,
-			Filters:      source.Filters,
-			IDHeader:     r.Header["X-Rh-Identity"][0],
-		}
-		msg, err := kpayload.ToMessage(headers)
-		if err != nil {
-			log.Errorw("failed to create kafka message", "error", err)
-			return
-		}
-		select {
-		case messagesChan <- msg:
-			log.Infof("sent message: %+v", msg)
-		default:
-			log.Error("kafka message not sent to the producer", "kmsg", msg)
-		}
-	}
-}
-
 // PostExport handles POST requests to the /exports endpoint.
 func PostExport(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
@@ -90,8 +61,38 @@ func PostExport(w http.ResponseWriter, r *http.Request) {
 		errors.InternalServerError(w, err.Error())
 	}
 
-	sendPayload(payload, r)
+	// send the payload to the producer with a goroutine so
+	// that we do not block the response
+	go sendPayload(payload, r)
+}
 
+// sendPayload converts the individual sources of a payload into
+// kafka messages which are then sent to the producer through the
+// `messagesChan`
+func sendPayload(payload models.ExportPayload, r *http.Request) {
+	headers := ekafka.KafkaHeader{
+		Application: payload.Application,
+		IDheader:    r.Header["X-Rh-Identity"][0],
+	}
+	for _, source := range payload.Sources {
+		kpayload := ekafka.KafkaMessage{
+			ExportUUID:   payload.ID,
+			Application:  payload.Application,
+			Format:       string(payload.Format),
+			ResourceName: source.Resource,
+			ResourceUUID: source.ID,
+			Filters:      source.Filters,
+			IDHeader:     r.Header["X-Rh-Identity"][0],
+		}
+		msg, err := kpayload.ToMessage(headers)
+		if err != nil {
+			log.Errorw("failed to create kafka message", "error", err)
+			return
+		}
+		log.Debug("sending kafka message to the producer")
+		messagesChan <- msg // TODO: what should we do if the message is never sent to the producer?
+		log.Infof("sent kafka message to the producer: %+v", msg)
+	}
 }
 
 func buildQuery(q url.Values) (map[string]interface{}, error) {
@@ -99,7 +100,7 @@ func buildQuery(q url.Values) (map[string]interface{}, error) {
 
 	for k, v := range q {
 		if len(v) > 1 {
-			return nil, fmt.Errorf("ThIs QuErY iS tOo CoMpLeX")
+			return nil, fmt.Errorf("query param `%s` has too many search values", k)
 		}
 		result[k] = v[0]
 	}

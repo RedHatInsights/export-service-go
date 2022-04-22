@@ -60,16 +60,16 @@ type loggingConfig struct {
 }
 
 type kafkaConfig struct {
-	KafkaBrokers       []string
-	KafkaGroupID       string
-	KafkaAnnounceTopic string
-	KafkaSSLConfig     kafkaSSLConfig
+	Brokers      []string
+	GroupID      string
+	ExportsTopic string
+	SSLConfig    kafkaSSLConfig
 }
 
 type kafkaSSLConfig struct {
-	KafkaCA       string
-	KafkaUsername string
-	KafkaPassword string
+	CA            string
+	Username      string
+	Password      string
 	SASLMechanism string
 	Protocol      string
 }
@@ -126,7 +126,7 @@ func init() {
 		LogLevel:             options.GetString("LogLevel"),
 		OpenAPIFilePath:      options.GetString("OpenAPIFilePath"),
 		Psks:                 options.GetStringSlice("psks"),
-		ProducerMessagesChan: make(chan *kafka.Message, 10),
+		ProducerMessagesChan: make(chan *kafka.Message), // TODO: determine an appropriate buffer (if one is actually necessary)
 	}
 
 	database := options.GetString("database")
@@ -145,9 +145,9 @@ func init() {
 	}
 
 	config.KafkaConfig = kafkaConfig{
-		KafkaBrokers:       options.GetStringSlice("KafkaBrokers"),
-		KafkaGroupID:       options.GetString("KafkaGroupID"),
-		KafkaAnnounceTopic: options.GetString("KafakAnnounceTopic"),
+		Brokers:      options.GetStringSlice("KafkaBrokers"),
+		GroupID:      options.GetString("KafkaGroupID"),
+		ExportsTopic: options.GetString("KafakAnnounceTopic"),
 	}
 
 	if clowder.IsClowderEnabled() {
@@ -169,19 +169,19 @@ func init() {
 			},
 		}
 
-		config.KafkaConfig.KafkaBrokers = clowder.KafkaServers
+		config.KafkaConfig.Brokers = clowder.KafkaServers
 		broker := cfg.Kafka.Brokers[0]
 		if broker.Authtype != nil {
 			caPath, err := cfg.KafkaCa(broker)
 			if err != nil {
 				panic("Kafka CA failed to write")
 			}
-			config.KafkaConfig.KafkaSSLConfig = kafkaSSLConfig{
-				KafkaUsername: *broker.Sasl.Username,
-				KafkaPassword: *broker.Sasl.Password,
+			config.KafkaConfig.SSLConfig = kafkaSSLConfig{
+				Username:      *broker.Sasl.Username,
+				Password:      *broker.Sasl.Password,
 				SASLMechanism: "SCRAM-SHA-512",
 				Protocol:      "sasl_ssl",
-				KafkaCA:       caPath,
+				CA:            caPath,
 			}
 		}
 

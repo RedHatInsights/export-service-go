@@ -44,9 +44,10 @@ type Producer struct {
 	*kafka.Producer
 }
 
+// StartProducer produces kafka messages on the kafka topic
 func (p *Producer) StartProducer() {
 	log.Infof("started kafka producer: %+v", p)
-	topic := cfg.KafkaConfig.KafkaAnnounceTopic
+	topic := cfg.KafkaConfig.ExportsTopic
 	for v := range cfg.ProducerMessagesChan {
 		go func(v *kafka.Message) {
 			producerCount.Inc()
@@ -65,6 +66,8 @@ func (p *Producer) StartProducer() {
 						cfg.ProducerMessagesChan <- v
 						publishFailures.With(prometheus.Labels{"topic": topic}).Inc()
 					} else {
+						// consider flipping ExportPayload status to `running` here
+						// this delivery confirms that the message was sent to kafka
 						log.Infof("delivered message to %v", ev.TopicPartition)
 						messagesPublished.With(prometheus.Labels{"topic": topic}).Inc()
 					}
@@ -74,12 +77,13 @@ func (p *Producer) StartProducer() {
 	}
 }
 
+// NewProducer generates a new kafka producer
 func NewProducer() (*Producer, error) {
-	brokers := strings.Join(cfg.KafkaConfig.KafkaBrokers, ",")
+	brokers := strings.Join(cfg.KafkaConfig.Brokers, ",")
 	log.Infow("kakfa configuration values",
 		"client.id", cfg.Hostname,
 		"bootstrap.servers", brokers,
-		"topic", cfg.KafkaConfig.KafkaAnnounceTopic,
+		"topic", cfg.KafkaConfig.ExportsTopic,
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
 	)
@@ -87,16 +91,16 @@ func NewProducer() (*Producer, error) {
 		"bootstrap.servers": brokers,
 		"client.id":         cfg.Hostname,
 	}
-	if cfg.KafkaConfig.KafkaSSLConfig.SASLMechanism != "" {
-		ssl := cfg.KafkaConfig.KafkaSSLConfig
+	if cfg.KafkaConfig.SSLConfig.SASLMechanism != "" {
+		ssl := cfg.KafkaConfig.SSLConfig
 		kcfg = &kafka.ConfigMap{
 			"bootstrap.servers": brokers,
 			"client.id":         cfg.Hostname,
 			"security.protocol": ssl.Protocol,
 			"sasl.mechanism":    ssl.SASLMechanism,
-			"ssl.ca.location":   ssl.KafkaCA,
-			"sasl.username":     ssl.KafkaUsername,
-			"sasl.password":     ssl.KafkaPassword,
+			"ssl.ca.location":   ssl.CA,
+			"sasl.username":     ssl.Username,
+			"sasl.password":     ssl.Password,
 		}
 	}
 

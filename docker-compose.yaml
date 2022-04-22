@@ -12,6 +12,7 @@ services:
       - DEBUG=false
       - OPENAPIFILEPATH=/var/tmp/openapi.json
       - PSKS=testing-a-psk
+      - KAFKA_BROKERS=kafka:29092
     ports:
       - 8765:8000
       - 9876:9000
@@ -32,3 +33,27 @@ services:
       - postgres
       - -c
       - log_statement=all
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=32181
+      - ZOOKEEPER_SERVER_ID=1
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka
+    ports:
+      - 9092:9092
+      - 29092:29092
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_ADVERTISED_LISTENERS=DOCKER://${KAFKA_QUEUE_HOST-kafka}:${KAFKA_QUEUE_PORT-29092},LOCALHOST://localhost:${KAFKA_QUEUE_PORT-9092}
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=DOCKER:PLAINTEXT,LOCALHOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER
+      - KAFKA_BROKER_ID=1
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:32181
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true

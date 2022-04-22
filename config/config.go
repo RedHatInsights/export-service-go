@@ -11,14 +11,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
 )
 
-const (
-	StatusTopic   string = "platform.export.status"
-	AnnounceTopic string = "platform.export.announce"
-)
+const ExportTopic string = "platform.export.requests"
 
 // ExportCfg is the global variable containing the runtime configuration
 var ExportCfg *ExportConfig
@@ -33,8 +31,11 @@ type ExportConfig struct {
 	LogLevel        string
 	Debug           bool
 	DBConfig        dbConfig
+	KafkaConfig     kafkaConfig
 	OpenAPIFilePath string
 	Psks            []string
+
+	ProducerMessagesChan chan *kafka.Message
 }
 
 type dbConfig struct {
@@ -58,20 +59,17 @@ type loggingConfig struct {
 	Region          string
 }
 
-type kafkaCfg struct {
-	KafkaBrokers         []string
-	KafkaGroupID         string
-	KafkaStatusTopic     string
-	KafkaDeliveryReports bool
-	KafkaAnnounceTopic   string
-	ValidTopics          []string
-	KafkaSSLConfig       kafkaSSLCfg
+type kafkaConfig struct {
+	Brokers      []string
+	GroupID      string
+	ExportsTopic string
+	SSLConfig    kafkaSSLConfig
 }
 
-type kafkaSSLCfg struct {
-	KafkaCA       string
-	KafkaUsername string
-	KafkaPassword string
+type kafkaSSLConfig struct {
+	CA            string
+	Username      string
+	Password      string
 	SASLMechanism string
 	Protocol      string
 }
@@ -105,6 +103,11 @@ func init() {
 	options.SetDefault("PGSQL_PORT", "15433")
 	options.SetDefault("PGSQL_DATABASE", "postgres")
 
+	// kafka defaults
+	options.SetDefault("KafakAnnounceTopic", ExportTopic)
+	options.SetDefault("KafkaBrokers", strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
+	options.SetDefault("KafkaGroupID", "export")
+
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -115,14 +118,15 @@ func init() {
 	kubenv.AutomaticEnv()
 
 	config = &ExportConfig{
-		Hostname:        kubenv.GetString("Hostname"),
-		PublicPort:      options.GetInt("PublicPort"),
-		MetricsPort:     options.GetInt("MetricsPort"),
-		PrivatePort:     options.GetInt("PrivatePort"),
-		Debug:           options.GetBool("Debug"),
-		LogLevel:        options.GetString("LogLevel"),
-		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
-		Psks:            options.GetStringSlice("psks"),
+		Hostname:             kubenv.GetString("Hostname"),
+		PublicPort:           options.GetInt("PublicPort"),
+		MetricsPort:          options.GetInt("MetricsPort"),
+		PrivatePort:          options.GetInt("PrivatePort"),
+		Debug:                options.GetBool("Debug"),
+		LogLevel:             options.GetString("LogLevel"),
+		OpenAPIFilePath:      options.GetString("OpenAPIFilePath"),
+		Psks:                 options.GetStringSlice("psks"),
+		ProducerMessagesChan: make(chan *kafka.Message), // TODO: determine an appropriate buffer (if one is actually necessary)
 	}
 
 	database := options.GetString("database")
@@ -138,6 +142,12 @@ func init() {
 				SSLMode: "prefer",
 			},
 		}
+	}
+
+	config.KafkaConfig = kafkaConfig{
+		Brokers:      options.GetStringSlice("KafkaBrokers"),
+		GroupID:      options.GetString("KafkaGroupID"),
+		ExportsTopic: options.GetString("KafakAnnounceTopic"),
 	}
 
 	if clowder.IsClowderEnabled() {
@@ -157,6 +167,22 @@ func init() {
 				SSLMode: cfg.Database.SslMode,
 				RdsCa:   cfg.Database.RdsCa,
 			},
+		}
+
+		config.KafkaConfig.Brokers = clowder.KafkaServers
+		broker := cfg.Kafka.Brokers[0]
+		if broker.Authtype != nil {
+			caPath, err := cfg.KafkaCa(broker)
+			if err != nil {
+				panic("Kafka CA failed to write")
+			}
+			config.KafkaConfig.SSLConfig = kafkaSSLConfig{
+				Username:      *broker.Sasl.Username,
+				Password:      *broker.Sasl.Password,
+				SASLMechanism: "SCRAM-SHA-512",
+				Protocol:      "sasl_ssl",
+				CA:            caPath,
+			}
 		}
 
 		config.Logging = &loggingConfig{

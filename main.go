@@ -26,14 +26,17 @@ import (
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
+	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-var cfg *config.ExportConfig
-var log *zap.SugaredLogger
-var s3Client *s3.Client
+var (
+	cfg      *config.ExportConfig
+	log      *zap.SugaredLogger
+	s3Client *s3.Client
+)
 
 func init() {
 	cfg = config.ExportCfg
@@ -78,14 +81,14 @@ func createPublicServer(cfg *config.ExportConfig) *http.Server {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	server.RegisterOnShutdown(func() {
-		// initialize Kafka producers/consumers here
-		// for _, consumer := range consumers {
-		// 	if consumer != nil {
-		// 		consumer.Close()
-		// 	}
-		// }
-	})
+	// server.RegisterOnShutdown(func() {
+	// 	// initialize Kafka producers/consumers here
+	// 	for _, producer := range producers {
+	// 		if producer != nil {
+	// 			producer.Shutdown()
+	// 		}
+	// 	}
+	// })
 	return &server
 }
 
@@ -171,10 +174,15 @@ func main() {
 	// bucket := "michaels-super-cool-bucket"
 	// es3.CreateFile(context.Background(), &bucket)
 
+	producer, err := ekafka.NewProducer()
+	if err != nil {
+		log.Panic("failed to create kafka producer", "error", err)
+	}
+	log.Infof("created kafka producer: %s", producer.String())
+	go producer.StartProducer()
+
 	wsrv := createPublicServer(cfg)
-
 	psrv := createPrivateServer(cfg)
-
 	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})
@@ -219,5 +227,12 @@ func main() {
 	log.Infof("private server started on %s", psrv.Addr)
 
 	<-idleConnsClosed
+
+	log.Info("flushing kafka producer")
+	producer.Flush(1500) // 1.5 second timeout
+	producer.Close()
+	close(cfg.ProducerMessagesChan)
+	log.Info("closed kafka producer")
+
 	log.Info("everything has shut down, goodbye")
 }

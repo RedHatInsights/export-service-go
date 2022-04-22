@@ -80,5 +80,8 @@ func createS3Object(c context.Context, body io.Reader, params *models.URLParams)
 	if err != nil {
 		return fmt.Errorf("error uploading file: %v", err)
 	}
+
+	// update resource status to success
+
 	return nil
 }

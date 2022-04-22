@@ -11,10 +11,11 @@ import (
 	"github.com/redhatinsights/export-service-go/logger"
 )
 
-var cfg = config.ExportCfg
-var log = logger.Log
-
 var (
+	cfg     = config.ExportCfg
+	log     = logger.Log
+	msgChan = cfg.Channels.ProducerMessagesChan
+
 	messagesPublished = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "ingress_kafka_produced",
 		Help: "Number of messages produced to kafka",
@@ -48,13 +49,13 @@ type Producer struct {
 func (p *Producer) StartProducer() {
 	log.Infof("started kafka producer: %+v", p)
 	topic := cfg.KafkaConfig.ExportsTopic
-	for v := range cfg.ProducerMessagesChan {
-		go func(v *kafka.Message) {
+	for msg := range msgChan {
+		go func(msg *kafka.Message) {
 			producerCount.Inc()
 			defer producerCount.Dec()
 			start := time.Now()
 
-			p.Produce(v, nil) // pass nil chan so that delivery reports go to the Events() channel
+			p.Produce(msg, nil) // pass nil chan so that delivery reports go to the Events() channel
 			messagePublishElapsed.With(prometheus.Labels{"topic": topic}).Observe(time.Since(start).Seconds())
 
 			// Delivery report handler for produced messages
@@ -63,7 +64,7 @@ func (p *Producer) StartProducer() {
 				case *kafka.Message:
 					if ev.TopicPartition.Error != nil {
 						log.Errorw("error publishing to kafka", "error", ev.TopicPartition.Error)
-						cfg.ProducerMessagesChan <- v
+						msgChan <- msg
 						publishFailures.With(prometheus.Labels{"topic": topic}).Inc()
 					} else {
 						log.Infof("delivered message to %v", ev.TopicPartition)
@@ -71,7 +72,7 @@ func (p *Producer) StartProducer() {
 					}
 				}
 			}
-		}(v)
+		}(msg)
 	}
 }
 

@@ -8,6 +8,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -35,7 +36,17 @@ type ExportConfig struct {
 	OpenAPIFilePath string
 	Psks            []string
 
+	Channels channels
+}
+
+type channels struct {
 	ProducerMessagesChan chan *kafka.Message
+	ToS3Chan             chan io.Reader
+}
+
+func (c channels) CloseChannels() {
+	close(c.ProducerMessagesChan)
+	close(c.ToS3Chan)
 }
 
 type dbConfig struct {
@@ -118,15 +129,19 @@ func init() {
 	kubenv.AutomaticEnv()
 
 	config = &ExportConfig{
-		Hostname:             kubenv.GetString("Hostname"),
-		PublicPort:           options.GetInt("PublicPort"),
-		MetricsPort:          options.GetInt("MetricsPort"),
-		PrivatePort:          options.GetInt("PrivatePort"),
-		Debug:                options.GetBool("Debug"),
-		LogLevel:             options.GetString("LogLevel"),
-		OpenAPIFilePath:      options.GetString("OpenAPIFilePath"),
-		Psks:                 options.GetStringSlice("psks"),
+		Hostname:        kubenv.GetString("Hostname"),
+		PublicPort:      options.GetInt("PublicPort"),
+		MetricsPort:     options.GetInt("MetricsPort"),
+		PrivatePort:     options.GetInt("PrivatePort"),
+		Debug:           options.GetBool("Debug"),
+		LogLevel:        options.GetString("LogLevel"),
+		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Psks:            options.GetStringSlice("psks"),
+	}
+
+	config.Channels = channels{
 		ProducerMessagesChan: make(chan *kafka.Message), // TODO: determine an appropriate buffer (if one is actually necessary)
+		ToS3Chan:             make(chan io.Reader),      // TODO: determine an appropriate buffer (if one is actually necessary),
 	}
 
 	database := options.GetString("database")

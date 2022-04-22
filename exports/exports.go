@@ -25,7 +25,7 @@ import (
 )
 
 var log = logger.Log
-var messagesChan = config.ExportCfg.ProducerMessagesChan
+var messagesChan = config.ExportCfg.Channels.ProducerMessagesChan
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
 func ExportRouter(r chi.Router) {

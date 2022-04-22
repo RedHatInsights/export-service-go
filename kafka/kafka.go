@@ -66,8 +66,6 @@ func (p *Producer) StartProducer() {
 						cfg.ProducerMessagesChan <- v
 						publishFailures.With(prometheus.Labels{"topic": topic}).Inc()
 					} else {
-						// consider flipping ExportPayload status to `running` here
-						// this delivery confirms that the message was sent to kafka
 						log.Infof("delivered message to %v", ev.TopicPartition)
 						messagesPublished.With(prometheus.Labels{"topic": topic}).Inc()
 					}

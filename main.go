@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
@@ -27,14 +28,17 @@ import (
 	"github.com/redhatinsights/export-service-go/exports"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
+	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
 var cfg *config.ExportConfig
 var log *zap.SugaredLogger
+var s3Client *s3.Client
 
 func init() {
 	cfg = config.ExportCfg
 	log = logger.Log
+	s3Client = es3.Client
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -163,6 +167,9 @@ func main() {
 		"openapifilepath", cfg.OpenAPIFilePath,
 		"psks", cfg.Psks, // TODO: remove this
 	)
+
+	// bucket := "michaels-super-cool-bucket"
+	// es3.CreateFile(context.Background(), &bucket)
 
 	wsrv := createPublicServer(cfg)
 

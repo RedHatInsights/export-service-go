@@ -74,7 +74,12 @@ func sendPayload(payload models.ExportPayload, r *http.Request) {
 		Application: payload.Application,
 		IDheader:    r.Header["X-Rh-Identity"][0],
 	}
-	for _, source := range payload.Sources {
+	sources, err := payload.GetSources()
+	if err != nil {
+		log.Errorw("failed unmarshalling sources", "error", err)
+		return
+	}
+	for _, source := range sources {
 		kpayload := ekafka.KafkaMessage{
 			ExportUUID:   payload.ID,
 			Application:  payload.Application,

@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type PayloadFormat string
@@ -29,16 +28,24 @@ const (
 	Complete PayloadStatus = "complete"
 )
 
+type ResourceStatus string
+
+const (
+	RPending ResourceStatus = "pending"
+	RSuccess ResourceStatus = "success"
+	RFailure ResourceStatus = "failure"
+)
+
 // URLParams represent the `exportUUID`, `resourceUUID`, and `application` found in
 // the url. These are added to the request context using the URLParams middleware.
 type URLParams struct {
-	ExportUUID   string
+	ExportUUID   uuid.UUID
 	Application  string
-	ResourceUUID string
+	ResourceUUID uuid.UUID
 }
 
 type ExportPayload struct {
-	ID             string        `gorm:"type:uuid;primarykey" json:"id"`
+	ID             uuid.UUID     `gorm:"type:uuid;primarykey" json:"id"`
 	CreatedAt      time.Time     `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
 	CompletedAt    *time.Time    `json:"completed_at,omitempty"`
@@ -54,7 +61,7 @@ type ExportPayload struct {
 }
 
 type Source struct {
-	ID       string         `json:"id"`
+	ID       uuid.UUID      `json:"id"`
 	Resource string         `json:"resource"`
 	Filters  datatypes.JSON `json:"filters"`
 }
@@ -63,13 +70,4 @@ type User struct {
 	AccountID      string `json:"-"`
 	OrganizationID string `json:"-"`
 	Username       string `json:"-"`
-}
-
-func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
-	ep.ID = uuid.NewString()
-	ep.Status = Pending
-	for _, source := range ep.Sources {
-		source.ID = uuid.NewString()
-	}
-	return nil
 }

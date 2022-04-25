@@ -228,10 +228,11 @@ func main() {
 
 	<-idleConnsClosed
 
+	cfg.Channels.CloseChannels()
+
 	log.Info("flushing kafka producer")
 	producer.Flush(1500) // 1.5 second timeout
 	producer.Close()
-	close(cfg.ProducerMessagesChan)
 	log.Info("closed kafka producer")
 
 	log.Info("everything has shut down, goodbye")

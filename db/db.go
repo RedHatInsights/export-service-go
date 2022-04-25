@@ -36,7 +36,9 @@ func init() {
 
 	var greeting string
 	DB.Raw("select 'Hello, from Postgres!!'").Scan(&greeting)
-	log.Infof(greeting)
+	log.Info(greeting)
+
+	// DB.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 
 	// all models go here for migration
 	DB.AutoMigrate(&models.ExportPayload{})

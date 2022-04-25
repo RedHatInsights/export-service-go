@@ -14,44 +14,6 @@ var Client *s3.Client
 var cfg = econfig.ExportCfg
 var log = logger.Log
 
-type S3CreateMultipartUploadAPI interface {
-	CreateMultipartUpload(ctx context.Context,
-		params *s3.CreateMultipartUploadInput,
-		optFns ...func(*s3.Options)) (*s3.CreateMultipartUploadOutput, error)
-}
-
-// S3PutObjectAPI defines the interface for the PutObject function.
-// We use this interface to test the function using a mocked service.
-type S3PutObjectAPI interface {
-	PutObject(ctx context.Context,
-		params *s3.PutObjectInput,
-		optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
-}
-
-// S3PartUploaderAPI defines the interface for the PartUploader function.
-// We use this interface to test the function using a mocked service.
-type S3PartUploaderAPI interface {
-	UploadPart(ctx context.Context,
-		params *s3.UploadPartInput,
-		optFns ...func(*s3.Options)) (*s3.UploadPartOutput, error)
-}
-
-func CreateMultipart(c context.Context, api S3CreateMultipartUploadAPI, input *s3.CreateMultipartUploadInput) (*s3.CreateMultipartUploadOutput, error) {
-	return api.CreateMultipartUpload(c, input)
-}
-
-// UploadFile uploads a file to an Amazon Simple Storage Service (Amazon S3) bucket
-// Inputs:
-//     c is the context of the method call, which includes the AWS Region
-//     api is the interface that defines the method call
-//     input defines the input arguments to the service call.
-// Output:
-//     If success, a UploadPartOutput object containing the result of the service call and nil
-//     Otherwise, nil and an error from the call to PartUploader
-func UploadFile(c context.Context, api S3PartUploaderAPI, input *s3.UploadPartInput) (*s3.UploadPartOutput, error) {
-	return api.UploadPart(c, input)
-}
-
 func init() {
 	scfg := cfg.StorageConfig
 
@@ -81,11 +43,6 @@ func init() {
 		Credentials:                 creds,
 		EndpointResolverWithOptions: resolver,
 	}
-
-	// s3cfg, err := config.LoadDefaultConfig(context.Background(), config.WithEndpointResolverWithOptions(customResolver))
-	// if err != nil {
-	// 	log.Panic(err)
-	// }
 
 	Client = s3.NewFromConfig(s3cfg)
 	log.Infof("s3 client configured")

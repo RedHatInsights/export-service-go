@@ -13,6 +13,7 @@ import (
 	"net/url"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -25,7 +26,7 @@ import (
 )
 
 var log = logger.Log
-var messagesChan = config.ExportCfg.ProducerMessagesChan
+var messagesChan = config.ExportCfg.Channels.ProducerMessagesChan
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
 func ExportRouter(r chi.Router) {
@@ -155,9 +156,10 @@ func GetExport(w http.ResponseWriter, r *http.Request) {
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
 func DeleteExport(w http.ResponseWriter, r *http.Request) {
-	exportUUID := chi.URLParam(r, "exportUUID")
-	if !middleware.IsValidUUID(exportUUID) {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
+	uid := chi.URLParam(r, "exportUUID")
+	exportUUID, err := uuid.Parse(uid)
+	if err != nil {
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
 		return
 	}
 
@@ -178,9 +180,10 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func GetExportStatus(w http.ResponseWriter, r *http.Request) {
-	exportUUID := chi.URLParam(r, "exportUUID")
-	if !middleware.IsValidUUID(exportUUID) {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
+	uid := chi.URLParam(r, "exportUUID")
+	exportUUID, err := uuid.Parse(uid)
+	if err != nil {
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
 		return
 	}
 

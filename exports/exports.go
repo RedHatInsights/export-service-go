@@ -74,8 +74,7 @@ func sendPayload(payload models.ExportPayload, r *http.Request) {
 		Application: payload.Application,
 		IDheader:    r.Header["X-Rh-Identity"][0],
 	}
-	var sources []*models.Source
-	err := json.Unmarshal(payload.Sources, &sources)
+	sources, err := payload.GetSources()
 	if err != nil {
 		log.Errorw("failed unmarshalling sources", "error", err)
 		return

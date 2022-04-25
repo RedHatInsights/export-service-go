@@ -79,8 +79,7 @@ type User struct {
 func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
 	ep.ID = uuid.NewString()
 	ep.Status = Pending
-	var sources []*Source
-	err := json.Unmarshal([]byte(ep.Sources), &sources)
+	sources, err := ep.GetSources()
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,17 @@ func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
 		source.ID = uuid.NewString()
 		source.Status = RPending
 	}
+	err = ep.SaveSources(sources)
+	return err
+}
+
+func (ep *ExportPayload) GetSources() (sources []*Source, err error) {
+	err = json.Unmarshal(ep.Sources, &sources)
+	return
+}
+
+func (ep *ExportPayload) SaveSources(sources []*Source) (err error) {
 	out, err := json.Marshal(sources)
 	ep.Sources = out
-	return err
+	return
 }

@@ -164,7 +164,7 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", uid))
 		return
 	}
 
@@ -188,7 +188,7 @@ func GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", uid))
 		return
 	}
 

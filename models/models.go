@@ -42,13 +42,13 @@ const (
 // URLParams represent the `exportUUID`, `resourceUUID`, and `application` found in
 // the url. These are added to the request context using the URLParams middleware.
 type URLParams struct {
-	ExportUUID   string
+	ExportUUID   uuid.UUID
 	Application  string
-	ResourceUUID string
+	ResourceUUID uuid.UUID
 }
 
 type ExportPayload struct {
-	ID             string         `gorm:"type:uuid;primarykey" json:"id"`
+	ID             uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
 	CreatedAt      time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	CompletedAt    *time.Time     `json:"completed_at,omitempty"`
@@ -64,7 +64,7 @@ type ExportPayload struct {
 }
 
 type Source struct {
-	ID       string         `json:"id"`
+	ID       uuid.UUID      `json:"id"`
 	Status   ResourceStatus `json:"status"`
 	Resource string         `json:"resource"`
 	Filters  datatypes.JSON `json:"filters"`
@@ -77,14 +77,14 @@ type User struct {
 }
 
 func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
-	ep.ID = uuid.NewString()
+	ep.ID = uuid.New()
 	ep.Status = Pending
 	sources, err := ep.GetSources()
 	if err != nil {
 		return err
 	}
 	for _, source := range sources {
-		source.ID = uuid.NewString()
+		source.ID = uuid.New()
 		source.Status = RPending
 	}
 	err = ep.SaveSources(sources)

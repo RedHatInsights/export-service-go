@@ -13,6 +13,7 @@ import (
 	"net/url"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -81,11 +82,11 @@ func sendPayload(payload models.ExportPayload, r *http.Request) {
 	}
 	for _, source := range sources {
 		kpayload := ekafka.KafkaMessage{
-			ExportUUID:   payload.ID,
+			ExportUUID:   payload.ID.String(),
 			Application:  payload.Application,
 			Format:       string(payload.Format),
 			ResourceName: source.Resource,
-			ResourceUUID: source.ID,
+			ResourceUUID: source.ID.String(),
 			Filters:      source.Filters,
 			IDHeader:     r.Header["X-Rh-Identity"][0],
 		}
@@ -160,8 +161,9 @@ func GetExport(w http.ResponseWriter, r *http.Request) {
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
 func DeleteExport(w http.ResponseWriter, r *http.Request) {
-	exportUUID := chi.URLParam(r, "exportUUID")
-	if !middleware.IsValidUUID(exportUUID) {
+	uid := chi.URLParam(r, "exportUUID")
+	exportUUID, err := uuid.Parse(uid)
+	if err != nil {
 		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
 		return
 	}
@@ -183,8 +185,9 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func GetExportStatus(w http.ResponseWriter, r *http.Request) {
-	exportUUID := chi.URLParam(r, "exportUUID")
-	if !middleware.IsValidUUID(exportUUID) {
+	uid := chi.URLParam(r, "exportUUID")
+	exportUUID, err := uuid.Parse(uid)
+	if err != nil {
 		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid UUID", exportUUID))
 		return
 	}

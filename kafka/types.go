@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/uuid"
+
 	"github.com/redhatinsights/export-service-go/config"
 )
 
@@ -30,13 +32,13 @@ func (kh KafkaHeader) ToHeader() []kafka.Header {
 }
 
 type KafkaMessage struct {
-	ExportUUID   string `json:"export_uuid"`
-	Application  string `json:"application"`
-	Format       string `json:"format"`
-	ResourceName string `json:"resource"`
-	ResourceUUID string `json:"resource_uuid"`
-	Filters      []byte `json:"filters"`
-	IDHeader     string `json:"x-rh-identity"`
+	ExportUUID   uuid.UUID `json:"export_uuid"`
+	Application  string    `json:"application"`
+	Format       string    `json:"format"`
+	ResourceName string    `json:"resource"`
+	ResourceUUID uuid.UUID `json:"resource_uuid"`
+	Filters      []byte    `json:"filters"`
+	IDHeader     string    `json:"x-rh-identity"`
 }
 
 // ToMessage converts the KafkaMessage struct to a confluent kafka.Message

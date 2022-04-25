@@ -82,11 +82,11 @@ func sendPayload(payload models.ExportPayload, r *http.Request) {
 	}
 	for _, source := range sources {
 		kpayload := ekafka.KafkaMessage{
-			ExportUUID:   payload.ID.String(),
+			ExportUUID:   payload.ID,
 			Application:  payload.Application,
 			Format:       string(payload.Format),
 			ResourceName: source.Resource,
-			ResourceUUID: source.ID.String(),
+			ResourceUUID: source.ID,
 			Filters:      source.Filters,
 			IDHeader:     r.Header["X-Rh-Identity"][0],
 		}

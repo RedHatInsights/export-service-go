@@ -14,7 +14,11 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/export-service-go/logger"
 )
+
+var log = logger.Log
 
 type PayloadFormat string
 
@@ -64,10 +68,11 @@ type ExportPayload struct {
 }
 
 type Source struct {
-	ID       uuid.UUID      `json:"id"`
-	Status   ResourceStatus `json:"status"`
-	Resource string         `json:"resource"`
-	Filters  datatypes.JSON `json:"filters"`
+	ID        uuid.UUID      `json:"id"`
+	Status    ResourceStatus `json:"status"`
+	StatusMsg *string        `json:"status_msg,omitempty"`
+	Resource  string         `json:"resource"`
+	Filters   datatypes.JSON `json:"filters"`
 }
 
 type User struct {
@@ -87,30 +92,49 @@ func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
 		source.ID = uuid.New()
 		source.Status = RPending
 	}
-	err = ep.SaveSources(sources)
+	err = ep.SetSources(sources)
 	return err
 }
 
-func (ep *ExportPayload) GetSources() (sources []*Source, err error) {
-	err = json.Unmarshal(ep.Sources, &sources)
-	return
+func (ep *ExportPayload) GetSources() ([]*Source, error) {
+	var sources []*Source
+	err := json.Unmarshal(ep.Sources, &sources)
+	return sources, err
 }
 
-func (ep *ExportPayload) GetSource(uid uuid.UUID) (*Source, error) {
-	var sources []*Source
-	if err := json.Unmarshal(ep.Sources, &sources); err != nil {
-		return nil, err
+func (ep *ExportPayload) SetSources(sources []*Source) error {
+	out, err := json.Marshal(sources)
+	ep.Sources = out
+	return err
+}
+
+func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, msg *string) error {
+	sources, err := ep.GetSources()
+	if err != nil {
+		return fmt.Errorf("failed to get sources: %v", err)
 	}
 	for _, source := range sources {
 		if source.ID == uid {
-			return source, nil
+			source.Status = status
+			source.StatusMsg = msg
+			break
 		}
 	}
-	return nil, fmt.Errorf("source uuid not found")
+	if err := ep.SetSources(sources); err != nil {
+		return fmt.Errorf("failed to set sources for export_payload: %v", err)
+	}
+	return nil
 }
 
-func (ep *ExportPayload) SaveSources(sources []*Source) (err error) {
-	out, err := json.Marshal(sources)
-	ep.Sources = out
-	return
+func (ep *ExportPayload) GetAllSourcesSuccess() (bool, error) {
+	sources, err := ep.GetSources()
+	if err != nil {
+		return false, fmt.Errorf("failed to get sources: %v", err)
+	}
+	for _, source := range sources {
+		if source.Status == RPending {
+			return false, nil
+		}
+	}
+	return true, nil
 }

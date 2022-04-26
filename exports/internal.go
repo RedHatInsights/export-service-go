@@ -11,12 +11,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
@@ -73,52 +71,56 @@ func PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 
-	createS3Object(r.Context(), r.Body, params, payload)
-
-	w.Write([]byte("payload delivered"))
-
-}
-
-func worker(id int, jobs <-chan int, results chan<- int) {
-	for j := range jobs {
-		fmt.Println("worker", id, "started  job", j)
-		time.Sleep(time.Second)
-		fmt.Println("worker", id, "finished job", j)
-		results <- j * 2
+	if err := createS3Object(r.Context(), r.Body, params, payload); err != nil {
+		w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err)))
+	} else {
+		w.Write([]byte("payload delivered"))
 	}
 }
 
-func createS3Object(c context.Context, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) {
-
-	// source := export.Sources[0]
+func createS3Object(c context.Context, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
 
 	uploader := manager.NewUploader(client, func(u *manager.Uploader) {
-		u.PartSize = 10 * 1024 * 1024 // 10 MiB
+		u.PartSize = 100 * 1024 * 1024 // 100 MiB
 	})
 
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
-	time.Sleep(10 * time.Second)
 
 	input := &s3.PutObjectInput{
 		Bucket: &cfg.StorageConfig.Bucket,
 		Key:    &filename,
 		Body:   body,
 	}
-	_, err := uploader.Upload(c, input)
-	if err != nil {
-		log.Errorf("error during upload: %v", err)
-		// db.DB.Model(&models.ExportSource{}).Where("id = ?", export.SourceID.String()).Update("status", models.RFailure)
-		return
+	_, uploadErr := uploader.Upload(c, input)
+	if uploadErr != nil {
+		log.Errorf("error during upload: %v", uploadErr)
+		statusMsg := uploadErr.Error()
+		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusMsg); err != nil {
+			log.Errorw("failed to set source status after failed upload", "error", err)
+			return uploadErr
+		}
+		if err := db.DB.Save(payload).Error; err != nil {
+			log.Errorw("failed to save status update after failed upload", "error", err)
+		}
+		return uploadErr
 	}
 
 	log.Info("successful upload")
-	// db.DB.Model(&models.ExportSource{}).Where("id = ?", export.SourceID).Update("status", models.RSuccess)
+	if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RSuccess, nil); err != nil {
+		log.Errorw("failed to set source status after failed upload", "error", err)
+		return nil
+	}
+	if err := db.DB.Save(payload).Error; err != nil {
+		log.Errorw("failed to save status update after successful upload", "error", err)
+		return nil
+	}
 
-}
-
-type Helper struct {
-	PayloadID uuid.UUID
-	SourceID  uuid.UUID
-	OrgID     string
-	Format    string
+	ready, uploadErr := payload.GetAllSourcesSuccess()
+	if uploadErr != nil {
+		log.Errorf("failed to get all source status: %v", uploadErr)
+	}
+	if ready {
+		log.Info("ready for zipping")
+	}
+	return nil
 }

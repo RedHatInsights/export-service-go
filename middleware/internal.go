@@ -31,15 +31,18 @@ func IsValidUUID(id string) bool {
 // from the url and puts them into a `urlParams` object in the request context.
 func URLParamsCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		exportUUID := chi.URLParam(r, "exportUUID")
-		if !IsValidUUID(exportUUID) {
-			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", exportUUID))
+		var uid string
+		uid = chi.URLParam(r, "exportUUID")
+		exportUUID, err := uuid.Parse(uid)
+		if err != nil {
+			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
 			return
 		}
 
-		resourceUUID := chi.URLParam(r, "resourceUUID")
-		if !IsValidUUID(resourceUUID) {
-			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid resource UUID", exportUUID))
+		uid = chi.URLParam(r, "resourceUUID")
+		resourceUUID, err := uuid.Parse(uid)
+		if err != nil {
+			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid resource UUID", uid))
 		}
 
 		application := chi.URLParam(r, "application")

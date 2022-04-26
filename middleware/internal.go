@@ -42,7 +42,7 @@ func URLParamsCtx(next http.Handler) http.Handler {
 		uid = chi.URLParam(r, "resourceUUID")
 		resourceUUID, err := uuid.Parse(uid)
 		if err != nil {
-			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid resource UUID", exportUUID))
+			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid resource UUID", uid))
 		}
 
 		application := chi.URLParam(r, "application")

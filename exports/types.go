@@ -9,11 +9,13 @@ package exports
 import (
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // APIExport represents select fields of the ExportPayload which are returned to the user
 type APIExport struct {
-	ID          string     `json:"id"`
+	ID          uuid.UUID  `json:"id"`
 	Name        string     `json:"name"`
 	CreatedAt   time.Time  `json:"created"`
 	CompletedAt *time.Time `json:"completed,omitempty"`

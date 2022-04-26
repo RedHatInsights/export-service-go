@@ -14,11 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-
-	"github.com/redhatinsights/export-service-go/logger"
 )
-
-var log = logger.Log
 
 type PayloadFormat string
 
@@ -126,7 +122,7 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, m
 	return nil
 }
 
-func (ep *ExportPayload) GetAllSourcesSuccess() (bool, error) {
+func (ep *ExportPayload) GetAllSourcesFinished() (bool, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
 		return false, fmt.Errorf("failed to get sources: %v", err)

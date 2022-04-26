@@ -115,7 +115,7 @@ func createS3Object(c context.Context, body io.Reader, urlparams *models.URLPara
 		return nil
 	}
 
-	ready, uploadErr := payload.GetAllSourcesSuccess()
+	ready, uploadErr := payload.GetAllSourcesFinished()
 	if uploadErr != nil {
 		log.Errorf("failed to get all source status: %v", uploadErr)
 	}

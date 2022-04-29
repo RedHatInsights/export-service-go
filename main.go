@@ -33,15 +33,17 @@ import (
 )
 
 var (
-	cfg      *config.ExportConfig
-	log      *zap.SugaredLogger
-	s3Client *s3.Client
+	cfg        *config.ExportConfig
+	log        *zap.SugaredLogger
+	s3Client   *s3.Client
+	compressor *es3.Compressor
 )
 
 func init() {
 	cfg = config.ExportCfg
 	log = logger.Log
 	s3Client = es3.Client
+	compressor = &es3.Compressor{}
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -180,6 +182,9 @@ func main() {
 	}
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer()
+
+	log.Info("starting s3 compressor")
+	go compressor.Start()
 
 	wsrv := createPublicServer(cfg)
 	psrv := createPrivateServer(cfg)

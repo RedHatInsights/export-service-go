@@ -12,8 +12,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -26,6 +24,7 @@ import (
 
 var cfg = config.ExportCfg
 var client = es3.Client
+var exportChan = config.ExportCfg.Channels.ToS3Chan
 
 // InternalRouter is a router for all of the internal routes which require exportuuid,
 // application name, and resourceuuid.
@@ -59,16 +58,23 @@ func PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := &models.ExportPayload{}
-	result := db.DB.Model(&models.ExportPayload{}).Where(&models.ExportPayload{ID: params.ExportUUID}).Find(&payload)
-	if result.Error != nil {
-		log.Errorw("error querying for payload entry", "error", result.Error)
-		errors.InternalServerError(w, result.Error)
+	if err := db.DB.Model(&models.ExportPayload{}).Where(&models.ExportPayload{ID: params.ExportUUID}).Find(&payload).Error; err != nil {
+		log.Errorw("error querying for payload entry", "error", err)
+		errors.InternalServerError(w, err)
 		return
 	}
-	if result.RowsAffected == 0 {
+	if payload == nil {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
 		return
 	}
+
+	if payload.Status == models.Complete {
+		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
+		w.WriteHeader(http.StatusGone)
+		w.Write([]byte("this export has already been packaged"))
+		return
+	}
+
 	w.WriteHeader(http.StatusAccepted)
 
 	if err := createS3Object(r.Context(), r.Body, params, payload); err != nil {
@@ -80,18 +86,10 @@ func PostUpload(w http.ResponseWriter, r *http.Request) {
 
 func createS3Object(c context.Context, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
 
-	uploader := manager.NewUploader(client, func(u *manager.Uploader) {
-		u.PartSize = 100 * 1024 * 1024 // 100 MiB
-	})
-
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
-	input := &s3.PutObjectInput{
-		Bucket: &cfg.StorageConfig.Bucket,
-		Key:    &filename,
-		Body:   body,
-	}
-	_, uploadErr := uploader.Upload(c, input)
+	_, uploadErr := es3.Upload(c, body, &cfg.StorageConfig.Bucket, &filename)
+	payload.Status = models.Running
 	if uploadErr != nil {
 		log.Errorf("error during upload: %v", uploadErr)
 		statusMsg := uploadErr.Error()
@@ -119,8 +117,10 @@ func createS3Object(c context.Context, body io.Reader, urlparams *models.URLPara
 	if uploadErr != nil {
 		log.Errorf("failed to get all source status: %v", uploadErr)
 	}
-	if ready {
-		log.Info("ready for zipping")
+	if ready && payload.Status == models.Running {
+		log.Infow("ready for zipping", "export-uuid", payload.ID)
+		exportChan <- payload
 	}
+
 	return nil
 }

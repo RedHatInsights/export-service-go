@@ -13,6 +13,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/redhatinsights/export-service-go/models"
 	"github.com/spf13/viper"
 )
 
@@ -35,7 +36,17 @@ type ExportConfig struct {
 	OpenAPIFilePath string
 	Psks            []string
 
+	Channels channels
+}
+
+type channels struct {
 	ProducerMessagesChan chan *kafka.Message
+	ReadyToZip           chan *models.ExportPayload
+}
+
+func (c channels) CloseChannels() {
+	close(c.ProducerMessagesChan)
+	close(c.ReadyToZip)
 }
 
 type dbConfig struct {
@@ -118,15 +129,19 @@ func init() {
 	kubenv.AutomaticEnv()
 
 	config = &ExportConfig{
-		Hostname:             kubenv.GetString("Hostname"),
-		PublicPort:           options.GetInt("PublicPort"),
-		MetricsPort:          options.GetInt("MetricsPort"),
-		PrivatePort:          options.GetInt("PrivatePort"),
-		Debug:                options.GetBool("Debug"),
-		LogLevel:             options.GetString("LogLevel"),
-		OpenAPIFilePath:      options.GetString("OpenAPIFilePath"),
-		Psks:                 options.GetStringSlice("psks"),
-		ProducerMessagesChan: make(chan *kafka.Message), // TODO: determine an appropriate buffer (if one is actually necessary)
+		Hostname:        kubenv.GetString("Hostname"),
+		PublicPort:      options.GetInt("PublicPort"),
+		MetricsPort:     options.GetInt("MetricsPort"),
+		PrivatePort:     options.GetInt("PrivatePort"),
+		Debug:           options.GetBool("Debug"),
+		LogLevel:        options.GetString("LogLevel"),
+		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Psks:            options.GetStringSlice("psks"),
+	}
+
+	config.Channels = channels{
+		ProducerMessagesChan: make(chan *kafka.Message),        // TODO: determine an appropriate buffer (if one is actually necessary)
+		ReadyToZip:           make(chan *models.ExportPayload), // TODO: determine an appropriate buffer (if one is actually necessary),
 	}
 
 	database := options.GetString("database")

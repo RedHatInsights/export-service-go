@@ -8,12 +8,12 @@ package config
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/redhatinsights/export-service-go/models"
 	"github.com/spf13/viper"
 )
 
@@ -41,12 +41,12 @@ type ExportConfig struct {
 
 type channels struct {
 	ProducerMessagesChan chan *kafka.Message
-	ToS3Chan             chan io.Reader
+	ReadyToZip           chan *models.ExportPayload
 }
 
 func (c channels) CloseChannels() {
 	close(c.ProducerMessagesChan)
-	close(c.ToS3Chan)
+	close(c.ReadyToZip)
 }
 
 type dbConfig struct {
@@ -140,8 +140,8 @@ func init() {
 	}
 
 	config.Channels = channels{
-		ProducerMessagesChan: make(chan *kafka.Message), // TODO: determine an appropriate buffer (if one is actually necessary)
-		ToS3Chan:             make(chan io.Reader),      // TODO: determine an appropriate buffer (if one is actually necessary),
+		ProducerMessagesChan: make(chan *kafka.Message),        // TODO: determine an appropriate buffer (if one is actually necessary)
+		ReadyToZip:           make(chan *models.ExportPayload), // TODO: determine an appropriate buffer (if one is actually necessary),
 	}
 
 	database := options.GetString("database")

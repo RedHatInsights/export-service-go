@@ -13,7 +13,6 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	"github.com/redhatinsights/export-service-go/models"
 	"github.com/spf13/viper"
 
 	"github.com/redhatinsights/export-service-go/models"

@@ -24,6 +24,10 @@ type APIExport struct {
 	Status      string     `json:"status"`
 }
 
+type APISource struct {
+	ID uuid.UUID `json:"id"`
+}
+
 func (e *APIExport) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }

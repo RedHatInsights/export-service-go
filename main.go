@@ -43,7 +43,10 @@ func init() {
 	cfg = config.ExportCfg
 	log = logger.Log
 	s3Client = es3.Client
-	compressor = &es3.Compressor{}
+	compressor = &es3.Compressor{
+		Bucket: cfg.StorageConfig.Bucket,
+		Log:    log,
+	}
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -95,6 +98,13 @@ func createPublicServer(cfg *config.ExportConfig) *http.Server {
 }
 
 func createPrivateServer(cfg *config.ExportConfig) *http.Server {
+	// Internal config struct
+	internal := exports.Internal{
+		Cfg:        cfg,
+		Log:        log,
+		Compressor: compressor,
+	}
+
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -112,7 +122,7 @@ func createPrivateServer(cfg *config.ExportConfig) *http.Server {
 		r.Use(emiddleware.EnforcePSK)
 		// add internal routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
-		r.Route("/", exports.InternalRouter)
+		r.Route("/", internal.InternalRouter)
 	})
 
 	return &http.Server{
@@ -182,9 +192,6 @@ func main() {
 	}
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer()
-
-	log.Info("starting s3 compressor")
-	go compressor.Start()
 
 	wsrv := createPublicServer(cfg)
 	psrv := createPrivateServer(cfg)

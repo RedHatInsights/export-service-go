@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
@@ -22,23 +23,26 @@ import (
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-var cfg = config.ExportCfg
-var client = es3.Client
-var exportChan = config.ExportCfg.Channels.ToS3Chan
+// Internal contains the configuration and
+type Internal struct {
+	Cfg        *config.ExportConfig
+	Log        *zap.SugaredLogger
+	Compressor *es3.Compressor
+}
 
 // InternalRouter is a router for all of the internal routes which require exportuuid,
 // application name, and resourceuuid.
-func InternalRouter(r chi.Router) {
+func (i *Internal) InternalRouter(r chi.Router) {
 	r.Route("/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
 		sub.Use(middleware.URLParamsCtx)
-		sub.Post("/upload", PostUpload)
-		sub.Post("/error", PostError)
+		sub.Post("/upload", i.PostUpload)
+		sub.Post("/error", i.PostError)
 	})
 }
 
 // PostError receives a POST request from the export source which contains the
 // errors associated with creating the export for the given resource.
-func PostError(w http.ResponseWriter, r *http.Request) {
+func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 	params := middleware.GetURLParams(r.Context())
 	if params == nil {
 		errors.InternalServerError(w, "unable to parse url params")
@@ -49,8 +53,8 @@ func PostError(w http.ResponseWriter, r *http.Request) {
 
 // PostUpload receives a POST request from the export source containing
 // the exported data. This data is uploaded to S3.
-func PostUpload(w http.ResponseWriter, r *http.Request) {
-	log.Info("received payload")
+func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
+	i.Log.Info("received payload")
 	params := middleware.GetURLParams(r.Context())
 	if params == nil {
 		errors.InternalServerError(w, "unable to parse url params")
@@ -59,7 +63,7 @@ func PostUpload(w http.ResponseWriter, r *http.Request) {
 
 	payload := &models.ExportPayload{}
 	if err := db.DB.Model(&models.ExportPayload{}).Where(&models.ExportPayload{ID: params.ExportUUID}).Find(&payload).Error; err != nil {
-		log.Errorw("error querying for payload entry", "error", err)
+		i.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
@@ -69,7 +73,7 @@ func PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Status == models.Complete {
-		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
+		// TODO: revisit this i.Logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
 		w.Write([]byte("this export has already been packaged"))
 		return
@@ -77,49 +81,49 @@ func PostUpload(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := createS3Object(r.Context(), r.Body, params, payload); err != nil {
+	if err := i.createS3Object(r.Context(), r.Body, params, payload); err != nil {
 		w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err)))
 	} else {
 		w.Write([]byte("payload delivered"))
 	}
 }
 
-func createS3Object(c context.Context, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
+func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
 
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
-	_, uploadErr := es3.Upload(c, body, &cfg.StorageConfig.Bucket, &filename)
+	_, uploadErr := i.Compressor.Upload(c, body, &i.Cfg.StorageConfig.Bucket, &filename)
 	payload.Status = models.Running
 	if uploadErr != nil {
-		log.Errorf("error during upload: %v", uploadErr)
+		i.Log.Errorf("error during upload: %v", uploadErr)
 		statusMsg := uploadErr.Error()
 		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusMsg); err != nil {
-			log.Errorw("failed to set source status after failed upload", "error", err)
+			i.Log.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
 		if err := db.DB.Save(payload).Error; err != nil {
-			log.Errorw("failed to save status update after failed upload", "error", err)
+			i.Log.Errorw("failed to save status update after failed upload", "error", err)
 		}
 		return uploadErr
 	}
 
-	log.Info("successful upload")
+	i.Log.Info("successful upload")
 	if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RSuccess, nil); err != nil {
-		log.Errorw("failed to set source status after failed upload", "error", err)
+		i.Log.Errorw("failed to set source status after failed upload", "error", err)
 		return nil
 	}
 	if err := db.DB.Save(payload).Error; err != nil {
-		log.Errorw("failed to save status update after successful upload", "error", err)
+		i.Log.Errorw("failed to save status update after successful upload", "error", err)
 		return nil
 	}
 
 	ready, uploadErr := payload.GetAllSourcesFinished()
 	if uploadErr != nil {
-		log.Errorf("failed to get all source status: %v", uploadErr)
+		i.Log.Errorf("failed to get all source status: %v", uploadErr)
 	}
 	if ready && payload.Status == models.Running {
-		log.Infow("ready for zipping", "export-uuid", payload.ID)
-		exportChan <- payload
+		i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
+		go i.Compressor.Compress(payload) // start a go-routine to not block
 	}
 
 	return nil

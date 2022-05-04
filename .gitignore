@@ -15,5 +15,8 @@
 .vscode/
 __debug_bin
 
+# MacOS
+.DS_Store
+
 tmp/
 .env

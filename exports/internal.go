@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/errors"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
@@ -26,8 +25,9 @@ import (
 // Internal contains the configuration and
 type Internal struct {
 	Cfg        *config.ExportConfig
-	Log        *zap.SugaredLogger
 	Compressor *es3.Compressor
+	DB         models.DBInterface
+	Log        *zap.SugaredLogger
 }
 
 // InternalRouter is a router for all of the internal routes which require exportuuid,
@@ -61,8 +61,8 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := &models.ExportPayload{}
-	if err := db.DB.Model(&models.ExportPayload{}).Where(&models.ExportPayload{ID: params.ExportUUID}).Find(&payload).Error; err != nil {
+	payload, err := i.DB.Get(params.ExportUUID)
+	if err != nil {
 		i.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
@@ -73,7 +73,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Status == models.Complete {
-		// TODO: revisit this i.Logic and response. Do we want to allow a re-write of an already zipped package?
+		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
 		w.Write([]byte("this export has already been packaged"))
 		return
@@ -101,7 +101,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 			i.Log.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
-		if err := db.DB.Save(payload).Error; err != nil {
+		if _, err := i.DB.Save(payload); err != nil {
 			i.Log.Errorw("failed to save status update after failed upload", "error", err)
 		}
 		return uploadErr
@@ -112,7 +112,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 		i.Log.Errorw("failed to set source status after failed upload", "error", err)
 		return nil
 	}
-	if err := db.DB.Save(payload).Error; err != nil {
+	if _, err := i.DB.Save(payload); err != nil {
 		i.Log.Errorw("failed to save status update after successful upload", "error", err)
 		return nil
 	}

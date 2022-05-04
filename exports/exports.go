@@ -15,9 +15,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/errors"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/logger"
@@ -28,19 +28,25 @@ import (
 var log = logger.Log
 var messagesChan = config.ExportCfg.Channels.ProducerMessagesChan
 
+type Export struct {
+	Cfg *config.ExportConfig
+	DB  models.DBInterface
+	Log *zap.SugaredLogger
+}
+
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
-func ExportRouter(r chi.Router) {
-	r.Post("/", PostExport)
-	r.With(middleware.PaginationCtx).Get("/", ListExports)
+func (e *Export) ExportRouter(r chi.Router) {
+	r.Post("/", e.PostExport)
+	r.With(middleware.PaginationCtx).Get("/", e.ListExports)
 	r.Route("/{exportUUID}", func(sub chi.Router) {
-		sub.With(middleware.GZIPContentType).Get("/", GetExport) // TODO: will this middleware work correctly?
-		sub.Delete("/", DeleteExport)
-		sub.Get("/status", GetExportStatus)
+		sub.With(middleware.GZIPContentType).Get("/", e.GetExport) // TODO: will this middleware work correctly?
+		sub.Delete("/", e.DeleteExport)
+		sub.Get("/status", e.GetExportStatus)
 	})
 }
 
 // PostExport handles POST requests to the /exports endpoint.
-func PostExport(w http.ResponseWriter, r *http.Request) {
+func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
 	user := middleware.GetUserIdentity(r.Context())
 
@@ -52,12 +58,13 @@ func PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	payload.RequestID = reqID
 	payload.User = user
-	if err := db.DB.Create(&payload).Error; err != nil {
+	export, err := e.DB.APICreate(&payload)
+	if err != nil {
 		log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&payload); err != nil {
+	if err := json.NewEncoder(w).Encode(&export); err != nil {
 		log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
@@ -115,7 +122,7 @@ func buildQuery(q url.Values) (map[string]interface{}, error) {
 }
 
 // ListExports handle GET requests to the /exports endpoint.
-func ListExports(w http.ResponseWriter, r *http.Request) {
+func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUserIdentity(r.Context())
 	page := middleware.GetPagination(r.Context())
 
@@ -129,15 +136,15 @@ func ListExports(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	exports := []*APIExport{}
+	// exports := []*APIExport{}
 	// result := db.DB.Model(
 	// 	&models.ExportPayload{}).Where(
 	// 	&models.ExportPayload{User: user}).Where(
 	// 	query).Find(
 	// 	&exports)
-	result := db.DB.Model(&models.ExportPayload{}).Where(&models.ExportPayload{User: user}).Find(&exports)
-	if result.Error != nil {
-		errors.InternalServerError(w, result.Error)
+	exports, err := e.DB.APIList(user)
+	if err != nil {
+		errors.InternalServerError(w, err)
 		return
 	}
 	resp, err := middleware.GetPaginatedResponse(r.URL, page, exports)
@@ -154,13 +161,13 @@ func ListExports(w http.ResponseWriter, r *http.Request) {
 
 // GetExport handles GET requests to the /exports/{exportUUID} endpoint.
 // This function is responsible for returning the S3 object.
-func GetExport(w http.ResponseWriter, r *http.Request) {
+func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	// func responsible for downloading from s3
 	errors.NotImplementedError(w)
 }
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
-func DeleteExport(w http.ResponseWriter, r *http.Request) {
+func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
@@ -170,13 +177,13 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	result := db.DB.Where(&models.ExportPayload{ID: exportUUID, User: user}).Delete(&models.ExportPayload{})
-	if result.Error != nil {
-		log.Errorw("error deleting payload entry", "error", result.Error)
-		errors.InternalServerError(w, result.Error)
+	rowsAffected, err := e.DB.Delete(exportUUID, user)
+	if err != nil {
+		log.Errorw("error deleting payload entry", "error", err)
+		errors.InternalServerError(w, err)
 		return
 	}
-	if result.RowsAffected == 0 {
+	if rowsAffected == 0 {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 		return
 	}
@@ -184,7 +191,7 @@ func DeleteExport(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
-func GetExportStatus(w http.ResponseWriter, r *http.Request) {
+func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
@@ -193,15 +200,14 @@ func GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := middleware.GetUserIdentity(r.Context())
-	export := APIExport{}
 
-	result := db.DB.Model(&models.ExportPayload{}).Where(&models.ExportPayload{ID: exportUUID, User: user}).Find(&export)
-	if result.Error != nil {
-		log.Errorw("error querying for payload entry", "error", result.Error)
-		errors.InternalServerError(w, result.Error)
+	export, err := e.DB.APIGetWithUser(exportUUID, user)
+	if err != nil {
+		log.Errorw("error querying for payload entry", "error", err)
+		errors.InternalServerError(w, err)
 		return
 	}
-	if result.RowsAffected == 0 {
+	if export == nil {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 		return
 	}

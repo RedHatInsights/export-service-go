@@ -12,12 +12,12 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/errors"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/middleware"
@@ -26,9 +26,9 @@ import (
 
 // Export holds any dependencies necessary for the external api endpoints
 type Export struct {
-	Cfg *config.ExportConfig
-	DB  models.DBInterface
-	Log *zap.SugaredLogger
+	DB        models.DBInterface
+	Log       *zap.SugaredLogger
+	KafkaChan chan *kafka.Message
 }
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
@@ -55,13 +55,13 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	payload.RequestID = reqID
 	payload.User = user
-	export, err := e.DB.APICreate(&payload)
+	_, err = e.DB.Create(&payload)
 	if err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&export); err != nil {
+	if err := json.NewEncoder(w).Encode(&payload); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
@@ -100,7 +100,7 @@ func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
 			return
 		}
 		e.Log.Debug("sending kafka message to the producer")
-		e.Cfg.Channels.ProducerMessagesChan <- msg // TODO: what should we do if the message is never sent to the producer?
+		e.KafkaChan <- msg // TODO: what should we do if the message is never sent to the producer?
 		e.Log.Infof("sent kafka message to the producer: %+v", msg)
 	}
 }
@@ -198,17 +198,18 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	export, err := e.DB.APIGetWithUser(exportUUID, user)
+	result := &models.ExportPayload{}
+	rows, err := e.DB.GetWithUser(exportUUID, user, result)
 	if err != nil {
 		e.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
-	if export == nil {
+	if rows == 0 {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&export); err != nil {
+	if err := json.NewEncoder(w).Encode(&result); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}

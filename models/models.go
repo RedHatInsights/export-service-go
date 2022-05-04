@@ -145,31 +145,6 @@ func (ep *ExportPayload) GetAllSourcesFinished() (bool, error) {
 	return true, nil
 }
 
-func (ep *ExportPayload) convertToAPI() (*APIExportWithSources, error) {
-	sources, err := ep.GetSources()
-	if err != nil {
-		return nil, err
-	}
-	apiSources := []APISources{}
-	for _, source := range sources {
-		s := APISources{
-			ID:       source.ID,
-			Resource: source.Resource,
-			Status:   string(source.Status),
-		}
-		apiSources = append(apiSources, s)
-	}
-	result := &APIExportWithSources{
-		ID:        ep.ID,
-		Name:      ep.Name,
-		CreatedAt: ep.CreatedAt,
-		Format:    string(ep.Format),
-		Status:    string(ep.Status),
-		Sources:   apiSources,
-	}
-	return result, nil
-}
-
 // APIExport represents select fields of the ExportPayload which are returned to the user
 type APIExport struct {
 	ID          uuid.UUID  `json:"id"`
@@ -181,31 +156,11 @@ type APIExport struct {
 	Status      string     `json:"status"`
 }
 
-type APIExportWithSources struct {
-	ID          uuid.UUID    `json:"id"`
-	Name        string       `json:"name"`
-	CreatedAt   time.Time    `json:"created"`
-	CompletedAt *time.Time   `json:"completed,omitempty"`
-	Expires     *time.Time   `json:"expires,omitempty"`
-	Format      string       `json:"format"`
-	Status      string       `json:"status"`
-	Sources     []APISources `json:"sources"`
-}
-
-type APISources struct {
-	ID       uuid.UUID `json:"id"`
-	Resource string    `json:"resource"`
-	Status   string    `json:"status"`
-}
-
 type ExportDB struct {
 	DB *gorm.DB
 }
 
 type DBInterface interface {
-	// APICreate(payload *ExportPayload) (*APIExportWithSources, error)
-	// APIGet(exportUUID uuid.UUID) (*APIExportWithSources, error)
-	// APIGetWithUser(exportUUID uuid.UUID, user User) (*APIExportWithSources, error)
 	APIList(user User) (result []*APIExport, err error)
 
 	Create(payload *ExportPayload) (int64, error)
@@ -215,14 +170,6 @@ type DBInterface interface {
 	List(user User) (result []*ExportPayload, err error)
 	Save(m *ExportPayload) (int64, error)
 }
-
-// func (em *ExportDB) APICreate(payload *ExportPayload) (*APIExportWithSources, error) {
-// 	_, err := em.Create(payload)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return payload.convertToAPI()
-// }
 
 func (em *ExportDB) Create(payload *ExportPayload) (int64, error) {
 	result := em.DB.Create(&payload)
@@ -236,28 +183,12 @@ func (em *ExportDB) Delete(exportUUID uuid.UUID, user User) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-// func (em *ExportDB) APIGet(exportUUID uuid.UUID) (*APIExportWithSources, error) {
-// 	payload, err := em.Get(exportUUID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return payload.convertToAPI()
-// }
-
 func (em *ExportDB) Get(exportUUID uuid.UUID, result *ExportPayload) (int64, error) {
 	query := (em.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID}).
 		Find(&result))
 	return query.RowsAffected, query.Error
 }
-
-// func (em *ExportDB) APIGetWithUser(exportUUID uuid.UUID, user User) (*APIExportWithSources, error) {
-// 	payload, err := em.GetWithUser(exportUUID, user)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return payload.convertToAPI()
-// }
 
 func (em *ExportDB) GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) (int64, error) {
 	query := (em.DB.Model(&ExportPayload{}).

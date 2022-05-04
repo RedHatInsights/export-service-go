@@ -24,8 +24,7 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
-var messagesChan = config.ExportCfg.Channels.ProducerMessagesChan
-
+// Export holds any dependencies necessary for the external api endpoints
 type Export struct {
 	Cfg *config.ExportConfig
 	DB  models.DBInterface
@@ -101,7 +100,7 @@ func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
 			return
 		}
 		e.Log.Debug("sending kafka message to the producer")
-		messagesChan <- msg // TODO: what should we do if the message is never sent to the producer?
+		e.Cfg.Channels.ProducerMessagesChan <- msg // TODO: what should we do if the message is never sent to the producer?
 		e.Log.Infof("sent kafka message to the producer: %+v", msg)
 	}
 }

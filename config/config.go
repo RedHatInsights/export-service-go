@@ -33,6 +33,7 @@ type ExportConfig struct {
 	LogLevel        string
 	Debug           bool
 	DBConfig        dbConfig
+	StorageConfig   storageConfig
 	KafkaConfig     kafkaConfig
 	OpenAPIFilePath string
 	Psks            []string
@@ -86,13 +87,13 @@ type kafkaSSLConfig struct {
 	Protocol      string
 }
 
-// type StorageCfg struct {
-// 	StorageBucket    string
-// 	StorageEndpoint  string
-// 	StorageAccessKey string
-// 	StorageSecretKey string
-// 	UseSSL           bool
-// }
+type storageConfig struct {
+	Bucket    string
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+	UseSSL    bool
+}
 
 var config *ExportConfig
 
@@ -108,14 +109,18 @@ func init() {
 	options.SetDefault("psks", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
 
 	// DB defaults
-	options.SetDefault("Database", "pgsql")
 	options.SetDefault("PGSQL_USER", "postgres")
 	options.SetDefault("PGSQL_PASSWORD", "postgres")
 	options.SetDefault("PGSQL_HOSTNAME", "localhost")
 	options.SetDefault("PGSQL_PORT", "15433")
 	options.SetDefault("PGSQL_DATABASE", "postgres")
 
-	// kafka defaults
+	// Minio defaults
+	options.SetDefault("MINIO_HOST", "localhost")
+	options.SetDefault("MINIO_PORT", "9000")
+	options.SetDefault("MINIO_SSL", false)
+
+	// Kafka defaults
 	options.SetDefault("KafakAnnounceTopic", ExportTopic)
 	options.SetDefault("KafkaBrokers", strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 	options.SetDefault("KafkaGroupID", "export")
@@ -145,19 +150,23 @@ func init() {
 		ReadyToZip:           make(chan *models.ExportPayload), // TODO: determine an appropriate buffer (if one is actually necessary),
 	}
 
-	database := options.GetString("database")
+	config.DBConfig = dbConfig{
+		User:     options.GetString("PGSQL_USER"),
+		Password: options.GetString("PGSQL_PASSWORD"),
+		Hostname: options.GetString("PGSQL_HOSTNAME"),
+		Port:     options.GetString("PGSQL_PORT"),
+		Name:     options.GetString("PGSQL_DATABASE"),
+		SSLCfg: dbSSLConfig{
+			SSLMode: "prefer",
+		},
+	}
 
-	if database == "pgsql" {
-		config.DBConfig = dbConfig{
-			User:     options.GetString("PGSQL_USER"),
-			Password: options.GetString("PGSQL_PASSWORD"),
-			Hostname: options.GetString("PGSQL_HOSTNAME"),
-			Port:     options.GetString("PGSQL_PORT"),
-			Name:     options.GetString("PGSQL_DATABASE"),
-			SSLCfg: dbSSLConfig{
-				SSLMode: "prefer",
-			},
-		}
+	config.StorageConfig = storageConfig{
+		Bucket:    "exports-bucket",
+		Endpoint:  fmt.Sprintf("http://%s:%s", options.GetString("MINIO_HOST"), options.GetString("MINIO_PORT")),
+		AccessKey: options.GetString("AWS_ACCESS_KEY"),
+		SecretKey: options.GetString("AWS_SECRET_ACCESS_KEY"),
+		UseSSL:    options.GetBool("MINIO_SSL"),
 	}
 
 	config.KafkaConfig = kafkaConfig{
@@ -206,6 +215,16 @@ func init() {
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,
+		}
+
+		endpoint := fmt.Sprintf("%s:%d", cfg.ObjectStore.Hostname, cfg.ObjectStore.Port)
+		bucket := cfg.ObjectStore.Buckets[0]
+		config.StorageConfig = storageConfig{
+			Bucket:    bucket.Name,
+			Endpoint:  endpoint,
+			AccessKey: *bucket.AccessKey,
+			SecretKey: *bucket.SecretKey,
+			UseSSL:    cfg.ObjectStore.Tls,
 		}
 	}
 

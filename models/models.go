@@ -69,7 +69,7 @@ type Source struct {
 	Status    ResourceStatus `json:"status"`
 	StatusMsg *string        `json:"status_msg,omitempty"`
 	Resource  string         `json:"resource"`
-	Filters   datatypes.JSON `json:"-"`
+	Filters   datatypes.JSON `json:"filters"`
 }
 
 type User struct {

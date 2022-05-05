@@ -18,7 +18,9 @@ import (
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redhatinsights/export-service-go/db"
 	metrics "github.com/redhatinsights/export-service-go/metrics"
+	"github.com/redhatinsights/export-service-go/models"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
@@ -41,7 +43,7 @@ func init() {
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func createPublicServer(cfg *config.ExportConfig) *http.Server {
+func createPublicServer(external exports.Export) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -68,7 +70,7 @@ func createPublicServer(cfg *config.ExportConfig) *http.Server {
 		// add external routes
 		r.Get("/openapi.json", serveOpenAPISpec) // OpenAPI Spec
 		r.Get("/ping", helloWorld)               // Hello World endpoint
-		r.Route("/exports", exports.ExportRouter)
+		r.Route("/exports", external.ExportRouter)
 	})
 
 	server := http.Server{
@@ -174,7 +176,12 @@ func main() {
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer()
 
-	wsrv := createPublicServer(cfg)
+	external := exports.Export{
+		KafkaChan: cfg.Channels.ProducerMessagesChan,
+		DB:        &models.ExportDB{DB: db.DB},
+		Log:       log,
+	}
+	wsrv := createPublicServer(external)
 	psrv := createPrivateServer(cfg)
 	msrv := createMetricsServer(cfg)
 

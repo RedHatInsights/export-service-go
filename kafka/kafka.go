@@ -41,9 +41,7 @@ func init() {
 	prometheus.MustRegister(producerCount)
 }
 
-type Producer struct {
-	*kafka.Producer
-}
+type Producer struct{ *kafka.Producer }
 
 // StartProducer produces kafka messages on the kafka topic
 func (p *Producer) StartProducer() {
@@ -55,7 +53,11 @@ func (p *Producer) StartProducer() {
 			defer producerCount.Dec()
 			start := time.Now()
 
-			p.Produce(msg, nil) // pass nil chan so that delivery reports go to the Events() channel
+			if err := p.Produce(msg, nil); err != nil { // pass nil chan so that delivery reports go to the Events() channel
+				log.Errorw("failed to produce message", "error", err)
+				return
+			}
+
 			messagePublishElapsed.With(prometheus.Labels{"topic": topic}).Observe(time.Since(start).Seconds())
 
 			// Delivery report handler for produced messages

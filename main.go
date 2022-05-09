@@ -239,8 +239,9 @@ func main() {
 	log.Info("syncing logger")
 	if err := log.Sync(); err != nil {
 		log.Errorw("failed to sync logger", "error", err)
+	} else {
+		log.Info("synced logger")
 	}
-	log.Info("synced logger")
 
 	log.Info("everything has shut down, goodbye")
 }

@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"

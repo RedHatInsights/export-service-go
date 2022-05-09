@@ -61,7 +61,8 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := i.DB.Get(params.ExportUUID)
+	payload := &models.ExportPayload{}
+	_, err := i.DB.Get(params.ExportUUID, payload)
 	if err != nil {
 		i.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)

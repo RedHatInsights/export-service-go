@@ -12,26 +12,23 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/errors"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
-	"github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
-var log = logger.Log
-var messagesChan = config.ExportCfg.Channels.ProducerMessagesChan
-
+// Export holds any dependencies necessary for the external api endpoints
 type Export struct {
-	Cfg *config.ExportConfig
-	DB  models.DBInterface
-	Log *zap.SugaredLogger
+	DB        models.DBInterface
+	Log       *zap.SugaredLogger
+	KafkaChan chan *kafka.Message
 }
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
@@ -58,33 +55,33 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	payload.RequestID = reqID
 	payload.User = user
-	export, err := e.DB.APICreate(&payload)
+	_, err = e.DB.Create(&payload)
 	if err != nil {
-		log.Errorw("error creating payload entry", "error", err)
+		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&export); err != nil {
-		log.Errorw("error while trying to encode", "error", err)
+	if err := json.NewEncoder(w).Encode(&payload); err != nil {
+		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	go sendPayload(payload, r)
+	go e.sendPayload(payload, r)
 }
 
 // sendPayload converts the individual sources of a payload into
 // kafka messages which are then sent to the producer through the
 // `messagesChan`
-func sendPayload(payload models.ExportPayload, r *http.Request) {
+func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
 	headers := ekafka.KafkaHeader{
 		Application: payload.Application,
 		IDheader:    r.Header["X-Rh-Identity"][0],
 	}
 	sources, err := payload.GetSources()
 	if err != nil {
-		log.Errorw("failed unmarshalling sources", "error", err)
+		e.Log.Errorw("failed unmarshalling sources", "error", err)
 		return
 	}
 	for _, source := range sources {
@@ -99,12 +96,12 @@ func sendPayload(payload models.ExportPayload, r *http.Request) {
 		}
 		msg, err := kpayload.ToMessage(headers)
 		if err != nil {
-			log.Errorw("failed to create kafka message", "error", err)
+			e.Log.Errorw("failed to create kafka message", "error", err)
 			return
 		}
-		log.Debug("sending kafka message to the producer")
-		messagesChan <- msg // TODO: what should we do if the message is never sent to the producer?
-		log.Infof("sent kafka message to the producer: %+v", msg)
+		e.Log.Debug("sending kafka message to the producer")
+		e.KafkaChan <- msg // TODO: what should we do if the message is never sent to the producer?
+		e.Log.Infof("sent kafka message to the producer: %+v", msg)
 	}
 }
 
@@ -149,12 +146,12 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	}
 	resp, err := middleware.GetPaginatedResponse(r.URL, page, exports)
 	if err != nil {
-		log.Errorw("error while paginating data", "error", err)
+		e.Log.Errorw("error while paginating data", "error", err)
 		errors.InternalServerError(w, err)
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
-		log.Errorw("error while encoding", "error", err)
+		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
 }
@@ -179,7 +176,7 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 	rowsAffected, err := e.DB.Delete(exportUUID, user)
 	if err != nil {
-		log.Errorw("error deleting payload entry", "error", err)
+		e.Log.Errorw("error deleting payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
@@ -201,18 +198,19 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	export, err := e.DB.APIGetWithUser(exportUUID, user)
+	result := &models.ExportPayload{}
+	rows, err := e.DB.GetWithUser(exportUUID, user, result)
 	if err != nil {
-		log.Errorw("error querying for payload entry", "error", err)
+		e.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
-	if export == nil {
+	if rows == 0 {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&export); err != nil {
-		log.Errorw("error while encoding", "error", err)
+	if err := json.NewEncoder(w).Encode(&result); err != nil {
+		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
 }

@@ -53,14 +53,7 @@ func init() {
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func createPublicServer(cfg *config.ExportConfig) *http.Server {
-	// External config struct
-	external := exports.Export{
-		Cfg: cfg,
-		Log: log,
-		DB:  &models.ExportDB{DB: db.DB},
-	}
-
+func createPublicServer(external exports.Export) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -204,7 +197,12 @@ func main() {
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer()
 
-	wsrv := createPublicServer(cfg)
+	external := exports.Export{
+		KafkaChan: cfg.Channels.ProducerMessagesChan,
+		DB:        &models.ExportDB{DB: db.DB},
+		Log:       log,
+	}
+	wsrv := createPublicServer(external)
 	psrv := createPrivateServer(cfg)
 	msrv := createMetricsServer(cfg)
 

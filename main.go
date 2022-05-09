@@ -31,16 +31,22 @@ import (
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
+	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
 var (
-	cfg *config.ExportConfig
-	log *zap.SugaredLogger
+	cfg        *config.ExportConfig
+	log        *zap.SugaredLogger
+	compressor *es3.Compressor
 )
 
 func init() {
 	cfg = config.ExportCfg
 	log = logger.Log
+	compressor = &es3.Compressor{
+		Bucket: cfg.StorageConfig.Bucket,
+		Log:    log,
+	}
 }
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -91,7 +97,7 @@ func createPublicServer(external exports.Export) *http.Server {
 	return &server
 }
 
-func createPrivateServer(cfg *config.ExportConfig) *http.Server {
+func createPrivateServer(internal exports.Internal) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -109,7 +115,7 @@ func createPrivateServer(cfg *config.ExportConfig) *http.Server {
 		r.Use(emiddleware.EnforcePSK)
 		// add internal routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
-		r.Route("/", exports.InternalRouter)
+		r.Route("/", internal.InternalRouter)
 	})
 
 	return &http.Server{
@@ -183,7 +189,14 @@ func main() {
 		Log:       log,
 	}
 	wsrv := createPublicServer(external)
-	psrv := createPrivateServer(cfg)
+
+	internal := exports.Internal{
+		Cfg:        cfg,
+		Compressor: compressor,
+		DB:         &models.ExportDB{DB: db.DB},
+		Log:        log,
+	}
+	psrv := createPrivateServer(internal)
 	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})

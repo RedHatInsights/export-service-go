@@ -3,7 +3,10 @@ module github.com/redhatinsights/export-service-go
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.43.38
+	github.com/aws/aws-sdk-go v1.38.51
+	github.com/aws/aws-sdk-go-v2 v1.16.2
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.5
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.5
 	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-openapi/runtime v0.23.3

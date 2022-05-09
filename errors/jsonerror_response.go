@@ -9,11 +9,22 @@ package errors
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/redhatinsights/export-service-go/logger"
 )
+
+var log = logger.Log
 
 type Error struct {
 	Msg  interface{} `json:"message"`
 	Code int         `json:"code"`
+}
+
+// Logerr is a wrapper function to log errors (as warning) from (http.ResponseWriter).Write
+func Logerr(n int, err error) {
+	if err != nil {
+		log.Warnw("write failed", "error", err)
+	}
 }
 
 // JSONError writes the supplied error and status code to the ResponseWriter

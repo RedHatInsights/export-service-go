@@ -39,7 +39,7 @@ func init() {
 
 	var greeting string
 	DB.Raw("select 'Hello, from Postgres!!'").Scan(&greeting)
-	log.Infof(greeting)
+	log.Info(greeting)
 
 	// all models go here for migration
 	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {

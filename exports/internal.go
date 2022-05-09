@@ -130,7 +130,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 }
 
 func (i *Internal) compressPayload(payload *models.ExportPayload) {
-	t, filename, s3key, err := i.Compressor.Compress(payload)
+	t, filename, s3key, err := i.Compressor.Compress(context.TODO(), payload)
 	if err != nil {
 		i.Log.Errorw("failed to compress payload", "error", err)
 		payload.SetStatusFailed()

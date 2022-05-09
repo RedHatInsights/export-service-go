@@ -115,9 +115,7 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 	return nil
 }
 
-func (c *Compressor) Compress(m *models.ExportPayload) (time.Time, string, string, error) {
-	ctx := context.TODO()
-
+func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error) {
 	t := time.Now()
 
 	c.Log.Infof("starting payload compression for %s", m.ID)

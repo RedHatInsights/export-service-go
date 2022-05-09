@@ -100,15 +100,7 @@ func createPublicServer(external exports.Export) *http.Server {
 	return &server
 }
 
-func createPrivateServer(cfg *config.ExportConfig) *http.Server {
-	// Internal config struct
-	internal := exports.Internal{
-		Cfg:        cfg,
-		Compressor: compressor,
-		DB:         &models.ExportDB{DB: db.DB},
-		Log:        log,
-	}
-
+func createPrivateServer(internal exports.Internal) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -187,9 +179,6 @@ func main() {
 		"psks", cfg.Psks, // TODO: remove this
 	)
 
-	// bucket := "michaels-super-cool-bucket"
-	// es3.CreateFile(context.Background(), &bucket)
-
 	producer, err := ekafka.NewProducer()
 	if err != nil {
 		log.Panic("failed to create kafka producer", "error", err)
@@ -203,7 +192,14 @@ func main() {
 		Log:       log,
 	}
 	wsrv := createPublicServer(external)
-	psrv := createPrivateServer(cfg)
+
+	internal := exports.Internal{
+		Cfg:        cfg,
+		Compressor: compressor,
+		DB:         &models.ExportDB{DB: db.DB},
+		Log:        log,
+	}
+	psrv := createPrivateServer(internal)
 	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})

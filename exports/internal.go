@@ -62,13 +62,13 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := &models.ExportPayload{}
-	_, err := i.DB.Get(params.ExportUUID, payload)
+	rows, err := i.DB.Get(params.ExportUUID, payload)
 	if err != nil {
 		i.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
-	if payload == nil {
+	if rows == 0 {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
 		return
 	}

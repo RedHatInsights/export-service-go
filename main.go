@@ -45,7 +45,6 @@ func init() {
 	log = logger.Log
 	compressor = &es3.Compressor{
 		Bucket: cfg.StorageConfig.Bucket,
-		DB:     &models.ExportDB{DB: db.DB},
 		Log:    log,
 	}
 }

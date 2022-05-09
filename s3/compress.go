@@ -20,7 +20,6 @@ import (
 
 type Compressor struct {
 	Bucket string
-	DB     models.DBInterface
 	Log    *zap.SugaredLogger
 }
 
@@ -116,7 +115,7 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 	return nil
 }
 
-func (c *Compressor) Compress(m *models.ExportPayload) {
+func (c *Compressor) Compress(m *models.ExportPayload) (time.Time, string, string, error) {
 	ctx := context.TODO()
 
 	t := time.Now()
@@ -127,18 +126,7 @@ func (c *Compressor) Compress(m *models.ExportPayload) {
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
 
 	err := c.zipExport(ctx, t, prefix, filename, s3key)
-	if err != nil {
-		c.Log.Errorw("failed to compress payload", "error", err)
-		m.SetStatusFailed()
-	} else {
-		c.Log.Infof("done uploading %s", filename)
-		m.SetStatusComplete(&t, s3key)
-	}
-
-	if _, err := c.DB.Save(m); err != nil {
-		c.Log.Errorw("failed updating model status after upload", "error", err)
-		return
-	}
+	return t, filename, s3key, err
 }
 
 func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error) {

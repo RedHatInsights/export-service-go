@@ -123,8 +123,24 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	}
 	if ready && payload.Status == models.Running {
 		i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
-		go i.Compressor.Compress(payload) // start a go-routine to not block
+		go i.compressPayload(payload) // start a go-routine to not block
 	}
 
 	return nil
+}
+
+func (i *Internal) compressPayload(payload *models.ExportPayload) {
+	t, filename, s3key, err := i.Compressor.Compress(payload)
+	if err != nil {
+		i.Log.Errorw("failed to compress payload", "error", err)
+		payload.SetStatusFailed()
+	} else {
+		i.Log.Infof("done uploading %s", filename)
+		payload.SetStatusComplete(&t, s3key)
+	}
+
+	if _, err := i.DB.Save(payload); err != nil {
+		i.Log.Errorw("failed updating model status after upload", "error", err)
+		return
+	}
 }

@@ -144,8 +144,7 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, s
 	return nil
 }
 
-// GetAllSourcesStatus gets the status for all of the sources. This function can return 4
-// different states:
+// GetAllSourcesStatus gets the status for all of the sources. This function can return these different states:
 //   *  -1: error - failed to retrieve sources
 //   *  0: sources are all complete as success
 //   *  1: sources are still pending

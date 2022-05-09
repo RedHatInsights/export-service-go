@@ -8,6 +8,7 @@ package exports
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,7 +49,39 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		errors.InternalServerError(w, "unable to parse url params")
 		return
 	}
-	errors.NotImplementedError(w)
+
+	var sourceError models.SourceError
+	err := json.NewDecoder(r.Body).Decode(&sourceError)
+	if err != nil {
+		errors.BadRequestError(w, err.Error())
+		return
+	}
+
+	payload := &models.ExportPayload{}
+	rows, err := i.DB.Get(params.ExportUUID, payload)
+	payload.Status = models.Running
+	if err != nil {
+		i.Log.Errorw("error querying for payload entry", "error", err)
+		errors.InternalServerError(w, err)
+		return
+	}
+	if rows == 0 {
+		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
+		return
+	}
+
+	if err := payload.SetSourceStatus(params.ResourceUUID, models.RFailed, &sourceError); err != nil {
+		i.Log.Errorw("failed to set source status for failed export", "error", err)
+		errors.InternalServerError(w, err)
+		return
+	}
+
+	if _, err := i.DB.Save(payload); err != nil {
+		i.Log.Errorw("failed to save status update for failed export", "error", err)
+		errors.InternalServerError(w, err)
+	}
+
+	i.processSources(payload)
 }
 
 // PostUpload receives a POST request from the export source containing
@@ -96,8 +129,8 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	payload.Status = models.Running
 	if uploadErr != nil {
 		i.Log.Errorf("error during upload: %v", uploadErr)
-		statusMsg := uploadErr.Error()
-		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusMsg); err != nil {
+		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
+		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {
 			i.Log.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
@@ -117,14 +150,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 		return nil
 	}
 
-	ready, uploadErr := payload.GetAllSourcesFinished()
-	if uploadErr != nil {
-		i.Log.Errorf("failed to get all source status: %v", uploadErr)
-	}
-	if ready && payload.Status == models.Running {
-		i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
-		go i.compressPayload(payload) // start a go-routine to not block
-	}
+	i.processSources(payload)
 
 	return nil
 }
@@ -136,11 +162,37 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 		payload.SetStatusFailed()
 	} else {
 		i.Log.Infof("done uploading %s", filename)
-		payload.SetStatusComplete(&t, s3key)
+		ready, err := payload.GetAllSourcesStatus()
+		switch ready {
+		case -1:
+			i.Log.Errorf("failed to get all source status: %v", err)
+		case 0:
+			payload.SetStatusComplete(&t, s3key)
+		case 3:
+			payload.SetStatusPartial(&t, s3key)
+		}
 	}
 
 	if _, err := i.DB.Save(payload); err != nil {
 		i.Log.Errorw("failed updating model status after upload", "error", err)
+		return
+	}
+}
+
+func (i *Internal) processSources(payload *models.ExportPayload) {
+	ready, err := payload.GetAllSourcesStatus()
+	switch ready {
+	case -1:
+		i.Log.Errorf("failed to get all source status: %v", err)
+	case 0, 3:
+		if payload.Status == models.Running {
+			i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
+			go i.compressPayload(payload) // start a go-routine to not block
+		}
+	case 1:
+		return
+	case 2:
+		i.Log.Infof("all sources for payload %s reported as failure", payload.ID)
 		return
 	}
 }

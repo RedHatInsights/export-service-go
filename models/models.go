@@ -26,6 +26,7 @@ const (
 type PayloadStatus string
 
 const (
+	Partial  PayloadStatus = "partial"
 	Pending  PayloadStatus = "pending"
 	Running  PayloadStatus = "running"
 	Complete PayloadStatus = "complete"
@@ -65,11 +66,16 @@ type ExportPayload struct {
 }
 
 type Source struct {
-	ID        uuid.UUID      `json:"id"`
-	Status    ResourceStatus `json:"status"`
-	StatusMsg *string        `json:"status_msg,omitempty"`
-	Resource  string         `json:"resource"`
-	Filters   datatypes.JSON `json:"filters"`
+	ID       uuid.UUID      `json:"id"`
+	Status   ResourceStatus `json:"status"`
+	Resource string         `json:"resource"`
+	Filters  datatypes.JSON `json:"filters"`
+	*SourceError
+}
+
+type SourceError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
 type User struct {
@@ -99,6 +105,12 @@ func (ep *ExportPayload) SetStatusComplete(t *time.Time, s3key string) {
 	ep.S3Key = s3key
 }
 
+func (ep *ExportPayload) SetStatusPartial(t *time.Time, s3key string) {
+	ep.Status = Partial
+	ep.CompletedAt = t
+	ep.S3Key = s3key
+}
+
 func (ep *ExportPayload) SetStatusFailed()  { ep.Status = Failed }
 func (ep *ExportPayload) SetStatusRunning() { ep.Status = Running }
 
@@ -114,7 +126,7 @@ func (ep *ExportPayload) SetSources(sources []*Source) error {
 	return err
 }
 
-func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, msg *string) error {
+func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
 	sources, err := ep.GetSources()
 	if err != nil {
 		return fmt.Errorf("failed to get sources: %v", err)
@@ -122,7 +134,7 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, m
 	for _, source := range sources {
 		if source.ID == uid {
 			source.Status = status
-			source.StatusMsg = msg
+			source.SourceError = sourceError
 			break
 		}
 	}
@@ -132,17 +144,38 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, m
 	return nil
 }
 
-func (ep *ExportPayload) GetAllSourcesFinished() (bool, error) {
+// GetAllSourcesStatus gets the status for all of the sources. This function can return 4
+// different states:
+//   *  -1: error - failed to retrieve sources
+//   *  0: sources are all complete as success
+//   *  1: sources are still pending
+//   *  2: sources are all complete, some sources are a failure
+//   *  3: all sources have failed
+func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
-		return false, fmt.Errorf("failed to get sources: %v", err)
+		// we do not know the status of the sources. as far as we know, there is nothing to zip.
+		return -1, err
 	}
+	failedCount := 0
 	for _, source := range sources {
 		if source.Status == RPending {
-			return false, nil
+			// there are more sources in a pending state. there is nothing to zip yet.
+			return 1, nil
+		} else if source.Status == RFailed {
+			failedCount += 1
 		}
 	}
-	return true, nil
+	if failedCount == len(sources) {
+		// return 2 as there is nothing to zip into a payload.
+		return 2, nil
+	}
+	if failedCount > 0 {
+		return 3, nil
+	}
+
+	// return 0 as there is at least 1 source that needs to be zipped.
+	return 0, nil
 }
 
 // APIExport represents select fields of the ExportPayload which are returned to the user

@@ -178,7 +178,8 @@ func (em *ExportDB) Create(payload *ExportPayload) (int64, error) {
 
 func (em *ExportDB) Delete(exportUUID uuid.UUID, user User) (int64, error) {
 	result := (em.DB.Where(&ExportPayload{
-		ID: exportUUID, User: user}).
+		ID: exportUUID, User: user,
+	}).
 		Delete(&ExportPayload{}))
 	return result.RowsAffected, result.Error
 }

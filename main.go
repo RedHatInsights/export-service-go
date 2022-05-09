@@ -18,12 +18,13 @@ import (
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redhatinsights/export-service-go/db"
-	metrics "github.com/redhatinsights/export-service-go/metrics"
-	"github.com/redhatinsights/export-service-go/models"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
+
+	"github.com/redhatinsights/export-service-go/db"
+	metrics "github.com/redhatinsights/export-service-go/metrics"
+	"github.com/redhatinsights/export-service-go/models"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -234,6 +235,12 @@ func main() {
 	producer.Flush(1500) // 1.5 second timeout
 	producer.Close()
 	log.Info("closed kafka producer")
+
+	log.Info("syncing logger")
+	if err := log.Sync(); err != nil {
+		log.Errorw("failed to sync logger", "error", err)
+	}
+	log.Info("synced logger")
 
 	log.Info("everything has shut down, goodbye")
 }

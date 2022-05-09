@@ -21,11 +21,15 @@ import (
 
 type userIdentityKey int
 
-const UserIdentityKey userIdentityKey = iota
-const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+const (
+	UserIdentityKey userIdentityKey = iota
+	debugHeader     string          = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+)
 
-var cfg = config.ExportCfg
-var log = logger.Log
+var (
+	cfg = config.ExportCfg
+	log = logger.Log
+)
 
 // InjectDebugUserIdentity is a middleware that set a valid x-rh-identity header
 // when operating in DEBUG mode. ** Only used during testing.

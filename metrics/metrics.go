@@ -42,7 +42,6 @@ func (rw *responseWriter) WriteHeader(code int) {
 
 func PrometheusMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		timer := prometheus.NewTimer(httpDuration.WithLabelValues(r.URL.Path))
 		rw := NewResponseWriter(w)
 		next.ServeHTTP(rw, r)

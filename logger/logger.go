@@ -72,7 +72,6 @@ func init() {
 	if err != nil {
 		tmpLogger.Info(err.Error())
 	}
-	defer logger.Sync()
 
 	Log = logger.Sugar()
 	Log.Infof("log level set to %s", cfg.LogLevel)

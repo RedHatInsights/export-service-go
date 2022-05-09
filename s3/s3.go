@@ -10,9 +10,11 @@ import (
 	"github.com/redhatinsights/export-service-go/logger"
 )
 
-var Client *s3.Client
-var cfg = econfig.ExportCfg
-var log = logger.Log
+var (
+	Client *s3.Client
+	cfg    = econfig.ExportCfg
+	log    = logger.Log
+)
 
 func init() {
 	scfg := cfg.StorageConfig

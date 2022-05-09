@@ -19,8 +19,11 @@ import (
 
 // DB is a global variable containing the gorm.DB
 var DB *gorm.DB
-var cfg = config.ExportCfg
-var log = logger.Log
+
+var (
+	cfg = config.ExportCfg
+	log = logger.Log
+)
 
 func init() {
 	dbcfg := cfg.DBConfig
@@ -39,5 +42,7 @@ func init() {
 	log.Info(greeting)
 
 	// all models go here for migration
-	DB.AutoMigrate(&models.ExportPayload{})
+	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {
+		log.Panicw("failed to migrate db", "error", err)
+	}
 }

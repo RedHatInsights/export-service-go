@@ -10,10 +10,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
@@ -105,18 +104,18 @@ func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
 	}
 }
 
-func buildQuery(q url.Values) (map[string]interface{}, error) {
-	result := map[string]interface{}{}
+// func buildQuery(q url.Values) (map[string]interface{}, error) {
+// 	result := map[string]interface{}{}
 
-	for k, v := range q {
-		if len(v) > 1 {
-			return nil, fmt.Errorf("query param `%s` has too many search values", k)
-		}
-		result[k] = v[0]
-	}
+// 	for k, v := range q {
+// 		if len(v) > 1 {
+// 			return nil, fmt.Errorf("query param `%s` has too many search values", k)
+// 		}
+// 		result[k] = v[0]
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 // ListExports handle GET requests to the /exports endpoint.
 func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +183,6 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 		return
 	}
-
 }
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.

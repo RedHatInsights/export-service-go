@@ -12,7 +12,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -76,21 +76,20 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	if payload.Status == models.Complete {
 		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
-		w.Write([]byte("this export has already been packaged"))
+		errors.Logerr(w.Write([]byte("this export has already been packaged")))
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
 
 	if err := i.createS3Object(r.Context(), r.Body, params, payload); err != nil {
-		w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err)))
+		errors.Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
 	} else {
-		w.Write([]byte("payload delivered"))
+		errors.Logerr(w.Write([]byte("payload delivered")))
 	}
 }
 
 func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
-
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
 	_, uploadErr := i.Compressor.Upload(c, body, &i.Cfg.StorageConfig.Bucket, &filename)

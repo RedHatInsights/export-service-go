@@ -170,7 +170,7 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 
 	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &result.S3Key}
 
-	out, err := es3.FindObject(r.Context(), e.Client, &input)
+	out, err := es3.GetObject(r.Context(), e.Client, &input)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
 	}

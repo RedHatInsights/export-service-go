@@ -117,7 +117,7 @@ func (ep *ExportPayload) SetSources(sources []*Source) error {
 func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, msg *string) error {
 	sources, err := ep.GetSources()
 	if err != nil {
-		return fmt.Errorf("failed to get sources: %v", err)
+		return fmt.Errorf("failed to get sources: %w", err)
 	}
 	for _, source := range sources {
 		if source.ID == uid {
@@ -127,7 +127,7 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, m
 		}
 	}
 	if err := ep.SetSources(sources); err != nil {
-		return fmt.Errorf("failed to set sources for export_payload: %v", err)
+		return fmt.Errorf("failed to set sources for export_payload: %w", err)
 	}
 	return nil
 }
@@ -135,7 +135,7 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, m
 func (ep *ExportPayload) GetAllSourcesFinished() (bool, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
-		return false, fmt.Errorf("failed to get sources: %v", err)
+		return false, fmt.Errorf("failed to get sources: %w", err)
 	}
 	for _, source := range sources {
 		if source.Status == RPending {

@@ -184,8 +184,9 @@ func main() {
 	go producer.StartProducer()
 
 	external := exports.Export{
-		KafkaChan: cfg.Channels.ProducerMessagesChan,
+		Bucket:    cfg.StorageConfig.Bucket,
 		DB:        &models.ExportDB{DB: db.DB},
+		KafkaChan: cfg.Channels.ProducerMessagesChan,
 		Log:       log,
 	}
 	wsrv := createPublicServer(external)

@@ -95,7 +95,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	_, uploadErr := i.Compressor.Upload(c, body, &i.Cfg.StorageConfig.Bucket, &filename)
 	payload.Status = models.Running
 	if uploadErr != nil {
-		i.Log.Errorf("error during upload: %v", uploadErr)
+		i.Log.Errorf("error during upload: %w", uploadErr)
 		statusMsg := uploadErr.Error()
 		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusMsg); err != nil {
 			i.Log.Errorw("failed to set source status after failed upload", "error", err)
@@ -119,7 +119,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 
 	ready, uploadErr := payload.GetAllSourcesFinished()
 	if uploadErr != nil {
-		i.Log.Errorf("failed to get all source status: %v", uploadErr)
+		i.Log.Errorf("failed to get all source status: %w", uploadErr)
 	}
 	if ready && payload.Status == models.Running {
 		i.Log.Infow("ready for zipping", "export-uuid", payload.ID)

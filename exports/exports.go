@@ -7,10 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package exports
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -21,10 +23,12 @@ import (
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
+	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
 // Export holds any dependencies necessary for the external api endpoints
 type Export struct {
+	Bucket    string
 	DB        models.DBInterface
 	Log       *zap.SugaredLogger
 	KafkaChan chan *kafka.Message
@@ -35,7 +39,7 @@ func (e *Export) ExportRouter(r chi.Router) {
 	r.Post("/", e.PostExport)
 	r.With(middleware.PaginationCtx).Get("/", e.ListExports)
 	r.Route("/{exportUUID}", func(sub chi.Router) {
-		sub.With(middleware.GZIPContentType).Get("/", e.GetExport) // TODO: will this middleware work correctly?
+		sub.With(middleware.GZIPContentType).Get("/", e.GetExport)
 		sub.Delete("/", e.DeleteExport)
 		sub.Get("/status", e.GetExportStatus)
 	})
@@ -158,8 +162,24 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 // GetExport handles GET requests to the /exports/{exportUUID} endpoint.
 // This function is responsible for returning the S3 object.
 func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
-	// func responsible for downloading from s3
-	errors.NotImplementedError(w)
+	result := e.getExportWithUser(w, r)
+	if result == nil {
+		return
+	}
+
+	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &result.S3Key}
+
+	out, err := es3.Client.GetObject(r.Context(), &input)
+	if err != nil {
+		e.Log.Errorw("failed to get object", "error", err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(out.Body); err != nil {
+		e.Log.Errorf("failed to read body: %w", err)
+	}
+	errors.Logerr(w.Write(buf.Bytes()))
 }
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
@@ -187,11 +207,19 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
+	result := e.getExportWithUser(w, r)
+	if err := json.NewEncoder(w).Encode(&result); err != nil {
+		e.Log.Errorw("error while encoding", "error", err)
+		errors.InternalServerError(w, err.Error())
+	}
+}
+
+func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *models.ExportPayload {
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
 		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
-		return
+		return nil
 	}
 
 	user := middleware.GetUserIdentity(r.Context())
@@ -201,14 +229,11 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
-		return
+		return nil
 	}
 	if rows == 0 {
 		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
-		return
+		return nil
 	}
-	if err := json.NewEncoder(w).Encode(&result); err != nil {
-		e.Log.Errorw("error while encoding", "error", err)
-		errors.InternalServerError(w, err.Error())
-	}
+	return result
 }

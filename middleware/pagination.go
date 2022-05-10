@@ -189,7 +189,7 @@ func PaginationCtx(next http.Handler) http.Handler {
 		if limit != "" {
 			lim, err := strconv.Atoi(limit)
 			if err != nil {
-				errors.BadRequestError(w, fmt.Errorf("invalid limit: %v", err))
+				errors.BadRequestError(w, fmt.Errorf("invalid limit: %w", err))
 				return
 			}
 			pagination.Limit = lim
@@ -199,7 +199,7 @@ func PaginationCtx(next http.Handler) http.Handler {
 		if offset != "" {
 			off, err := strconv.Atoi(offset)
 			if err != nil {
-				errors.BadRequestError(w, fmt.Errorf("invalid offset: %v", err))
+				errors.BadRequestError(w, fmt.Errorf("invalid offset: %w", err))
 				return
 			}
 			pagination.Offset = off

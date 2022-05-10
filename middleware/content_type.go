@@ -12,7 +12,7 @@ import "net/http"
 func SetContentType(ct string) func(next http.Handler) http.Handler {
 	fn1 := func(next http.Handler) http.Handler {
 		fn2 := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", ct)
+			w.Header().Set("Content-Type", ct)
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn2)

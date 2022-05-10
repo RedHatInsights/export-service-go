@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
@@ -22,15 +23,14 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/export-service-go/db"
-	metrics "github.com/redhatinsights/export-service-go/metrics"
-	"github.com/redhatinsights/export-service-go/models"
-
 	"github.com/redhatinsights/export-service-go/config"
+	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/logger"
+	metrics "github.com/redhatinsights/export-service-go/metrics"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
+	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
@@ -38,10 +38,12 @@ var (
 	cfg        *config.ExportConfig
 	log        *zap.SugaredLogger
 	compressor *es3.Compressor
+	client     *s3.Client
 )
 
 func init() {
 	cfg = config.ExportCfg
+	client = es3.Client
 	log = logger.Log
 	compressor = &es3.Compressor{
 		Bucket: cfg.StorageConfig.Bucket,
@@ -185,6 +187,7 @@ func main() {
 
 	external := exports.Export{
 		Bucket:    cfg.StorageConfig.Bucket,
+		Client:    client,
 		DB:        &models.ExportDB{DB: db.DB},
 		KafkaChan: cfg.Channels.ProducerMessagesChan,
 		Log:       log,

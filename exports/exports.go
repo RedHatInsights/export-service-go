@@ -29,6 +29,7 @@ import (
 // Export holds any dependencies necessary for the external api endpoints
 type Export struct {
 	Bucket    string
+	Client    *s3.Client
 	DB        models.DBInterface
 	Log       *zap.SugaredLogger
 	KafkaChan chan *kafka.Message
@@ -169,7 +170,7 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 
 	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &result.S3Key}
 
-	out, err := es3.Client.GetObject(r.Context(), &input)
+	out, err := es3.FindObject(r.Context(), e.Client, &input)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
 	}

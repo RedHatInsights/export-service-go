@@ -164,11 +164,11 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 		i.Log.Infof("done uploading %s", filename)
 		ready, err := payload.GetAllSourcesStatus()
 		switch ready {
-		case -1:
+		case models.StatusError:
 			i.Log.Errorf("failed to get all source status: %v", err)
-		case 0:
+		case models.StatusComplete:
 			payload.SetStatusComplete(&t, s3key)
-		case 3:
+		case models.StatusPartial:
 			payload.SetStatusPartial(&t, s3key)
 		}
 	}
@@ -182,16 +182,16 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 func (i *Internal) processSources(payload *models.ExportPayload) {
 	ready, err := payload.GetAllSourcesStatus()
 	switch ready {
-	case -1:
+	case models.StatusError:
 		i.Log.Errorf("failed to get all source status: %v", err)
-	case 0, 3:
+	case models.StatusComplete, models.StatusPartial:
 		if payload.Status == models.Running {
 			i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
 			go i.compressPayload(payload) // start a go-routine to not block
 		}
-	case 1:
+	case models.StatusPending:
 		return
-	case 2:
+	case models.StatusFailed:
 		i.Log.Infof("all sources for payload %s reported as failure", payload.ID)
 		return
 	}

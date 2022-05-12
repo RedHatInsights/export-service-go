@@ -144,37 +144,45 @@ func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, s
 	return nil
 }
 
+const (
+	StatusError = iota
+	StatusFailed
+	StatusPending
+	StatusPartial
+	StatusComplete
+)
+
 // GetAllSourcesStatus gets the status for all of the sources. This function can return these different states:
-//   *  -1: error - failed to retrieve sources
-//   *  0: sources are all complete as success
-//   *  1: sources are still pending
-//   *  2: sources are all complete, some sources are a failure
-//   *  3: all sources have failed
+//   *  StatusError - failed to retrieve sources
+//   *  StatusComplete - sources are all complete as success
+//   *  StatusPending - sources are still pending
+//   *  StatusPartial - sources are all complete, some sources are a failure
+//   *  StatusFailed - all sources have failed
 func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
 		// we do not know the status of the sources. as far as we know, there is nothing to zip.
-		return -1, err
+		return StatusError, err
 	}
 	failedCount := 0
 	for _, source := range sources {
 		if source.Status == RPending {
 			// there are more sources in a pending state. there is nothing to zip yet.
-			return 1, nil
+			return StatusPending, nil
 		} else if source.Status == RFailed {
 			failedCount += 1
 		}
 	}
 	if failedCount == len(sources) {
 		// return 2 as there is nothing to zip into a payload.
-		return 2, nil
+		return StatusFailed, nil
 	}
 	if failedCount > 0 {
-		return 3, nil
+		return StatusPartial, nil
 	}
 
 	// return 0 as there is at least 1 source that needs to be zipped.
-	return 0, nil
+	return StatusComplete, nil
 }
 
 // APIExport represents select fields of the ExportPayload which are returned to the user

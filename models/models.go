@@ -111,7 +111,12 @@ func (ep *ExportPayload) SetStatusPartial(t *time.Time, s3key string) {
 	ep.S3Key = s3key
 }
 
-func (ep *ExportPayload) SetStatusFailed()  { ep.Status = Failed }
+func (ep *ExportPayload) SetStatusFailed() {
+	t := time.Now()
+	ep.Status = Failed
+	ep.CompletedAt = &t
+}
+
 func (ep *ExportPayload) SetStatusRunning() { ep.Status = Running }
 
 func (ep *ExportPayload) GetSource(uid uuid.UUID) (*Source, error) {

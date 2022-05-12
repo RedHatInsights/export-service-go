@@ -59,7 +59,7 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 
 	payload := &models.ExportPayload{}
 	rows, err := i.DB.Get(params.ExportUUID, payload)
-	payload.Status = models.Running
+	payload.SetStatusRunning()
 	if err != nil {
 		i.Log.Errorw("error querying for payload entry", "error", err)
 		errors.InternalServerError(w, err)
@@ -141,7 +141,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
 	_, uploadErr := i.Compressor.Upload(c, body, &i.Cfg.StorageConfig.Bucket, &filename)
-	payload.Status = models.Running
+	payload.SetStatusRunning()
 	if uploadErr != nil {
 		i.Log.Errorf("error during upload: %v", uploadErr)
 		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
@@ -208,6 +208,10 @@ func (i *Internal) processSources(payload *models.ExportPayload) {
 		return
 	case models.StatusFailed:
 		i.Log.Infof("all sources for payload %s reported as failure", payload.ID)
+		payload.SetStatusFailed()
+		if _, err := i.DB.Save(payload); err != nil {
+			i.Log.Errorw("failed updating model status after sources failed", "error", err)
+		}
 		return
 	}
 }

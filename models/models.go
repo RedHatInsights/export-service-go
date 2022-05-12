@@ -114,6 +114,19 @@ func (ep *ExportPayload) SetStatusPartial(t *time.Time, s3key string) {
 func (ep *ExportPayload) SetStatusFailed()  { ep.Status = Failed }
 func (ep *ExportPayload) SetStatusRunning() { ep.Status = Running }
 
+func (ep *ExportPayload) GetSource(uid uuid.UUID) (*Source, error) {
+	sources, err := ep.GetSources()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sources: %w", err)
+	}
+	for _, source := range sources {
+		if source.ID == uid {
+			return source, nil
+		}
+	}
+	return nil, fmt.Errorf("source `%s` not found", uid)
+}
+
 func (ep *ExportPayload) GetSources() ([]*Source, error) {
 	var sources []*Source
 	err := json.Unmarshal(ep.Sources, &sources)

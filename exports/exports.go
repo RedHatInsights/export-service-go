@@ -65,6 +65,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		errors.InternalServerError(w, err)
 		return
 	}
+	w.WriteHeader(http.StatusAccepted)
 	if err := json.NewEncoder(w).Encode(&payload); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())

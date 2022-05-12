@@ -70,6 +70,21 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	source, err := payload.GetSource(params.ResourceUUID)
+	if err != nil {
+		i.Log.Errorw("failed to get source: %w", err)
+		errors.InternalServerError(w, err.Error())
+	}
+
+	if source.Status == models.RSuccess || source.Status == models.RFailed {
+		// TODO: revisit this logic and response. Do we want to allow a re-write of an already completed source?
+		w.WriteHeader(http.StatusGone)
+		errors.Logerr(w.Write([]byte("this resource has already been processed")))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+
 	if err := payload.SetSourceStatus(params.ResourceUUID, models.RFailed, &sourceError); err != nil {
 		i.Log.Errorw("failed to set source status for failed export", "error", err)
 		errors.InternalServerError(w, err)
@@ -106,7 +121,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.Status == models.Complete {
+	if payload.Status == models.Complete || payload.Status == models.Partial {
 		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
 		errors.Logerr(w.Write([]byte("this export has already been packaged")))

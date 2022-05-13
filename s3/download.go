@@ -14,7 +14,7 @@ type S3GetObjectAPI interface {
 		optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
 }
 
-// FindObject retrieves objects from Amazon S3
-func FindObject(c context.Context, api S3GetObjectAPI, input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
+// GetObject retrieves objects from Amazon S3
+func GetObject(c context.Context, api S3GetObjectAPI, input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	return api.GetObject(c, input)
 }

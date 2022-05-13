@@ -8,6 +8,7 @@ package exports
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,7 +49,54 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		errors.InternalServerError(w, "unable to parse url params")
 		return
 	}
-	errors.NotImplementedError(w)
+
+	var sourceError models.SourceError
+	err := json.NewDecoder(r.Body).Decode(&sourceError)
+	if err != nil {
+		errors.BadRequestError(w, err.Error())
+		return
+	}
+
+	payload := &models.ExportPayload{}
+	rows, err := i.DB.Get(params.ExportUUID, payload)
+	payload.SetStatusRunning()
+	if err != nil {
+		i.Log.Errorw("error querying for payload entry", "error", err)
+		errors.InternalServerError(w, err)
+		return
+	}
+	if rows == 0 {
+		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
+		return
+	}
+
+	source, err := payload.GetSource(params.ResourceUUID)
+	if err != nil {
+		i.Log.Errorw("failed to get source: %w", err)
+		errors.InternalServerError(w, err.Error())
+	}
+
+	if source.Status == models.RSuccess || source.Status == models.RFailed {
+		// TODO: revisit this logic and response. Do we want to allow a re-write of an already completed source?
+		w.WriteHeader(http.StatusGone)
+		errors.Logerr(w.Write([]byte("this resource has already been processed")))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+
+	if err := payload.SetSourceStatus(params.ResourceUUID, models.RFailed, &sourceError); err != nil {
+		i.Log.Errorw("failed to set source status for failed export", "error", err)
+		errors.InternalServerError(w, err)
+		return
+	}
+
+	if _, err := i.DB.Save(payload); err != nil {
+		i.Log.Errorw("failed to save status update for failed export", "error", err)
+		errors.InternalServerError(w, err)
+	}
+
+	i.processSources(payload)
 }
 
 // PostUpload receives a POST request from the export source containing
@@ -73,7 +121,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.Status == models.Complete {
+	if payload.Status == models.Complete || payload.Status == models.Partial {
 		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
 		errors.Logerr(w.Write([]byte("this export has already been packaged")))
@@ -93,11 +141,11 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
 	_, uploadErr := i.Compressor.Upload(c, body, &i.Cfg.StorageConfig.Bucket, &filename)
-	payload.Status = models.Running
+	payload.SetStatusRunning()
 	if uploadErr != nil {
-		i.Log.Errorf("error during upload: %w", uploadErr)
-		statusMsg := uploadErr.Error()
-		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusMsg); err != nil {
+		i.Log.Errorf("error during upload: %v", uploadErr)
+		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
+		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {
 			i.Log.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
@@ -117,14 +165,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 		return nil
 	}
 
-	ready, uploadErr := payload.GetAllSourcesFinished()
-	if uploadErr != nil {
-		i.Log.Errorf("failed to get all source status: %w", uploadErr)
-	}
-	if ready && payload.Status == models.Running {
-		i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
-		go i.compressPayload(payload) // start a go-routine to not block
-	}
+	i.processSources(payload)
 
 	return nil
 }
@@ -136,11 +177,41 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 		payload.SetStatusFailed()
 	} else {
 		i.Log.Infof("done uploading %s", filename)
-		payload.SetStatusComplete(&t, s3key)
+		ready, err := payload.GetAllSourcesStatus()
+		switch ready {
+		case models.StatusError:
+			i.Log.Errorf("failed to get all source status: %v", err)
+		case models.StatusComplete:
+			payload.SetStatusComplete(&t, s3key)
+		case models.StatusPartial:
+			payload.SetStatusPartial(&t, s3key)
+		}
 	}
 
 	if _, err := i.DB.Save(payload); err != nil {
 		i.Log.Errorw("failed updating model status after upload", "error", err)
+		return
+	}
+}
+
+func (i *Internal) processSources(payload *models.ExportPayload) {
+	ready, err := payload.GetAllSourcesStatus()
+	switch ready {
+	case models.StatusError:
+		i.Log.Errorf("failed to get all source status: %v", err)
+	case models.StatusComplete, models.StatusPartial:
+		if payload.Status == models.Running {
+			i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
+			go i.compressPayload(payload) // start a go-routine to not block
+		}
+	case models.StatusPending:
+		return
+	case models.StatusFailed:
+		i.Log.Infof("all sources for payload %s reported as failure", payload.ID)
+		payload.SetStatusFailed()
+		if _, err := i.DB.Save(payload); err != nil {
+			i.Log.Errorw("failed updating model status after sources failed", "error", err)
+		}
 		return
 	}
 }

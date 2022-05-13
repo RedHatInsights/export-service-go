@@ -80,20 +80,20 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 // kafka messages which are then sent to the producer through the
 // `messagesChan`
 func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
-	headers := ekafka.KafkaHeader{
-		Application: payload.Application,
-		IDheader:    r.Header["X-Rh-Identity"][0],
-	}
 	sources, err := payload.GetSources()
 	if err != nil {
 		e.Log.Errorw("failed unmarshalling sources", "error", err)
 		return
 	}
 	for _, source := range sources {
+		headers := ekafka.KafkaHeader{
+			Application: source.Application,
+			IDheader:    r.Header["X-Rh-Identity"][0],
+		}
 		kpayload := ekafka.KafkaMessage{
 			ExportUUID:   payload.ID,
-			Application:  payload.Application,
 			Format:       string(payload.Format),
+			Application:  source.Application,
 			ResourceName: source.Resource,
 			ResourceUUID: source.ID,
 			Filters:      source.Filters,

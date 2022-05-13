@@ -57,7 +57,6 @@ type ExportPayload struct {
 	Expires     *time.Time     `json:"expires,omitempty"`
 	RequestID   string         `json:"-"`
 	Name        string         `json:"name"`
-	Application string         `json:"application"`
 	Format      PayloadFormat  `gorm:"type:string" json:"format"`
 	Status      PayloadStatus  `gorm:"type:string" json:"status"`
 	Sources     datatypes.JSON `gorm:"type:json" json:"sources"`
@@ -66,10 +65,11 @@ type ExportPayload struct {
 }
 
 type Source struct {
-	ID       uuid.UUID      `json:"id"`
-	Status   ResourceStatus `json:"status"`
-	Resource string         `json:"resource"`
-	Filters  datatypes.JSON `json:"filters"`
+	ID          uuid.UUID      `json:"id"`
+	Application string         `json:"application"`
+	Status      ResourceStatus `json:"status"`
+	Resource    string         `json:"resource"`
+	Filters     datatypes.JSON `json:"filters"`
 	*SourceError
 }
 

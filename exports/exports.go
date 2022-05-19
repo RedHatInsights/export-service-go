@@ -164,18 +164,19 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 // GetExport handles GET requests to the /exports/{exportUUID} endpoint.
 // This function is responsible for returning the S3 object.
 func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
-	result := e.getExportWithUser(w, r)
-	if result == nil {
+	payload := e.getExportWithUser(w, r)
+	if payload == nil {
 		return
 	}
 
-	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &result.S3Key}
+	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &payload.S3Key}
 
 	out, err := es3.GetObject(r.Context(), e.Client, &input)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
 	}
 
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", payload.SuggestedFileName))
 	w.WriteHeader(http.StatusOK)
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(out.Body); err != nil {

@@ -12,8 +12,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -70,10 +72,11 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := payload.GetSource(params.ResourceUUID)
+	_, source, err := payload.GetSource(params.ResourceUUID)
 	if err != nil {
 		i.Log.Errorw("failed to get source: %w", err)
 		errors.InternalServerError(w, err.Error())
+		return
 	}
 
 	if source.Status == models.RSuccess || source.Status == models.RFailed {
@@ -85,7 +88,7 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := payload.SetSourceStatus(params.ResourceUUID, models.RFailed, &sourceError); err != nil {
+	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RFailed, &sourceError); err != nil {
 		i.Log.Errorw("failed to set source status for failed export", "error", err)
 		errors.InternalServerError(w, err)
 		return
@@ -96,7 +99,7 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		errors.InternalServerError(w, err)
 	}
 
-	i.processSources(payload)
+	i.processSources(params.ExportUUID)
 }
 
 // PostUpload receives a POST request from the export source containing
@@ -130,6 +133,9 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 
+	i.Log.Debug("SLEEPING")
+	time.Sleep(30 * time.Second)
+
 	if err := i.createS3Object(r.Context(), r.Body, params, payload); err != nil {
 		errors.Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
 	} else {
@@ -145,7 +151,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	if uploadErr != nil {
 		i.Log.Errorf("error during upload: %v", uploadErr)
 		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
-		if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {
+		if err := payload.SetSourceStatus(i.DB, urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {
 			i.Log.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
@@ -156,7 +162,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 	}
 
 	i.Log.Info("successful upload")
-	if err := payload.SetSourceStatus(urlparams.ResourceUUID, models.RSuccess, nil); err != nil {
+	if err := payload.SetSourceStatus(i.DB, urlparams.ResourceUUID, models.RSuccess, nil); err != nil {
 		i.Log.Errorw("failed to set source status after failed upload", "error", err)
 		return nil
 	}
@@ -165,7 +171,7 @@ func (i *Internal) createS3Object(c context.Context, body io.Reader, urlparams *
 		return nil
 	}
 
-	i.processSources(payload)
+	i.processSources(payload.ID)
 
 	return nil
 }
@@ -194,7 +200,12 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 	}
 }
 
-func (i *Internal) processSources(payload *models.ExportPayload) {
+func (i *Internal) processSources(uid uuid.UUID) {
+	var payload models.ExportPayload
+	row, err := i.DB.Get(uid, &payload)
+	if err != nil || row == 0 {
+		i.Log.Errorf("failed to get payload: %v", err)
+	}
 	ready, err := payload.GetAllSourcesStatus()
 	switch ready {
 	case models.StatusError:
@@ -202,14 +213,14 @@ func (i *Internal) processSources(payload *models.ExportPayload) {
 	case models.StatusComplete, models.StatusPartial:
 		if payload.Status == models.Running {
 			i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
-			go i.compressPayload(payload) // start a go-routine to not block
+			go i.compressPayload(&payload) // start a go-routine to not block
 		}
 	case models.StatusPending:
 		return
 	case models.StatusFailed:
 		i.Log.Infof("all sources for payload %s reported as failure", payload.ID)
 		payload.SetStatusFailed()
-		if _, err := i.DB.Save(payload); err != nil {
+		if _, err := i.DB.Save(&payload); err != nil {
 			i.Log.Errorw("failed updating model status after sources failed", "error", err)
 		}
 		return

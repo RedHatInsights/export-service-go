@@ -95,7 +95,8 @@ func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
 		source.ID = uuid.New()
 		source.Status = RPending
 	}
-	err = ep.SetSources(sources)
+	out, err := json.Marshal(sources)
+	ep.Sources = out
 	return err
 }
 
@@ -119,17 +120,17 @@ func (ep *ExportPayload) SetStatusFailed() {
 
 func (ep *ExportPayload) SetStatusRunning() { ep.Status = Running }
 
-func (ep *ExportPayload) GetSource(uid uuid.UUID) (*Source, error) {
+func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get sources: %w", err)
+		return -1, nil, fmt.Errorf("failed to get sources: %w", err)
 	}
-	for _, source := range sources {
+	for idx, source := range sources {
 		if source.ID == uid {
-			return source, nil
+			return idx, source, nil
 		}
 	}
-	return nil, fmt.Errorf("source `%s` not found", uid)
+	return -1, nil, fmt.Errorf("source `%s` not found", uid)
 }
 
 func (ep *ExportPayload) GetSources() ([]*Source, error) {
@@ -138,28 +139,19 @@ func (ep *ExportPayload) GetSources() ([]*Source, error) {
 	return sources, err
 }
 
-func (ep *ExportPayload) SetSources(sources []*Source) error {
-	out, err := json.Marshal(sources)
-	ep.Sources = out
-	return err
-}
-
-func (ep *ExportPayload) SetSourceStatus(uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
-	sources, err := ep.GetSources()
+func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
+	idx, _, err := ep.GetSource(uid)
 	if err != nil {
 		return fmt.Errorf("failed to get sources: %w", err)
 	}
-	for _, source := range sources {
-		if source.ID == uid {
-			source.Status = status
-			source.SourceError = sourceError
-			break
-		}
+
+	var sql string
+	if sourceError == nil {
+		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) WHERE id='%s'", idx, status, ep.ID)
+	} else {
+		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || '{\"status\": \"%s\", \"code\": %d, \"message\": \"%s\"}', true) WHERE id='%s'", idx, idx, status, sourceError.Code, sourceError.Message, ep.ID)
 	}
-	if err := ep.SetSources(sources); err != nil {
-		return fmt.Errorf("failed to set sources for export_payload: %w", err)
-	}
-	return nil
+	return db.Raw(sql).Scan(&ep).Error
 }
 
 const (
@@ -227,6 +219,7 @@ type DBInterface interface {
 	GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) (int64, error)
 	List(user User) (result []*ExportPayload, err error)
 	Save(m *ExportPayload) (int64, error)
+	Raw(sql string, values ...interface{}) (tx *gorm.DB)
 }
 
 func (em *ExportDB) Create(payload *ExportPayload) (int64, error) {
@@ -273,4 +266,8 @@ func (em *ExportDB) List(user User) (result []*ExportPayload, err error) {
 func (em *ExportDB) Save(m *ExportPayload) (int64, error) {
 	result := em.DB.Save(m)
 	return result.RowsAffected, result.Error
+}
+
+func (em *ExportDB) Raw(sql string, values ...interface{}) (tx *gorm.DB) {
+	return em.DB.Raw(sql, values...)
 }

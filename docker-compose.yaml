@@ -1,22 +1,22 @@
 version: '3'
 
 services:
-  export:
-    container_name: export-server
-    image: export
-    build:
-      context: .
-    environment:
-      - PGSQL_PORT=5432
-      - PGSQL_HOSTNAME=export-db
-      - DEBUG=false
-      - OPENAPIFILEPATH=/var/tmp/openapi.json
-      - PSKS=testing-a-psk
-      - KAFKA_BROKERS=kafka:29092
-    ports:
-      - 8765:8000
-      - 9876:9000
-      - 10987:10000
+  # export:
+  #   container_name: export-server
+  #   image: export
+  #   build:
+  #     context: .
+  #   environment:
+  #     - PGSQL_PORT=5432
+  #     - PGSQL_HOSTNAME=export-db
+  #     - DEBUG=false
+  #     - OPENAPIFILEPATH=/var/tmp/openapi.json
+  #     - PSKS=testing-a-psk
+  #     - KAFKA_BROKERS=kafka:29092
+  #   ports:
+  #     - 8765:8000
+  #     - 9876:9000
+  #     - 10987:10000
 
   db:
     container_name: export-db

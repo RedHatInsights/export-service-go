@@ -100,26 +100,6 @@ func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
 	return err
 }
 
-func (ep *ExportPayload) SetStatusComplete(t *time.Time, s3key string) {
-	ep.Status = Complete
-	ep.CompletedAt = t
-	ep.S3Key = s3key
-}
-
-func (ep *ExportPayload) SetStatusPartial(t *time.Time, s3key string) {
-	ep.Status = Partial
-	ep.CompletedAt = t
-	ep.S3Key = s3key
-}
-
-func (ep *ExportPayload) SetStatusFailed() {
-	t := time.Now()
-	ep.Status = Failed
-	ep.CompletedAt = &t
-}
-
-func (ep *ExportPayload) SetStatusRunning() { ep.Status = Running }
-
 func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
@@ -139,6 +119,38 @@ func (ep *ExportPayload) GetSources() ([]*Source, error) {
 	return sources, err
 }
 
+func (ep *ExportPayload) SetStatusComplete(db DBInterface, t *time.Time, s3key string) error {
+	values := map[string]interface{}{
+		"status":       Complete,
+		"completed_at": t,
+		"s3_key":       s3key,
+	}
+	return db.Updates(ep, values)
+}
+
+func (ep *ExportPayload) SetStatusPartial(db DBInterface, t *time.Time, s3key string) error {
+	values := map[string]interface{}{
+		"status":       Partial,
+		"completed_at": t,
+		"s3_key":       s3key,
+	}
+	return db.Updates(ep, values)
+}
+
+func (ep *ExportPayload) SetStatusFailed(db DBInterface) error {
+	t := time.Now()
+	values := map[string]interface{}{
+		"status":       Failed,
+		"completed_at": &t,
+	}
+	return db.Updates(ep, values)
+}
+
+func (ep *ExportPayload) SetStatusRunning(db DBInterface) error {
+	values := map[string]interface{}{"status": Running}
+	return db.Updates(ep, values)
+}
+
 func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
 	idx, _, err := ep.GetSource(uid)
 	if err != nil {
@@ -147,8 +159,10 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 
 	var sql string
 	if sourceError == nil {
-		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) WHERE id='%s'", idx, status, ep.ID)
+		// set the status and remove 'code' and 'message' fields if they exist
+		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
 	} else {
+		// set status and add 'code' and 'message' fields
 		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || '{\"status\": \"%s\", \"code\": %d, \"message\": \"%s\"}', true) WHERE id='%s'", idx, idx, status, sourceError.Code, sourceError.Message, ep.ID)
 	}
 	return db.Raw(sql).Scan(&ep).Error
@@ -193,81 +207,4 @@ func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
 
 	// return 0 as there is at least 1 source that needs to be zipped.
 	return StatusComplete, nil
-}
-
-// APIExport represents select fields of the ExportPayload which are returned to the user
-type APIExport struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	CreatedAt   time.Time  `json:"created"`
-	CompletedAt *time.Time `json:"completed,omitempty"`
-	Expires     *time.Time `json:"expires,omitempty"`
-	Format      string     `json:"format"`
-	Status      string     `json:"status"`
-}
-
-type ExportDB struct {
-	DB *gorm.DB
-}
-
-type DBInterface interface {
-	APIList(user User) (result []*APIExport, err error)
-
-	Create(payload *ExportPayload) (int64, error)
-	Delete(exportUUID uuid.UUID, user User) (int64, error)
-	Get(exportUUID uuid.UUID, result *ExportPayload) (int64, error)
-	GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) (int64, error)
-	List(user User) (result []*ExportPayload, err error)
-	Save(m *ExportPayload) (int64, error)
-	Raw(sql string, values ...interface{}) (tx *gorm.DB)
-}
-
-func (em *ExportDB) Create(payload *ExportPayload) (int64, error) {
-	result := em.DB.Create(&payload)
-	return result.RowsAffected, result.Error
-}
-
-func (em *ExportDB) Delete(exportUUID uuid.UUID, user User) (int64, error) {
-	result := (em.DB.Where(&ExportPayload{
-		ID: exportUUID, User: user,
-	}).
-		Delete(&ExportPayload{}))
-	return result.RowsAffected, result.Error
-}
-
-func (em *ExportDB) Get(exportUUID uuid.UUID, result *ExportPayload) (int64, error) {
-	query := (em.DB.Model(&ExportPayload{}).
-		Where(&ExportPayload{ID: exportUUID}).
-		Find(&result))
-	return query.RowsAffected, query.Error
-}
-
-func (em *ExportDB) GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) (int64, error) {
-	query := (em.DB.Model(&ExportPayload{}).
-		Where(&ExportPayload{ID: exportUUID, User: user}).
-		Find(&result))
-	return query.RowsAffected, query.Error
-}
-
-func (em *ExportDB) APIList(user User) (result []*APIExport, err error) {
-	err = (em.DB.Model(&ExportPayload{}).
-		Where(&ExportPayload{User: user}).
-		Find(&result).Error)
-	return
-}
-
-func (em *ExportDB) List(user User) (result []*ExportPayload, err error) {
-	err = (em.DB.Model(&ExportPayload{}).
-		Where(&ExportPayload{User: user}).
-		Find(&result).Error)
-	return
-}
-
-func (em *ExportDB) Save(m *ExportPayload) (int64, error) {
-	result := em.DB.Save(m)
-	return result.RowsAffected, result.Error
-}
-
-func (em *ExportDB) Raw(sql string, values ...interface{}) (tx *gorm.DB) {
-	return em.DB.Raw(sql, values...)
 }

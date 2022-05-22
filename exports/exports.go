@@ -59,8 +59,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	payload.RequestID = reqID
 	payload.User = user
-	err = e.DB.Create(&payload)
-	if err != nil {
+	if err := e.DB.Create(&payload); err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return

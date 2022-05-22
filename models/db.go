@@ -37,20 +37,20 @@ type DBInterface interface {
 
 var ErrRecordNotFound = errors.New("record not found")
 
-func (em *ExportDB) Create(payload *ExportPayload) error {
-	return em.DB.Create(&payload).Error
+func (edb *ExportDB) Create(payload *ExportPayload) error {
+	return edb.DB.Create(&payload).Error
 }
 
-func (em *ExportDB) Delete(exportUUID uuid.UUID, user User) error {
-	err := (em.DB.Where(&ExportPayload{ID: exportUUID, User: user}).Delete(&ExportPayload{})).Error
+func (edb *ExportDB) Delete(exportUUID uuid.UUID, user User) error {
+	err := (edb.DB.Where(&ExportPayload{ID: exportUUID, User: user}).Delete(&ExportPayload{})).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return ErrRecordNotFound
 	}
 	return err
 }
 
-func (em *ExportDB) Get(exportUUID uuid.UUID, result *ExportPayload) error {
-	err := (em.DB.Model(&ExportPayload{}).
+func (edb *ExportDB) Get(exportUUID uuid.UUID, result *ExportPayload) error {
+	err := (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID}).
 		Find(&result)).
 		Error
@@ -60,8 +60,8 @@ func (em *ExportDB) Get(exportUUID uuid.UUID, result *ExportPayload) error {
 	return err
 }
 
-func (em *ExportDB) GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) error {
-	err := (em.DB.Model(&ExportPayload{}).
+func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) error {
+	err := (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID, User: user}).
 		Find(&result)).
 		Error
@@ -71,24 +71,24 @@ func (em *ExportDB) GetWithUser(exportUUID uuid.UUID, user User, result *ExportP
 	return err
 }
 
-func (em *ExportDB) APIList(user User) (result []*APIExport, err error) {
-	err = (em.DB.Model(&ExportPayload{}).
+func (edb *ExportDB) APIList(user User) (result []*APIExport, err error) {
+	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{User: user}).
 		Find(&result).Error)
 	return
 }
 
-func (em *ExportDB) List(user User) (result []*ExportPayload, err error) {
-	err = (em.DB.Model(&ExportPayload{}).
+func (edb *ExportDB) List(user User) (result []*ExportPayload, err error) {
+	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{User: user}).
 		Find(&result).Error)
 	return
 }
 
-func (em *ExportDB) Updates(m *ExportPayload, values interface{}) error {
-	return em.DB.Model(m).Updates(values).Error
+func (edb *ExportDB) Updates(m *ExportPayload, values interface{}) error {
+	return edb.DB.Model(m).Updates(values).Error
 }
 
-func (em *ExportDB) Raw(sql string, values ...interface{}) *gorm.DB {
-	return em.DB.Raw(sql, values...)
+func (edb *ExportDB) Raw(sql string, values ...interface{}) *gorm.DB {
+	return edb.DB.Raw(sql, values...)
 }

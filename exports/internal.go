@@ -192,6 +192,7 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 		switch ready {
 		case models.StatusError:
 			i.Log.Errorf("failed to get all source status: %v", err)
+			return
 		case models.StatusComplete:
 			err = payload.SetStatusComplete(i.DB, &t, s3key)
 		case models.StatusPartial:
@@ -201,7 +202,6 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 
 	if err != nil {
 		i.Log.Errorw("failed updating model status", "error", err)
-		return
 	}
 }
 

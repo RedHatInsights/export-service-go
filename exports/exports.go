@@ -215,6 +215,9 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	result := e.getExportWithUser(w, r)
+	if result == nil {
+		return
+	}
 	if err := json.NewEncoder(w).Encode(&result); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
@@ -235,6 +238,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	if err := e.DB.GetWithUser(exportUUID, user, result); err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
+			e.Log.Infof("record '%s' not found", exportUUID)
 			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 			return nil
 		default:

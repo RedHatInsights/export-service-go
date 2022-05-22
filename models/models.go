@@ -120,34 +120,34 @@ func (ep *ExportPayload) GetSources() ([]*Source, error) {
 }
 
 func (ep *ExportPayload) SetStatusComplete(db DBInterface, t *time.Time, s3key string) error {
-	values := map[string]interface{}{
-		"status":       Complete,
-		"completed_at": t,
-		"s3_key":       s3key,
+	values := ExportPayload{
+		Status:      Complete,
+		CompletedAt: t,
+		S3Key:       s3key,
 	}
 	return db.Updates(ep, values)
 }
 
 func (ep *ExportPayload) SetStatusPartial(db DBInterface, t *time.Time, s3key string) error {
-	values := map[string]interface{}{
-		"status":       Partial,
-		"completed_at": t,
-		"s3_key":       s3key,
+	values := ExportPayload{
+		Status:      Partial,
+		CompletedAt: t,
+		S3Key:       s3key,
 	}
 	return db.Updates(ep, values)
 }
 
 func (ep *ExportPayload) SetStatusFailed(db DBInterface) error {
 	t := time.Now()
-	values := map[string]interface{}{
-		"status":       Failed,
-		"completed_at": &t,
+	values := ExportPayload{
+		Status:      Failed,
+		CompletedAt: &t,
 	}
 	return db.Updates(ep, values)
 }
 
 func (ep *ExportPayload) SetStatusRunning(db DBInterface) error {
-	values := map[string]interface{}{"status": Running}
+	values := ExportPayload{Status: Running}
 	return db.Updates(ep, values)
 }
 
@@ -157,15 +157,18 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 		return fmt.Errorf("failed to get sources: %w", err)
 	}
 
-	var sql string
+	var sql *gorm.DB
 	if sourceError == nil {
 		// set the status and remove 'code' and 'message' fields if they exist
-		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
+		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
+		sql = db.Raw(sqlStr)
 	} else {
 		// set status and add 'code' and 'message' fields
-		sql = fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || '{\"status\": \"%s\", \"code\": %d, \"message\": \"%s\"}', true) WHERE id='%s'", idx, idx, status, sourceError.Code, sourceError.Message, ep.ID)
+		// the `code` and `message` are user inpurts, so they are parameterized to prevent sql injection
+		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || jsonb_build_object('status', '%s', 'code', ?::int, 'message', ?::text), true) WHERE id='%s'", idx, idx, status, ep.ID)
+		sql = db.Raw(sqlStr, sourceError.Code, sourceError.Message)
 	}
-	return db.Raw(sql).Scan(&ep).Error
+	return sql.Scan(&ep).Error
 }
 
 const (

@@ -126,7 +126,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 
 	_, source, err := payload.GetSource(params.ResourceUUID)
 	if err != nil {
-		i.Log.Errorw("failed to get source: %w", err)
+		i.Log.Errorf("failed to get source: %w", err)
 		errors.InternalServerError(w, err.Error())
 		return
 	}
@@ -139,9 +139,6 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-
-	i.Log.Debug("SLEEPING")
-	// time.Sleep(30 * time.Second)
 
 	if err := i.createS3Object(r.Context(), r.Body, params, payload); err != nil {
 		errors.Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))

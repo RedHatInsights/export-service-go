@@ -28,8 +28,8 @@ type DBInterface interface {
 
 	Create(payload *ExportPayload) error
 	Delete(exportUUID uuid.UUID, user User) error
-	Get(exportUUID uuid.UUID, result *ExportPayload) error
-	GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) error
+	Get(exportUUID uuid.UUID) (result *ExportPayload, err error)
+	GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error)
 	List(user User) (result []*ExportPayload, err error)
 	Raw(sql string, values ...interface{}) *gorm.DB
 	Updates(m *ExportPayload, values interface{}) error
@@ -49,26 +49,26 @@ func (edb *ExportDB) Delete(exportUUID uuid.UUID, user User) error {
 	return result.Error
 }
 
-func (edb *ExportDB) Get(exportUUID uuid.UUID, result *ExportPayload) error {
-	err := (edb.DB.Model(&ExportPayload{}).
+func (edb *ExportDB) Get(exportUUID uuid.UUID) (result *ExportPayload, err error) {
+	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID}).
 		Take(&result)).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return ErrRecordNotFound
+		return result, ErrRecordNotFound
 	}
-	return err
+	return
 }
 
-func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User, result *ExportPayload) error {
-	err := (edb.DB.Model(&ExportPayload{}).
+func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error) {
+	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID, User: user}).
 		Take(&result)).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return ErrRecordNotFound
+		return result, ErrRecordNotFound
 	}
-	return err
+	return
 }
 
 func (edb *ExportDB) APIList(user User) (result []*APIExport, err error) {

@@ -233,8 +233,8 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	result := &models.ExportPayload{}
-	if err := e.DB.GetWithUser(exportUUID, user, result); err != nil {
+	result, err := e.DB.GetWithUser(exportUUID, user)
+	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
 			e.Log.Infof("record '%s' not found", exportUUID)

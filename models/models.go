@@ -164,7 +164,7 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 		sql = db.Raw(sqlStr)
 	} else {
 		// set status and add 'code' and 'message' fields
-		// the `code` and `message` are user inpurts, so they are parameterized to prevent sql injection
+		// the `code` and `message` are user inputs, so they are parameterized to prevent sql injection
 		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || jsonb_build_object('status', '%s', 'code', ?::int, 'message', ?::text), true) WHERE id='%s'", idx, idx, status, ep.ID)
 		sql = db.Raw(sqlStr, sourceError.Code, sourceError.Message)
 	}

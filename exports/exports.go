@@ -59,8 +59,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	payload.RequestID = reqID
 	payload.User = user
-	_, err = e.DB.Create(&payload)
-	if err != nil {
+	if err := e.DB.Create(&payload); err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
@@ -168,6 +167,10 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	if result == nil {
 		return
 	}
+	if result.Status != models.Complete && result.Status != models.Partial {
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", result.ID))
+		return
+	}
 
 	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &result.S3Key}
 
@@ -195,21 +198,25 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	rowsAffected, err := e.DB.Delete(exportUUID, user)
-	if err != nil {
-		e.Log.Errorw("error deleting payload entry", "error", err)
-		errors.InternalServerError(w, err)
-		return
-	}
-	if rowsAffected == 0 {
-		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
-		return
+	if err := e.DB.Delete(exportUUID, user); err != nil {
+		switch err {
+		case models.ErrRecordNotFound:
+			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
+			return
+		default:
+			e.Log.Errorw("error deleting payload entry", "error", err)
+			errors.InternalServerError(w, err)
+			return
+		}
 	}
 }
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	result := e.getExportWithUser(w, r)
+	if result == nil {
+		return
+	}
 	if err := json.NewEncoder(w).Encode(&result); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
@@ -227,15 +234,18 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	user := middleware.GetUserIdentity(r.Context())
 
 	result := &models.ExportPayload{}
-	rows, err := e.DB.GetWithUser(exportUUID, user, result)
-	if err != nil {
-		e.Log.Errorw("error querying for payload entry", "error", err)
-		errors.InternalServerError(w, err)
-		return nil
+	if err := e.DB.GetWithUser(exportUUID, user, result); err != nil {
+		switch err {
+		case models.ErrRecordNotFound:
+			e.Log.Infof("record '%s' not found", exportUUID)
+			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
+			return nil
+		default:
+			e.Log.Errorw("error querying for payload entry", "error", err)
+			errors.InternalServerError(w, err)
+			return nil
+		}
 	}
-	if rows == 0 {
-		errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
-		return nil
-	}
+
 	return result
 }

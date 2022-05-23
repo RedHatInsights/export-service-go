@@ -181,20 +181,24 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 	t, filename, s3key, err := i.Compressor.Compress(context.TODO(), payload)
 	if err != nil {
 		i.Log.Errorw("failed to compress payload", "error", err)
-		err = payload.SetStatusFailed(i.DB)
-	} else {
-		i.Log.Infof("done uploading %s", filename)
-		var ready int
-		ready, err = payload.GetAllSourcesStatus()
-		switch ready {
-		case models.StatusError:
-			i.Log.Errorf("failed to get all source status: %v", err)
+		if err := payload.SetStatusFailed(i.DB); err != nil {
+			i.Log.Errorw("failed to set status failed", "error", err)
 			return
-		case models.StatusComplete:
-			err = payload.SetStatusComplete(i.DB, &t, s3key)
-		case models.StatusPartial:
-			err = payload.SetStatusPartial(i.DB, &t, s3key)
 		}
+	}
+
+	i.Log.Infof("done uploading %s", filename)
+	ready, err := payload.GetAllSourcesStatus()
+	if err != nil {
+		i.Log.Errorf("failed to get all source status: %v", err)
+		return
+	}
+
+	switch ready {
+	case models.StatusComplete:
+		err = payload.SetStatusComplete(i.DB, &t, s3key)
+	case models.StatusPartial:
+		err = payload.SetStatusPartial(i.DB, &t, s3key)
 	}
 
 	if err != nil {
@@ -210,9 +214,11 @@ func (i *Internal) processSources(uid uuid.UUID) {
 		return
 	}
 	ready, err := payload.GetAllSourcesStatus()
-	switch ready {
-	case models.StatusError:
+	if err != nil {
 		i.Log.Errorf("failed to get all source status: %v", err)
+		return
+	}
+	switch ready {
 	case models.StatusComplete, models.StatusPartial:
 		if payload.Status == models.Running {
 			i.Log.Infow("ready for zipping", "export-uuid", payload.ID)

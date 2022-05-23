@@ -172,7 +172,7 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 }
 
 const (
-	StatusError = iota
+	StatusError = iota - 1
 	StatusFailed
 	StatusPending
 	StatusPartial

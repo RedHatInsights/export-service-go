@@ -58,8 +58,8 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := &models.ExportPayload{}
-	if err := i.DB.Get(params.ExportUUID, payload); err != nil {
+	payload, err := i.DB.Get(params.ExportUUID)
+	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
 			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
@@ -111,8 +111,8 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := &models.ExportPayload{}
-	if err := i.DB.Get(params.ExportUUID, payload); err != nil {
+	payload, err := i.DB.Get(params.ExportUUID)
+	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
 			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
@@ -207,8 +207,7 @@ func (i *Internal) compressPayload(payload *models.ExportPayload) {
 }
 
 func (i *Internal) processSources(uid uuid.UUID) {
-	var payload models.ExportPayload
-	err := i.DB.Get(uid, &payload)
+	payload, err := i.DB.Get(uid)
 	if err != nil {
 		i.Log.Errorf("failed to get payload: %v", err)
 		return
@@ -222,7 +221,7 @@ func (i *Internal) processSources(uid uuid.UUID) {
 	case models.StatusComplete, models.StatusPartial:
 		if payload.Status == models.Running {
 			i.Log.Infow("ready for zipping", "export-uuid", payload.ID)
-			go i.compressPayload(&payload) // start a go-routine to not block
+			go i.compressPayload(payload) // start a go-routine to not block
 		}
 	case models.StatusPending:
 		return

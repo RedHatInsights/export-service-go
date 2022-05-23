@@ -65,23 +65,20 @@ paths:
         - name: sort
           in: query
           schema:
-            type: array
-            items:
-              type: string
-              enum:
-                - name
-                - -name
-                - created
-                - -created
-                - expires
-                - -expires
-                - application
-                - -application
-                - resource
-                - -resource
-          style: form
-          explode: false
-
+            type: string
+            enum:
+              - name
+              - created
+              - expires
+              - application
+              - resource
+        - name: dir
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
       responses:
         200:
           description: Matching Exports

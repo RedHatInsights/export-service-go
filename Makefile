@@ -46,3 +46,6 @@ docker-up-db:
 	    printf '.'; \
 	    sleep 0.5 ; \
     done
+
+monitor-topic:
+	docker exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests

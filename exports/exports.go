@@ -163,23 +163,23 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 // GetExport handles GET requests to the /exports/{exportUUID} endpoint.
 // This function is responsible for returning the S3 object.
 func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
-	payload := e.getExportWithUser(w, r)
-	if payload == nil {
+	export := e.getExportWithUser(w, r)
+	if export == nil {
 		return
 	}
-	if result.Status != models.Complete && result.Status != models.Partial {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", result.ID))
+	if export.Status != models.Complete && export.Status != models.Partial {
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", export.ID))
 		return
 	}
 
-	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &payload.S3Key}
+	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &export.S3Key}
 
 	out, err := es3.GetObject(r.Context(), e.Client, &input)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
 	}
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", payload.SuggestedFileName))
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", export.SuggestedFileName))
 	w.WriteHeader(http.StatusOK)
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(out.Body); err != nil {
@@ -214,11 +214,11 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
-	result := e.getExportWithUser(w, r)
-	if result == nil {
+	export := e.getExportWithUser(w, r)
+	if export == nil {
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&result); err != nil {
+	if err := json.NewEncoder(w).Encode(&export); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
@@ -234,7 +234,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	result, err := e.DB.GetWithUser(exportUUID, user)
+	export, err := e.DB.GetWithUser(exportUUID, user)
 	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
@@ -248,5 +248,5 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 		}
 	}
 
-	return result
+	return export
 }

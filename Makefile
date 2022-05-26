@@ -41,7 +41,7 @@ else
 endif
 
 docker-down:
-	docker-compose down --remove-orphans
+	$(DOCKER_COMPOSE) down --remove-orphans
 
 docker-up-db:
 	$(DOCKER_COMPOSE) up -d db
@@ -51,7 +51,7 @@ docker-up-db:
 	done
 
 docker-up-no-server: docker-up-db
-	docker-compose up -d kafka s3
+	$(DOCKER_COMPOSE) up -d kafka s3
 
 monitor-topic:
-	docker exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests
+	$(OCI_TOOL) exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests

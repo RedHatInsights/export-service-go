@@ -50,18 +50,17 @@ type URLParams struct {
 }
 
 type ExportPayload struct {
-	ID                uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
-	CreatedAt         time.Time      `gorm:"autoCreateTime" json:"created"`
-	UpdatedAt         time.Time      `gorm:"autoUpdateTime" json:"-"`
-	CompletedAt       *time.Time     `json:"completed,omitempty"`
-	Expires           *time.Time     `json:"expires,omitempty"`
-	RequestID         string         `json:"-"`
-	Name              string         `json:"name"`
-	Format            PayloadFormat  `gorm:"type:string" json:"format"`
-	Status            PayloadStatus  `gorm:"type:string" json:"status"`
-	Sources           datatypes.JSON `gorm:"type:json" json:"sources"`
-	S3Key             string         `json:"-"`
-	SuggestedFileName string         `json:"-"`
+	ID          uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
+	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created"`
+	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"-"`
+	CompletedAt *time.Time     `json:"completed,omitempty"`
+	Expires     *time.Time     `json:"expires,omitempty"`
+	RequestID   string         `json:"-"`
+	Name        string         `json:"name"`
+	Format      PayloadFormat  `gorm:"type:string" json:"format"`
+	Status      PayloadStatus  `gorm:"type:string" json:"status"`
+	Sources     datatypes.JSON `gorm:"type:json" json:"sources"`
+	S3Key       string         `json:"-"`
 	User
 }
 
@@ -92,7 +91,6 @@ func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	ep.SuggestedFileName = getSuggestedFilename(sources, ep.OrganizationID)
 	for _, source := range sources {
 		source.ID = uuid.New()
 		source.Status = RPending
@@ -171,29 +169,6 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 		sql = db.Raw(sqlStr, sourceError.Code, sourceError.Message)
 	}
 	return sql.Scan(&ep).Error
-}
-
-func getSuggestedFilename(sources []*Source, orgID string) string {
-	if len(sources) < 1 {
-		return ""
-	}
-	t := time.Now()
-	if len(sources) == 1 {
-		source := sources[0]
-		return fmt.Sprintf("%s-%s-%s-%s.tar.gz", source.Application, source.Resource, orgID, t.Format(time.RFC3339))
-	}
-	appCount := 1
-	first := sources[0].Application
-	for _, source := range sources {
-		if source.Application != first {
-			appCount += 1
-		}
-	}
-	if appCount == 1 {
-		return fmt.Sprintf("%s-%s-%s.tar.gz", first, orgID, t.Format(time.RFC3339))
-	} else {
-		return fmt.Sprintf("%s-%s.tar.gz", orgID, t.Format(time.RFC3339))
-	}
 }
 
 const (

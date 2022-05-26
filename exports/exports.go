@@ -179,7 +179,6 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		e.Log.Errorw("failed to get object", "error", err)
 	}
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", export.SuggestedFileName))
 	w.WriteHeader(http.StatusOK)
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(out.Body); err != nil {

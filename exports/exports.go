@@ -79,20 +79,20 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 // kafka messages which are then sent to the producer through the
 // `messagesChan`
 func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
-	headers := ekafka.KafkaHeader{
-		Application: payload.Application,
-		IDheader:    r.Header["X-Rh-Identity"][0],
-	}
 	sources, err := payload.GetSources()
 	if err != nil {
 		e.Log.Errorw("failed unmarshalling sources", "error", err)
 		return
 	}
 	for _, source := range sources {
+		headers := ekafka.KafkaHeader{
+			Application: source.Application,
+			IDheader:    r.Header["X-Rh-Identity"][0],
+		}
 		kpayload := ekafka.KafkaMessage{
 			ExportUUID:   payload.ID,
-			Application:  payload.Application,
 			Format:       string(payload.Format),
+			Application:  source.Application,
 			ResourceName: source.Resource,
 			ResourceUUID: source.ID,
 			Filters:      source.Filters,
@@ -163,16 +163,16 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 // GetExport handles GET requests to the /exports/{exportUUID} endpoint.
 // This function is responsible for returning the S3 object.
 func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
-	result := e.getExportWithUser(w, r)
-	if result == nil {
+	export := e.getExportWithUser(w, r)
+	if export == nil {
 		return
 	}
-	if result.Status != models.Complete && result.Status != models.Partial {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", result.ID))
+	if export.Status != models.Complete && export.Status != models.Partial {
+		errors.BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", export.ID))
 		return
 	}
 
-	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &result.S3Key}
+	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &export.S3Key}
 
 	out, err := es3.GetObject(r.Context(), e.Client, &input)
 	if err != nil {
@@ -213,11 +213,11 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
 func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
-	result := e.getExportWithUser(w, r)
-	if result == nil {
+	export := e.getExportWithUser(w, r)
+	if export == nil {
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&result); err != nil {
+	if err := json.NewEncoder(w).Encode(&export); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
@@ -233,7 +233,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	result, err := e.DB.GetWithUser(exportUUID, user)
+	export, err := e.DB.GetWithUser(exportUUID, user)
 	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
@@ -247,5 +247,5 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 		}
 	}
 
-	return result
+	return export
 }

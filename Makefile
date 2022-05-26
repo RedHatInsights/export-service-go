@@ -43,6 +43,12 @@ endif
 docker-up-db:
 	$(DOCKER_COMPOSE) up -d db
 	@until pg_isready -h $${POSTGRES_SQL_SERVICE_HOST:-localhost} -p $${POSTGRES_SQL_SERVICE_PORT:-15433} >/dev/null ; do \
-	    printf '.'; \
-	    sleep 0.5 ; \
-    done
+		printf '.'; \
+		sleep 0.5 ; \
+	done
+
+docker-up-no-server: docker-up-db
+	docker-compose up -d kafka s3
+
+monitor-topic:
+	docker exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests

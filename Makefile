@@ -40,6 +40,9 @@ else
 	yq -o=json eval static/spec/openapi.yaml > static/spec/openapi.json
 endif
 
+docker-down:
+	docker-compose down --remove-orphans
+
 docker-up-db:
 	$(DOCKER_COMPOSE) up -d db
 	@until pg_isready -h $${POSTGRES_SQL_SERVICE_HOST:-localhost} -p $${POSTGRES_SQL_SERVICE_PORT:-15433} >/dev/null ; do \

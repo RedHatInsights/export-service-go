@@ -50,17 +50,17 @@ type URLParams struct {
 }
 
 type ExportPayload struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
-	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created"`
-	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"-"`
-	CompletedAt *time.Time     `json:"completed,omitempty"`
-	Expires     *time.Time     `json:"expires,omitempty"`
-	RequestID   string         `json:"-"`
-	Name        string         `json:"name"`
-	Format      PayloadFormat  `gorm:"type:string" json:"format"`
-	Status      PayloadStatus  `gorm:"type:string" json:"status"`
-	Sources     datatypes.JSON `gorm:"type:json" json:"sources"`
-	S3Key       string         `json:"-"`
+	ID        uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
+	Created   time.Time      `gorm:"autoCreateTime" json:"created"`
+	Updated   time.Time      `gorm:"autoUpdateTime" json:"-"`
+	Completed *time.Time     `json:"completed,omitempty"`
+	Expires   *time.Time     `json:"expires,omitempty"`
+	RequestID string         `json:"-"`
+	Name      string         `json:"name"`
+	Format    PayloadFormat  `gorm:"type:string" json:"format"`
+	Status    PayloadStatus  `gorm:"type:string" json:"status"`
+	Sources   datatypes.JSON `gorm:"type:json" json:"sources"`
+	S3Key     string         `json:"-"`
 	User
 }
 
@@ -120,19 +120,23 @@ func (ep *ExportPayload) GetSources() ([]*Source, error) {
 }
 
 func (ep *ExportPayload) SetStatusComplete(db DBInterface, t *time.Time, s3key string) error {
+	expires := t.Add(7 * 24 * time.Hour)
 	values := ExportPayload{
-		Status:      Complete,
-		CompletedAt: t,
-		S3Key:       s3key,
+		Status:    Complete,
+		Completed: t,
+		Expires:   &expires,
+		S3Key:     s3key,
 	}
 	return db.Updates(ep, values)
 }
 
 func (ep *ExportPayload) SetStatusPartial(db DBInterface, t *time.Time, s3key string) error {
+	expires := t.Add(7 * 24 * time.Hour)
 	values := ExportPayload{
-		Status:      Partial,
-		CompletedAt: t,
-		S3Key:       s3key,
+		Status:    Partial,
+		Completed: t,
+		Expires:   &expires,
+		S3Key:     s3key,
 	}
 	return db.Updates(ep, values)
 }
@@ -140,8 +144,8 @@ func (ep *ExportPayload) SetStatusPartial(db DBInterface, t *time.Time, s3key st
 func (ep *ExportPayload) SetStatusFailed(db DBInterface) error {
 	t := time.Now()
 	values := ExportPayload{
-		Status:      Failed,
-		CompletedAt: &t,
+		Status:    Failed,
+		Completed: &t,
 	}
 	return db.Updates(ep, values)
 }

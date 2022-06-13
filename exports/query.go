@@ -35,19 +35,20 @@ func (e *Export) readCSV(qs url.Values, key string, defaultValue []string) []str
 }
 
 func (e *Export) convertSortParams(in []string) []string {
-	valids := map[string]struct{}{"name": {}, "-name": {}, "created": {}, "-created": {}, "expires": {}, "-expires": {}, "application": {}, "-application": {}, "resource": {}, "-resource": {}}
+	valids := map[string]struct{}{"name": {}, "created": {}, "expires": {}, "application": {}, "resource": {}}
+	dirSql := "%s asc"
 	result := []string{}
 	for _, s := range in {
+		if strings.HasPrefix(s, "-") {
+			dirSql = "%s desc"
+			s = strings.TrimPrefix(s, "-")
+		}
 		if _, ok := valids[s]; !ok {
+			// TODO: validate and return 400 instead
 			continue
 		}
-		if strings.HasPrefix(s, "-") {
-			s = fmt.Sprintf("%s desc", strings.TrimPrefix(s, "-"))
-			result = append(result, s)
-		} else {
-			s = fmt.Sprintf("%s asc", s)
-			result = append(result, s)
-		}
+		s = fmt.Sprintf(dirSql, s)
+		result = append(result, s)
 	}
 	return result
 }

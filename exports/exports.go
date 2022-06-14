@@ -180,7 +180,7 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		e.Log.Errorw("failed to get object", "error", err)
 	}
 
-	baseName := filepath.Base(result.S3Key)
+	baseName := filepath.Base(export.S3Key)
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
 	buf := new(bytes.Buffer)

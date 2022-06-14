@@ -14,8 +14,16 @@
 						"exec": [
 							"var jsonData = JSON.parse(responseBody);",
 							"postman.setEnvironmentVariable(\"exportUUID\", jsonData.id);",
-							"postman.setEnvironmentVariable(\"resourceUUID\", jsonData.sources[0].id);",
-							"postman.setEnvironmentVariable(\"application\", jsonData.application);",
+							"postman.setEnvironmentVariable(\"resourceUUID-1\", jsonData.sources[0].id);",
+							"postman.setEnvironmentVariable(\"application-1\", jsonData.sources[0].application);",
+							"",
+							"if (jsonData.sources.length > 1) {",
+							"    postman.setEnvironmentVariable(\"resourceUUID-2\", jsonData.sources[1].id);",
+							"    postman.setEnvironmentVariable(\"application-2\", jsonData.sources[1].application);",
+							"} else {",
+							"    postman.setEnvironmentVariable(\"resourceUUID-2\", null);",
+							"    postman.setEnvironmentVariable(\"application-2\", null);",
+							"}",
 							""
 						],
 						"type": "text/javascript"
@@ -45,7 +53,75 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"sources\": [{\n        \"resource\": \"resource-name\",\n        \"filters\": {\n            \"order_by\": \"filter\"\n        }\n    }],\n    \"name\": \"export-name\",\n    \"format\": \"csv\",\n    \"application\": \"application-name\"\n}",
+					"raw": "{\n    \"sources\": [\n        {\n            \"application\": \"application-name\",\n            \"resource\": \"/reports/openshift/costs/\",\n            \"filters\": {\n                \"order_by\": \"filter\"\n            }\n        }\n    ],\n    \"name\": \"export-name\",\n    \"format\": \"csv\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{publicPort}}/api/export/v1/exports",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{publicPort}}",
+					"path": [
+						"api",
+						"export",
+						"v1",
+						"exports"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/api/export/v1/exports (2 sources)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"exportUUID\", jsonData.id);",
+							"postman.setEnvironmentVariable(\"resourceUUID-1\", jsonData.sources[0].id);",
+							"postman.setEnvironmentVariable(\"application-1\", jsonData.sources[0].application);",
+							"",
+							"if (jsonData.sources.length > 1) {",
+							"    postman.setEnvironmentVariable(\"resourceUUID-2\", jsonData.sources[1].id);",
+							"    postman.setEnvironmentVariable(\"application-2\", jsonData.sources[1].application);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-2}}",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-invalid}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"sources\": [\n        {\n            \"application\": \"application-name\",\n            \"resource\": \"/reports/openshift/costs/\",\n            \"filters\": {\n                \"order_by\": \"filter\"\n            }\n        },\n        {\n            \"application\": \"application-name\",\n            \"resource\": \"/reports/openshift/usage/\",\n            \"filters\": {\n                \"order_by\": \"filter\"\n            }\n        }\n    ],\n    \"name\": \"export-name\",\n    \"format\": \"csv\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -224,7 +300,7 @@
 				"header": [
 					{
 						"key": "x-rh-identity",
-						"value": "{{id-header}}",
+						"value": "{{id-header-1}}",
 						"type": "text"
 					},
 					{
@@ -610,19 +686,30 @@
 						"key": "x-rh-exports-psk",
 						"value": "{{exports-psk}}",
 						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "text/csv",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text",
+						"disabled": true
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "",
+					"raw": "report_period_start,report_period_end,interval_start,interval_end,node,node_labels\n2022-02-01 00:00:00 +0000 UTC,2022-03-01 00:00:00 +0000 UTC,2022-02-23 11:00:00 +0000 UTC,2022-02-23 11:59:59 +0000 UTC,fake-namespace,label_beta_kubernetes_io_arch:amd64",
 					"options": {
 						"raw": {
-							"language": "json"
+							"language": "text"
 						}
 					}
 				},
 				"url": {
-					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/upload",
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application-1}}/{{resourceUUID-1}}/upload",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -633,8 +720,59 @@
 						"export",
 						"v1",
 						"{{exportUUID}}",
-						"{{application}}",
-						"{{resourceUUID}}",
+						"{{application-1}}",
+						"{{resourceUUID-1}}",
+						"upload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/app/export/v1/upload (2)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-rh-exports-psk",
+						"value": "{{exports-psk}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "text/csv",
+						"type": "text"
+					},
+					{
+						"key": "x-rh-identity",
+						"value": "{{id-header-1}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "report_period_start,report_period_end,interval_start,interval_end,node,node_labels\n2022-02-01 00:00:00 +0000 UTC,2022-03-01 00:00:00 +0000 UTC,2022-02-23 11:00:00 +0000 UTC,2022-02-23 11:59:59 +0000 UTC,fake-namespace,label_beta_kubernetes_io_arch:amd64",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application-2}}/{{resourceUUID-2}}/upload",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{privatePort}}",
+					"path": [
+						"app",
+						"export",
+						"v1",
+						"{{exportUUID}}",
+						"{{application-2}}",
+						"{{resourceUUID-2}}",
 						"upload"
 					]
 				}
@@ -654,7 +792,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"stuff\": \"in the body\"}",
+					"raw": "{\"message\": \"failed to generate data\", \"code\": 9120}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -662,7 +800,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application}}/{{resourceUUID}}/error",
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application-1}}/{{resourceUUID-1}}/error",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -673,13 +811,73 @@
 						"export",
 						"v1",
 						"{{exportUUID}}",
-						"{{application}}",
-						"{{resourceUUID}}",
+						"{{application-1}}",
+						"{{resourceUUID-1}}",
 						"error"
 					]
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "/app/export/v1/error (2)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "x-rh-exports-psk",
+						"value": "{{exports-psk}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"message\": \"failed to generate data\", \"code\": 9120}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{privatePort}}/app/export/v1/{{exportUUID}}/{{application-2}}/{{resourceUUID-2}}/error",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{privatePort}}",
+					"path": [
+						"app",
+						"export",
+						"v1",
+						"{{exportUUID}}",
+						"{{application-2}}",
+						"{{resourceUUID-2}}",
+						"error"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
 		}
 	],
 	"variable": [

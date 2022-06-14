@@ -46,6 +46,3 @@ docker-up-db:
 	    printf '.'; \
 	    sleep 0.5 ; \
     done
-
-docker-up-no-server: docker-up-db
-	$(DOCKER_COMPOSE) up -d kafka s3

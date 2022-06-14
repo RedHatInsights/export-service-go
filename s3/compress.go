@@ -120,7 +120,7 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 
 	c.Log.Infof("starting payload compression for %s", m.ID)
 	prefix := fmt.Sprintf("%s/%s/", m.OrganizationID, m.ID)
-	filename := fmt.Sprintf("%s-%s.tar.gz", m.ID.String(), t.Format(time.RFC3339))
+	filename := fmt.Sprintf("%s-%s.tar.gz", t.Format(time.RFC3339), m.ID.String())
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
 
 	err := c.zipExport(ctx, t, prefix, filename, s3key)

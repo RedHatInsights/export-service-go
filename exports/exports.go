@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -206,6 +207,8 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		e.Log.Errorw("failed to get object", "error", err)
 	}
 
+	baseName := filepath.Base(export.S3Key)
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(out.Body); err != nil {

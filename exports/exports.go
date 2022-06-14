@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -19,7 +21,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
+	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/errors"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/middleware"
@@ -110,45 +114,68 @@ func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
 	}
 }
 
-// func buildQuery(q url.Values) (map[string]interface{}, error) {
-// 	result := map[string]interface{}{}
+func GetExportsByDate(tx *gorm.DB, key, value string) *gorm.DB {
+	sql := fmt.Sprintf("%s = ?", key)
+	return tx.Where(sql, value)
+}
 
-// 	for k, v := range q {
-// 		if len(v) > 1 {
-// 			return nil, fmt.Errorf("query param `%s` has too many search values", k)
-// 		}
-// 		result[k] = v[0]
-// 	}
+func GetExportsByILike(tx *gorm.DB, key, value string) *gorm.DB {
+	sql := fmt.Sprintf("%s ILIKE ?", key)
+	return tx.Where(sql, value)
+}
 
-// 	return result, nil
-// }
+func GetExportsByJSON(tx *gorm.DB, key, value string) *gorm.DB {
+	return tx.Where(`sources @> concat('[', ?::jsonb, ']')::jsonb`, map[string]interface{}{key: value})
+}
+
+func SortExports(tx *gorm.DB, sorts []string) *gorm.DB {
+	sql := strings.Join(sorts, ",")
+	return tx.Order(sql)
+}
 
 // ListExports handle GET requests to the /exports endpoint.
 func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
-	user := middleware.GetUserIdentity(r.Context())
+	// user := middleware.GetUserIdentity(r.Context())
 	page := middleware.GetPagination(r.Context())
 
 	q := r.URL.Query()
-	// offset/limit are for pagination so remove them so they are not inserted into the db query
-	q.Del("offset")
-	q.Del("limit")
-	// query, err := buildQuery(q)
-	// if err != nil {
-	// 	errors.BadRequestError(w, err.Error())
-	// 	return
-	// }
 
-	// exports := []*APIExport{}
-	// result := db.DB.Model(
-	// 	&models.ExportPayload{}).Where(
-	// 	&models.ExportPayload{User: user}).Where(
-	// 	query).Find(
-	// 	&exports)
-	exports, err := e.DB.APIList(user)
-	if err != nil {
-		errors.InternalServerError(w, err)
-		return
+	sevenDaysAgo := time.Now().Add(-time.Duration(7 * 24 * time.Hour))
+
+	// implicitly filter already expired reports in case they still exist in s3.
+	tx := db.DB.Model(&models.ExportPayload{}).Where("expires >= ? OR expires is null", sevenDaysAgo)
+
+	name := e.readString(q, "name", "")
+	if name != "" {
+		tx = GetExportsByILike(tx, "name", name)
 	}
+
+	resource := e.readString(q, "resource", "")
+	if resource != "" {
+		tx = GetExportsByJSON(tx, "resource", resource)
+	}
+
+	application := e.readString(q, "application", "")
+	if application != "" {
+		tx = GetExportsByJSON(tx, "application", application)
+	}
+
+	created := e.readString(q, "created", "")
+	if created != "" {
+		tx = GetExportsByDate(tx, "created", created)
+	}
+
+	expires := e.readString(q, "expires", "")
+	if expires != "" {
+		tx = GetExportsByDate(tx, "expires", expires)
+	}
+
+	sorts := e.convertSortParams(e.readCSV(q, "sort", []string{"name"}))
+	tx = SortExports(tx, sorts)
+
+	exports := []models.APIExport{}
+	tx.Find(&exports)
+
 	resp, err := middleware.GetPaginatedResponse(r.URL, page, exports)
 	if err != nil {
 		e.Log.Errorw("error while paginating data", "error", err)

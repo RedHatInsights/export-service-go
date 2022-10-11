@@ -55,3 +55,22 @@ docker-up-no-server: docker-up-db
 
 monitor-topic:
 	$(OCI_TOOL) exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests
+
+sample-request-create-export:
+	curl -X POST http://localhost:8000/api/export/v1/exports -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" -H "Content-Type: application/json" -d @example_export_request.json
+
+sample-request-get-exports:
+	curl -X GET http://localhost:8000/api/export/v1/exports -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K"
+
+# set the variables below based your info from the request above
+EXPORT_ID=5a252691-b241-4ef5-a0c4-4b64b96faf61
+EXPORT_APPLICATION=exampleApplication
+EXPORT_RESOURCE=ee3453cb-eb84-4258-b5f4-228c0fc73719
+sample-request-export-status:
+	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID)/status -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K"
+
+sample-request-export-download:
+	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID) -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" -f --output ./export_download.zip
+
+sample-request-internal-upload:
+	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/zip" --data-binary @example_export_upload.zip

@@ -1,5 +1,9 @@
 # export-service-go
 
+## Dependencies
+- Golang >= 1.16
+- podman-compose
+- make (optional for running the Makefile)
 ## Starting the service
 You can start the database and minio using `podman-compose up db s3`. This will expose minio on `localhost:9099` 
 (use `minio` as the access key and `minioadmin` as the secret key)

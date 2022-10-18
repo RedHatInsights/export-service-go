@@ -178,6 +178,8 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	out, err := es3.GetObject(r.Context(), e.Client, &input)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
+		errors.InternalServerError(w, err)
+		return
 	}
 
 	baseName := filepath.Base(export.S3Key)

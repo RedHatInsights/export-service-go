@@ -10,19 +10,7 @@ You can start the database and minio using `podman-compose up db s3`. This will 
 
 Create a bucket called `exports-bucket` in minio, click **Manage** and set it's **Access Policy** to `public`.
 
-Then start the export api service using the following command:
-```
-DEBUG=true \
-MINIO_PORT=9099 \
-AWS_ACCESS_KEY=minio \
-AWS_SECRET_ACCESS_KEY=minioadmin \
-PSKS=testing-a-psk \
-PUBLICPORT=8000 \
-METRICSPORT=9090 \
-PRIVATEPORT=10010 \
-PGSQL_PORT=5432 \
-go run main.go
-```
+Then start the export api service locally using `make run`
 
 ## Testing the service
 You can create a new export request using `make sample-request-create-export` which pulls data from the `example_export_request.json`. It should respond with the following information:

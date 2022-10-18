@@ -56,6 +56,9 @@ docker-up-no-server: docker-up-db
 monitor-topic:
 	$(OCI_TOOL) exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests
 
+run:
+	DEBUG=true MINIO_PORT=9099 AWS_ACCESS_KEY=minio AWS_SECRET_ACCESS_KEY=minioadmin PSKS=testing-a-psk PUBLICPORT=8000 METRICSPORT=9090 PRIVATEPORT=10010 PGSQL_PORT=5432 go run main.go
+
 sample-request-create-export:
 	curl -X POST http://localhost:8000/api/export/v1/exports -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" -H "Content-Type: application/json" -d @example_export_request.json
 

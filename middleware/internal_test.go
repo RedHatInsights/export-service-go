@@ -6,12 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/redhatinsights/identity"
+	"github.com/go-chi/chi"
 )
 
-var (
-	IDENTITY = "eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K"
-)
+var IDENTITY = "eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K"
 
 // Test that invalid uuid do not make it into internal endpoints
 func TestInternalMiddleware(t *testing.T) {
@@ -60,26 +58,24 @@ func TestInternalMiddleware(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf(tc.TestType), func(t *testing.T) {
-			req, err := http.NewRequest("GET", fmt.Sprintf("/app/export/v1/%s/%s/%s", tc.ExportUUID, tc.Application, tc.ResourceUUID), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/app/export/v1/%s/%s/%s/test", tc.ExportUUID, tc.Application, tc.ResourceUUID), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			req.Header = make(http.Header)
-			req.Header.Add("x-rh-identity", IDENTITY)
-			req.Header.Add("x-rh-exports-a-psk", "testing-a-psk")
-			req.Header.Add("Content-Type", "application/zip")
-
 			rr := httptest.NewRecorder()
 
-			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				// handler should return 200
+			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 			})
 
-			handler := identity.Extractor(URLParamsCtx(applicationHandler))
+			router := chi.NewRouter()
+			router.Route("/app/export/v1/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
+				sub.Use(URLParamsCtx)
+				sub.Get("/test", applicationHandler)
+			})
 
-			handler.ServeHTTP(rr, req)
+			router.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tc.ExpectedStatus {
 				t.Errorf("handler returned wrong status code: got %v want %v", status, tc.ExpectedStatus)

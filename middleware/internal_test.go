@@ -6,10 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-chi/chi"
+	chi "github.com/go-chi/chi/v5"
 )
-
-var IDENTITY = "eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K"
 
 // Test that invalid uuid do not make it into internal endpoints
 func TestInternalMiddleware(t *testing.T) {
@@ -78,7 +76,7 @@ func TestInternalMiddleware(t *testing.T) {
 			router.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tc.ExpectedStatus {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tc.ExpectedStatus)
+				t.Errorf("Handler returned wrong status code: got %v want %v", status, tc.ExpectedStatus)
 			}
 		})
 	}

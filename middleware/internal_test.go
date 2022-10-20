@@ -63,8 +63,11 @@ func TestInternalMiddleware(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
+			handlerCalled := false
+
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
+				handlerCalled = true
 			})
 
 			router := chi.NewRouter()
@@ -76,7 +79,15 @@ func TestInternalMiddleware(t *testing.T) {
 			router.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tc.ExpectedStatus {
-				t.Errorf("Handler returned wrong status code: got %v want %v", status, tc.ExpectedStatus)
+				t.Errorf("Returned wrong status code: got %v want %v", status, tc.ExpectedStatus)
+				return
+			}
+
+			// Handler should not be called if an error is expected
+			// The middleware would pass a bad context
+			if handlerCalled && tc.ExpectedStatus != http.StatusOK {
+				t.Errorf("Handler was called when it should not have been")
+				return
 			}
 		})
 	}

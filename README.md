@@ -1,6 +1,6 @@
 # Export Service
 
-The export service lets users request an archive of their data from various services on the platform, allowing them to explore and use their data with their own tools. Because many console dot applications export data for similar purposes, this service provides the necessary functionality that is common to export as a feature.
+The Export Service allows users to request and download data archives for auditing or use with their own tooling. Because many ConsoleDot applications need to export data, this service provides some common functionality.
 
 For more information on integrating with the export service, see the [integration documentation](docs/integration.md).
 

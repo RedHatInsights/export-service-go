@@ -10,12 +10,10 @@ For more information on integrating with the export service, see the [integratio
 - make (optional for running the Makefile)
 
 ## Starting the service locally
-You can start the database and minio using `podman-compose up db s3`. This will expose minio on `localhost:9099` 
+You can start the database and minio using `podman-compose up db s3 s3-bucket`. This will start the database and expose minio on `localhost:9099`.
 (use `minio` as the access key and `minioadmin` as the secret key)
 
-Create a bucket called `exports-bucket` in minio, click **Manage** and set it's **Access Policy** to `public`.
-
-Then start the export api service locally using `make run`
+Then start the export api service locally using `make run`.
 
 ## Testing the service
 You can create a new export request using `make sample-request-create-export` which pulls data from the `example_export_request.json`. It should respond with the following information:

@@ -53,6 +53,18 @@ services:
       - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY-minioadmin}
     command: server --address 0.0.0.0:9099 --console-address 0.0.0.0:9990 /data
 
+  s3-bucket:
+    image: minio/mc
+    depends_on:
+      - s3
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://s3:9099 ${AWS_ACCESS_KEY-minio} ${AWS_SECRET_ACCESS_KEY-minioadmin} || exit 1;
+      /usr/bin/mc mb --ignore-existing myminio/exports-bucket;
+      /usr/bin/mc policy set public myminio/exports-bucket;
+      "
+
   zookeeper:
     container_name: zookeeper
     image: confluentinc/cp-zookeeper

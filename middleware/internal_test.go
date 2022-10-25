@@ -4,62 +4,23 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	chi "github.com/go-chi/chi/v5"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-// Test that invalid uuid do not make it into internal endpoints
-func TestInternalMiddleware(t *testing.T) {
+var _ = Describe("Handler", func() {
 	var (
-		valid_uuid   = "0dc924db-20a3-415a-ae63-3434dd3e4f6a"
-		invalid_uuid = "1234"
-		valid_app    = "app"
+		validUUID   = "0dc924db-20a3-415a-ae63-3434dd3e4f6a"
+		invalidUUID = "1234"
+		validApp    = "app"
 	)
 
-	testCases := []struct {
-		TestType       string
-		ExportUUID     string
-		Application    string
-		ResourceUUID   string
-		ExpectedStatus int
-	}{
-		{
-			"Both Invalid ExportUUID and ResourceUUID",
-			invalid_uuid,
-			valid_app,
-			invalid_uuid,
-			http.StatusBadRequest,
-		},
-		{
-			"Invalid ExportUUID",
-			invalid_uuid,
-			valid_app,
-			valid_uuid,
-			http.StatusBadRequest,
-		},
-		{
-			"Invalid ResourceUUID",
-			valid_uuid,
-			valid_app,
-			invalid_uuid,
-			http.StatusBadRequest,
-		},
-		{
-			"Valid UUIDs",
-			valid_uuid,
-			valid_app,
-			valid_uuid,
-			http.StatusOK,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf(tc.TestType), func(t *testing.T) {
-			req, err := http.NewRequest("GET", fmt.Sprintf("/app/export/v1/%s/%s/%s/test", tc.ExportUUID, tc.Application, tc.ResourceUUID), nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+	DescribeTable("Test that invalid uuid do not make it into internal endpoints",
+		func(exportUUID, application, resourceUUID string, expectedStatus int) {
+			req, err := http.NewRequest("GET", fmt.Sprintf("/app/export/v1/%s/%s/%s/test", exportUUID, application, resourceUUID), nil)
+			Expect(err).ToNot(HaveOccurred())
 
 			rr := httptest.NewRecorder()
 
@@ -78,17 +39,15 @@ func TestInternalMiddleware(t *testing.T) {
 
 			router.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tc.ExpectedStatus {
-				t.Errorf("Returned wrong status code: got %v want %v", status, tc.ExpectedStatus)
-				return
-			}
+			Expect(rr.Code).To(Equal(expectedStatus))
 
 			// Handler should not be called if an error is expected
 			// The middleware would pass a bad context
-			if handlerCalled && tc.ExpectedStatus != http.StatusOK {
-				t.Errorf("Handler was called when it should not have been")
-				return
-			}
-		})
-	}
-}
+			Expect(handlerCalled).To(Equal(expectedStatus == http.StatusOK))
+		},
+		Entry("Both Invalid ExportUUID and ResourceUUID", invalidUUID, validApp, invalidUUID, http.StatusBadRequest),
+		Entry("Invalid ExportUUID", invalidUUID, validApp, validUUID, http.StatusBadRequest),
+		Entry("Invalid ResourceUUID", validUUID, validApp, invalidUUID, http.StatusBadRequest),
+		Entry("Valid UUIDs", validUUID, validApp, validUUID, http.StatusOK),
+	)
+})

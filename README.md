@@ -10,10 +10,16 @@ For more information on integrating with the export service, see the [integratio
 - make (optional for running the Makefile)
 
 ## Starting the service locally
-You can start the database and minio using `podman-compose up db s3 s3-bucket`. This will start the database and expose minio on `localhost:9099`.
-(use `minio` as the access key and `minioadmin` as the secret key)
+You can start the database, minio, and the api using `make run`. 
 
-Then start the export api service locally using `make run`.
+Ports now exposed:
+- public api on localhost:8000
+- metrics on localhost:9090
+- internal api on localhost:10010
+- minio on localhosst:9099
+(use `minio` as the access key and `minioadmin` as the secret key to view the dashboard)
+
+To test local changes, you can restart the server using `make run-api`.
 
 ## Testing the service
 You can create a new export request using `make sample-request-create-export` which pulls data from the `example_export_request.json`. It should respond with the following information:

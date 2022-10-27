@@ -51,7 +51,7 @@ docker-up-db:
 	done
 
 docker-up-no-server: docker-up-db
-	$(DOCKER_COMPOSE) up -d kafka s3 s3-bucket
+	$(DOCKER_COMPOSE) up -d kafka s3 s3-createbucket
 
 monitor-topic:
 	$(OCI_TOOL) exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests

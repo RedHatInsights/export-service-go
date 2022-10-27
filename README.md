@@ -16,10 +16,10 @@ Ports now exposed:
 - public api on localhost:8000
 - metrics on localhost:9090
 - internal api on localhost:10010
-- minio on localhosst:9099
+- minio on localhost:9099
 (use `minio` as the access key and `minioadmin` as the secret key to view the dashboard)
 
-To test local changes, you can restart the server using `make run-api`.
+To test local changes, you can restart the api server using `make run-api`.
 
 ## Testing the service
 You can create a new export request using `make sample-request-create-export` which pulls data from the `example_export_request.json`. It should respond with the following information:

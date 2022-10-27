@@ -53,7 +53,7 @@ services:
       - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY-minioadmin}
     command: server --address 0.0.0.0:9099 --console-address 0.0.0.0:9990 /data
 
-  s3-bucket:
+  s3-createbucket:
     image: minio/mc
     depends_on:
       - s3

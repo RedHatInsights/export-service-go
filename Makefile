@@ -77,3 +77,6 @@ sample-request-export-download:
 
 sample-request-internal-upload:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/zip" --data-binary @example_export_upload.zip
+
+make test:
+	ginkgo -r --race --randomize-all --randomize-suites

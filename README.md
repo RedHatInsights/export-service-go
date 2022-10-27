@@ -8,6 +8,7 @@ For more information on integrating with the export service, see the [integratio
 - Golang >= 1.16
 - podman-compose
 - make (optional for running the Makefile)
+- ginkgo
 
 ## Starting the service locally
 You can start the database and minio using `podman-compose up db s3`. This will expose minio on `localhost:9099` 

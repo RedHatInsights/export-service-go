@@ -8,6 +8,7 @@ For more information on integrating with the export service, see the [integratio
 - Golang >= 1.16
 - podman-compose
 - make (optional for running the Makefile)
+- ginkgo
 
 ## Starting the service locally
 You can start the database, minio, and the api using `make run`. 

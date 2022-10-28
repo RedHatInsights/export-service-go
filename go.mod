@@ -11,6 +11,8 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-openapi/runtime v0.23.3
 	github.com/google/uuid v1.3.0
+	github.com/onsi/ginkgo/v2 v2.3.1
+	github.com/onsi/gomega v1.22.1
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
@@ -20,5 +22,3 @@ require (
 	gorm.io/driver/postgres v1.3.4
 	gorm.io/gorm v1.23.4
 )
-
-require go.uber.org/multierr v1.7.0 // indirect

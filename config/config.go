@@ -22,18 +22,19 @@ var ExportCfg *ExportConfig
 
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
-	Hostname        string
-	PublicPort      int
-	MetricsPort     int
-	PrivatePort     int
-	Logging         *loggingConfig
-	LogLevel        string
-	Debug           bool
-	DBConfig        dbConfig
-	StorageConfig   storageConfig
-	KafkaConfig     kafkaConfig
-	OpenAPIFilePath string
-	Psks            []string
+	Hostname         string
+	PublicPort       int
+	MetricsPort      int
+	PrivatePort      int
+	Logging          *loggingConfig
+	LogLevel         string
+	Debug            bool
+	DBConfig         dbConfig
+	StorageConfig    storageConfig
+	KafkaConfig      kafkaConfig
+	OpenAPIFilePath  string
+	Psks             []string
+	ExportExpiryDays int
 }
 
 type dbConfig struct {
@@ -92,6 +93,7 @@ func init() {
 	options.SetDefault("Debug", false)
 	options.SetDefault("OpenAPIFilePath", "./static/spec/openapi.json")
 	options.SetDefault("psks", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
+	options.SetDefault("Export_Expiriy_Days", 7)
 
 	// DB defaults
 	options.SetDefault("PGSQL_USER", "postgres")
@@ -120,14 +122,15 @@ func init() {
 	kubenv.AutomaticEnv()
 
 	config = &ExportConfig{
-		Hostname:        kubenv.GetString("Hostname"),
-		PublicPort:      options.GetInt("PublicPort"),
-		MetricsPort:     options.GetInt("MetricsPort"),
-		PrivatePort:     options.GetInt("PrivatePort"),
-		Debug:           options.GetBool("Debug"),
-		LogLevel:        options.GetString("LogLevel"),
-		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
-		Psks:            options.GetStringSlice("psks"),
+		Hostname:         kubenv.GetString("Hostname"),
+		PublicPort:       options.GetInt("PublicPort"),
+		MetricsPort:      options.GetInt("MetricsPort"),
+		PrivatePort:      options.GetInt("PrivatePort"),
+		Debug:            options.GetBool("Debug"),
+		LogLevel:         options.GetString("LogLevel"),
+		OpenAPIFilePath:  options.GetString("OpenAPIFilePath"),
+		Psks:             options.GetStringSlice("psks"),
+		ExportExpiryDays: options.GetInt("Export_Expiriy_Days"),
 	}
 
 	config.DBConfig = dbConfig{

@@ -16,6 +16,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
+	github.com/spf13/cobra v0.0.3 // indirect
 	github.com/spf13/viper v1.11.0
 	go.uber.org/zap v1.21.0
 	gorm.io/datatypes v1.0.6

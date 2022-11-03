@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	cfg     = config.ExportCfg
-	log     = logger.Log
-	msgChan = cfg.Channels.ProducerMessagesChan
+	cfg = config.ExportCfg
+	log = logger.Log
 
 	messagesPublished = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "ingress_kafka_produced",
@@ -44,7 +43,7 @@ func init() {
 type Producer struct{ *kafka.Producer }
 
 // StartProducer produces kafka messages on the kafka topic
-func (p *Producer) StartProducer() {
+func (p *Producer) StartProducer(msgChan chan *kafka.Message) {
 	log.Infof("started kafka producer: %+v", p)
 	topic := cfg.KafkaConfig.ExportsTopic
 	for msg := range msgChan {

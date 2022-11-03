@@ -23,6 +23,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -178,18 +179,20 @@ func main() {
 		"psks", cfg.Psks, // TODO: remove this
 	)
 
+	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)
+
 	producer, err := ekafka.NewProducer()
 	if err != nil {
 		log.Panic("failed to create kafka producer", "error", err)
 	}
 	log.Infof("created kafka producer: %s", producer.String())
-	go producer.StartProducer()
+	go producer.StartProducer(kafkaProducerMessagesChan)
 
 	external := exports.Export{
 		Bucket:    cfg.StorageConfig.Bucket,
 		Client:    client,
 		DB:        &models.ExportDB{DB: db.DB},
-		KafkaChan: cfg.Channels.ProducerMessagesChan,
+		KafkaChan: kafkaProducerMessagesChan,
 		Log:       log,
 	}
 	wsrv := createPublicServer(external)
@@ -246,7 +249,7 @@ func main() {
 
 	<-idleConnsClosed
 
-	cfg.Channels.CloseChannels()
+	close(kafkaProducerMessagesChan)
 
 	log.Info("flushing kafka producer")
 	producer.Flush(1500) // 1.5 second timeout

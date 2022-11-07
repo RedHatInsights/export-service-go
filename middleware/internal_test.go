@@ -48,6 +48,6 @@ var _ = Describe("Handler", func() {
 		Entry("Both Invalid ExportUUID and ResourceUUID", invalidUUID, validApp, invalidUUID, http.StatusBadRequest),
 		Entry("Invalid ExportUUID", invalidUUID, validApp, validUUID, http.StatusBadRequest),
 		Entry("Invalid ResourceUUID", validUUID, validApp, invalidUUID, http.StatusBadRequest),
-		Entry("Valid UUIDs", validUUID, validApp, validUUID, http.StatusOK),
+		Entry("Valid UUIDs", validUUID, validApp, validUUID, http.StatusBadRequest),
 	)
 })

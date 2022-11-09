@@ -168,6 +168,7 @@ func getLinks(url *url.URL, p Paginate, data interface{}) Links {
 	result := Links{First: getFirstLink(url)}
 	count := lenSlice(data)
 	if count <= p.Limit && p.Offset == 0 {
+		result.Last = &result.First
 		return result
 	}
 	result.Next = getNextLink(url, count, p.Limit, p.Offset)

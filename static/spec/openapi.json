@@ -146,12 +146,12 @@
         ]
       }
     },
-    "/api/export/v1/exports/{uuid}": {
+    "/api/export/v1/exports/{id}": {
       "get": {
         "operationId": "downloadExport",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "id",
             "in": "path",
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -182,7 +182,7 @@
         "operationId": "deleteExport",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "id",
             "in": "path",
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -202,12 +202,12 @@
         ]
       }
     },
-    "/api/export/v1/exports/{uuid}/status": {
+    "/api/export/v1/exports/{id}/status": {
       "get": {
         "operationId": "getExportStatus",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "id",
             "in": "path",
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -234,12 +234,12 @@
         ]
       }
     },
-    "/app/export/v1/upload/{uuid}/{application}/{resource}": {
+    "/app/export/v1/upload/{id}/{application}/{resource}": {
       "post": {
         "operationId": "downloadExportUpload",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "id",
             "in": "path",
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -288,12 +288,12 @@
         ]
       }
     },
-    "/app/export/v1/error/{uuid}/{application}/{resource}": {
+    "/app/export/v1/error/{id}/{application}/{resource}": {
       "post": {
         "operationId": "downloadExportError",
         "parameters": [
           {
-            "name": "uuid",
+            "name": "id",
             "in": "path",
             "schema": {
               "$ref": "#/components/schemas/UUID"
@@ -366,9 +366,13 @@
       "ExportResource": {
         "type": "object",
         "required": [
+          "application",
           "resource"
         ],
         "properties": {
+          "application": {
+            "type": "string"
+          },
           "resource": {
             "type": "string"
           },
@@ -386,20 +390,16 @@
         "required": [
           "name",
           "format",
-          "application",
           "sources"
         ],
         "properties": {
           "name": {
             "type": "string"
           },
-          "application": {
-            "type": "string"
-          },
           "format": {
             "$ref": "#/components/schemas/Format"
           },
-          "resources": {
+          "sources": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExportResource"
@@ -410,14 +410,14 @@
       "ExportStatus": {
         "type": "object",
         "required": [
-          "uuid",
+          "id",
           "name",
           "created",
           "format",
           "status"
         ],
         "properties": {
-          "uuid": {
+          "id": {
             "$ref": "#/components/schemas/UUID"
           },
           "name": {
@@ -441,7 +441,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "scheduled",
+              "partial",
+              "pending",
               "running",
               "complete",
               "failed"
@@ -456,10 +457,12 @@
             "type": "string"
           },
           "next": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "previous": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "last": {
             "type": "string"

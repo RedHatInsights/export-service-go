@@ -88,11 +88,11 @@ paths:
                 $ref: '#/components/schemas/ExportList'
       security:
         - 3ScaleIdentity: []
-  /api/export/v1/exports/{uuid}:
+  /api/export/v1/exports/{id}:
     get:
       operationId: downloadExport
       parameters:
-        - name: uuid
+        - name: id
           in: path
           schema:
             $ref: '#/components/schemas/UUID'
@@ -110,7 +110,7 @@ paths:
     delete:
       operationId: deleteExport
       parameters:
-        - name: uuid
+        - name: id
           in: path
           schema:
             $ref: '#/components/schemas/UUID'
@@ -120,11 +120,11 @@ paths:
           description: Export deleted (if it existed)
       security:
         - 3ScaleIdentity: []
-  /api/export/v1/exports/{uuid}/status:
+  /api/export/v1/exports/{id}/status:
     get:
       operationId: getExportStatus
       parameters:
-        - name: uuid
+        - name: id
           in: path
           schema:
             $ref: '#/components/schemas/UUID'
@@ -140,11 +140,11 @@ paths:
         - 3ScaleIdentity: []
 
 #internal
-  /app/export/v1/upload/{uuid}/{application}/{resource}:
+  /app/export/v1/upload/{id}/{application}/{resource}:
     post:
       operationId: downloadExportUpload
       parameters:
-        - name: uuid
+        - name: id
           in: path
           schema:
             $ref: '#/components/schemas/UUID'
@@ -172,11 +172,11 @@ paths:
         - psk: []
       tags:
         - internal
-  /app/export/v1/error/{uuid}/{application}/{resource}:
+  /app/export/v1/error/{id}/{application}/{resource}:
     post:
       operationId: downloadExportError
       parameters:
-        - name: uuid
+        - name: id
           in: path
           schema:
             $ref: '#/components/schemas/UUID'
@@ -223,8 +223,11 @@ components:
     ExportResource:
       type: object
       required:
+        - application
         - resource
       properties:
+        application:
+          type: string
         resource:
           type: string
         expires:
@@ -237,29 +240,26 @@ components:
       required:
         - name
         - format
-        - application
         - sources
       properties:
         name:
           type: string
-        application:
-          type: string
         format:
           $ref: '#/components/schemas/Format'
-        resources:
+        sources:
           type: array
           items:
             $ref: '#/components/schemas/ExportResource'
     ExportStatus:
       type: object
       required:
-        - uuid
+        - id
         - name
         - created
         - format
         - status
       properties:
-        uuid:
+        id:
           $ref: '#/components/schemas/UUID'
         name:
           type: string
@@ -277,7 +277,8 @@ components:
         status:
           type: string
           enum:
-            - scheduled
+            - partial
+            - pending
             - running
             - complete
             - failed
@@ -288,8 +289,10 @@ components:
           type: string
         next:
           type: string
+          nullable: true
         previous:
           type: string
+          nullable: true
         last:
           type: string
       required:

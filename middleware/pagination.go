@@ -74,11 +74,20 @@ func indexSlice(data interface{}, start, stop int) interface{} {
 // GetPaginatedResponse accepts the pagination settings and full data list and returns
 // the paginated data.
 func GetPaginatedResponse(url *url.URL, p Paginate, data interface{}) (*PaginatedResponse, error) {
+	if data == nil {
+		return nil, fmt.Errorf("invalid data set: data cannot be nil")
+	}
+
 	// use lenSlice as error checker. lenSlice returns -1 if the data is not a slice.
 	// Paginated data must be a slice
 	if lenSlice(data) == -1 {
 		return nil, fmt.Errorf("invalid data set: must be a slice")
 	}
+
+	if p.Limit < 0 || p.Offset < 0 {
+		return nil, fmt.Errorf("invalid negative value for limit or offset")
+	}
+
 	return &PaginatedResponse{
 		Meta:  getMeta(data),
 		Links: getLinks(url, p, data),
@@ -118,7 +127,7 @@ func getFirstLink(url *url.URL) string {
 }
 
 func getNextLink(url *url.URL, count, limit, offset int) *string {
-	if offset+limit > count {
+	if offset+limit >= count {
 		return nil
 	}
 	nextURL := url
@@ -193,6 +202,12 @@ func PaginationCtx(next http.Handler) http.Handler {
 				errors.BadRequestError(w, fmt.Errorf("invalid limit: %w", err))
 				return
 			}
+
+			if lim < 0 {
+				errors.BadRequestError(w, fmt.Errorf("invalid limt: %d", lim))
+				return
+			}
+
 			pagination.Limit = lim
 		}
 
@@ -203,6 +218,12 @@ func PaginationCtx(next http.Handler) http.Handler {
 				errors.BadRequestError(w, fmt.Errorf("invalid offset: %w", err))
 				return
 			}
+
+			if off < 0 {
+				errors.BadRequestError(w, fmt.Errorf("invalid offset: %d", off))
+				return
+			}
+
 			pagination.Offset = off
 		}
 

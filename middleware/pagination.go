@@ -58,7 +58,7 @@ func indexSlice(data interface{}, start, stop int) interface{} {
 		s := reflect.ValueOf(data)
 		len := s.Len()
 		if len == 0 {
-			return s
+			return []interface{}{}
 		}
 		if start > len {
 			return []interface{}{}

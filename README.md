@@ -18,7 +18,9 @@ Ports now exposed:
 - metrics on localhost:9090
 - internal api on localhost:10010
 - minio on localhost:9099
+- psql on localhost:5432
 (use `minio` as the access key and `minioadmin` as the secret key to view the dashboard)
+(use `psql -h localhost -p 5432 -U postgres` and the pass `postgres` to connect to the db)
 
 To test local changes, you can restart the api server using `make run-api`.
 

@@ -56,12 +56,6 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := identity.Get(r.Context())
 
-		// if no id was found in the request context, return an error
-		// if id == null {
-		// 	errors.BadRequestError(w, "missing x-rh-identity header")
-		// 	return
-		// }
-
 		if id.Identity.Type != "User" {
 			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid user type", id.Identity.Type))
 			return

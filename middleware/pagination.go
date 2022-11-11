@@ -117,10 +117,11 @@ type Links struct {
 	Last *string `json:"last"`
 }
 
-func getFirstLink(url *url.URL) string {
+func getFirstLink(url *url.URL, limit, offset int) string {
 	firstURL := url
 	q := firstURL.Query()
-	q.Del("offset")
+	q.Set("offset", fmt.Sprintf("%d", 0))
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	firstURL.RawQuery = q.Encode()
 	return firstURL.String()
@@ -133,6 +134,7 @@ func getNextLink(url *url.URL, count, limit, offset int) *string {
 	nextURL := url
 	q := nextURL.Query()
 	q.Set("offset", fmt.Sprintf("%d", limit+offset))
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	nextURL.RawQuery = q.Encode()
 	next := nextURL.String()
@@ -148,10 +150,12 @@ func getPreviousLink(url *url.URL, count, limit, offset int) *string {
 	q := previousURL.Query()
 
 	if offset-limit <= 0 {
-		q.Del("offset")
+		q.Set("offset", fmt.Sprintf("%d", 0))
 	} else {
 		q.Set("offset", fmt.Sprintf("%d", offset-limit))
 	}
+
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	previousURL.RawQuery = q.Encode()
 	previous := previousURL.String()
@@ -166,6 +170,7 @@ func getLastLink(url *url.URL, count, limit, offset int) *string {
 	lastURL := url
 	q := lastURL.Query()
 	q.Set("offset", fmt.Sprintf("%d", count-limit))
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	lastURL.RawQuery = q.Encode()
 	last := lastURL.String()
@@ -174,7 +179,7 @@ func getLastLink(url *url.URL, count, limit, offset int) *string {
 }
 
 func getLinks(url *url.URL, p Paginate, data interface{}) Links {
-	result := Links{First: getFirstLink(url)}
+	result := Links{First: getFirstLink(url, p.Limit, p.Offset)}
 	count := lenSlice(data)
 	if count <= p.Limit && p.Offset == 0 {
 		result.Last = &result.First

@@ -23,13 +23,14 @@ var _ = Describe("Handler", func() {
 				// (url *url.URL, p Paginate, data interface{})
 				links := getLinks(r.URL, Paginate{Limit: 10, Offset: 20}, data)
 
+				expectedFirst := "/test?limit=10&offset=0"
 				// possibly wrong, should return /test/?limit=10&offset=10
-				Expect(links.First).To(Equal("/test"))
+				Expect(links.First).To(Equal(expectedFirst))
 
 				// should the limit be included? I think so
-				expectedNext := "/test?offset=30"
-				expectedPrevious := "/test?offset=10"
-				expectedLast := "/test?offset=90"
+				expectedNext := "/test?limit=10&offset=30"
+				expectedPrevious := "/test?limit=10&offset=10"
+				expectedLast := "/test?limit=10&offset=90"
 				var expectedNextPtr *string = &expectedNext
 				var expectedPreviousPtr *string = &expectedPrevious
 				var expectedLastPtr *string = &expectedLast
@@ -39,7 +40,7 @@ var _ = Describe("Handler", func() {
 				Expect(links.Last).To(Equal(expectedLastPtr))
 
 				Expect(links).To(Equal(Links{
-					First:    "/test",
+					First:    expectedFirst,
 					Next:     expectedNextPtr,
 					Previous: expectedPreviousPtr,
 					Last:     expectedLastPtr,
@@ -183,8 +184,8 @@ var _ = Describe("Handler", func() {
 			0,
 			[]string{},
 			0,
-			"/test",
-			"/test",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=0",
 			"",
 			"",
 			[]interface{}{},
@@ -195,8 +196,8 @@ var _ = Describe("Handler", func() {
 			0,
 			[]string{"test"},
 			1,
-			"/test",
-			"/test",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=0",
 			"",
 			"",
 			[]string{"test"},
@@ -207,8 +208,8 @@ var _ = Describe("Handler", func() {
 			0,
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			10,
-			"/test",
-			"/test",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=0",
 			"",
 			"",
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
@@ -219,9 +220,9 @@ var _ = Describe("Handler", func() {
 			0,
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			11,
-			"/test",
-			"/test?offset=1",
-			"/test?offset=10",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=1",
+			"/test?limit=10&offset=10",
 			"",
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			nil,
@@ -231,9 +232,9 @@ var _ = Describe("Handler", func() {
 			0,
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			12,
-			"/test",
-			"/test?offset=2",
-			"/test?offset=10",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=2",
+			"/test?limit=10&offset=10",
 			"",
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			nil,
@@ -243,9 +244,9 @@ var _ = Describe("Handler", func() {
 			0,
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			20,
-			"/test",
-			"/test?offset=10",
-			"/test?offset=10",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=10",
+			"/test?limit=10&offset=10",
 			"",
 			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
 			nil,
@@ -255,10 +256,10 @@ var _ = Describe("Handler", func() {
 			10,
 			[]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
 			20,
-			"/test",
-			"/test?offset=10",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=10",
 			"",
-			"/test",
+			"/test?limit=10&offset=0",
 			[]string{"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
 			nil,
 		),
@@ -267,10 +268,10 @@ var _ = Describe("Handler", func() {
 			100,
 			[]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
 			20,
-			"/test",
-			"/test?offset=10",
+			"/test?limit=10&offset=0",
+			"/test?limit=10&offset=10",
 			"",
-			"/test?offset=90",
+			"/test?limit=10&offset=90",
 			[]interface{}{},
 			nil,
 		),

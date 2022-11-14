@@ -114,7 +114,7 @@ type Links struct {
 	// Previous represents the previous page of paginated data.
 	Previous *string `json:"previous"`
 	// Last represents the last page of paginated data.
-	Last *string `json:"last"`
+	Last string `json:"last"`
 }
 
 func getFirstLink(url *url.URL, limit, offset int) string {
@@ -163,10 +163,7 @@ func getPreviousLink(url *url.URL, count, limit, offset int) *string {
 	return &previous
 }
 
-func getLastLink(url *url.URL, count, limit, offset int) *string {
-	if count-limit <= 0 {
-		return nil
-	}
+func getLastLink(url *url.URL, count, limit, offset int) string {
 	lastURL := url
 	q := lastURL.Query()
 	q.Set("offset", fmt.Sprintf("%d", count-limit))
@@ -175,14 +172,14 @@ func getLastLink(url *url.URL, count, limit, offset int) *string {
 	lastURL.RawQuery = q.Encode()
 	last := lastURL.String()
 
-	return &last
+	return last
 }
 
 func GetLinks(url *url.URL, p Paginate, data interface{}) Links {
 	result := Links{First: getFirstLink(url, p.Limit, p.Offset)}
 	count := lenSlice(data)
 	if count <= p.Limit && p.Offset == 0 {
-		result.Last = &result.First
+		result.Last = result.First
 		return result
 	}
 	result.Next = getNextLink(url, count, p.Limit, p.Offset)

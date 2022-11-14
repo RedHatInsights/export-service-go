@@ -1,4 +1,4 @@
-package middleware
+package middleware_test
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/export-service-go/middleware"
 )
 
 var _ = Describe("Handler", func() {
@@ -33,7 +34,7 @@ var _ = Describe("Handler", func() {
 
 			router := chi.NewRouter()
 			router.Route("/app/export/v1/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
-				sub.Use(URLParamsCtx)
+				sub.Use(middleware.URLParamsCtx)
 				sub.Get("/test", applicationHandler)
 			})
 

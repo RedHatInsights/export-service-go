@@ -1,4 +1,4 @@
-package middleware
+package middleware_test
 
 import (
 	"encoding/base64"
@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
@@ -29,7 +30,7 @@ var _ = Describe("Handler", func() {
 			rr := httptest.NewRecorder()
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				// Check that the context has the UserIdentity field
-				userIdentity := r.Context().Value(UserIdentityKey).(models.User)
+				userIdentity := r.Context().Value(middleware.UserIdentityKey).(models.User)
 
 				Expect(userIdentity.AccountID).To(Equal(accountNumber))
 				Expect(userIdentity.OrganizationID).To(Equal(orgID))
@@ -41,7 +42,7 @@ var _ = Describe("Handler", func() {
 			router := chi.NewRouter()
 			router.Route("/", func(sub chi.Router) {
 				sub.Use(identity.EnforceIdentity)
-				sub.Use(EnforceUserIdentity)
+				sub.Use(middleware.EnforceUserIdentity)
 				sub.Get("/test", applicationHandler)
 			})
 

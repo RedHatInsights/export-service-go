@@ -1,4 +1,4 @@
-package middleware
+package middleware_test
 
 import (
 	"net/http"
@@ -10,6 +10,7 @@ import (
 
 	// exportconfig from the config package
 	config "github.com/redhatinsights/export-service-go/config"
+	"github.com/redhatinsights/export-service-go/middleware"
 )
 
 var (
@@ -21,7 +22,7 @@ var _ = Describe("Handler", func() {
 	DescribeTable("Test EnforcePSK function",
 		func(useHeader, useMultipleHeaders bool, header string, expectedStatus int) {
 			// set the user's config to validExportConfig
-			cfg = validExportConfig
+			middleware.cfg = validExportConfig
 
 			req, err := http.NewRequest("GET", "/test", nil)
 			Expect(err).To(BeNil())
@@ -46,7 +47,7 @@ var _ = Describe("Handler", func() {
 
 			router := chi.NewRouter()
 			router.Route("/", func(sub chi.Router) {
-				sub.Use(EnforcePSK)
+				sub.Use(middleware.EnforcePSK)
 				sub.Get("/test", applicationHandler)
 			})
 

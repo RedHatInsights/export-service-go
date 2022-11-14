@@ -1,9 +1,11 @@
-package middleware
+package middleware_test
 
 import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/redhatinsights/export-service-go/middleware"
 
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,7 +23,7 @@ var _ = Describe("Handler", func() {
 			rr := httptest.NewRecorder()
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				// (url *url.URL, p Paginate, data interface{})
-				links := getLinks(r.URL, Paginate{Limit: 10, Offset: 20}, data)
+				links := middleware.getLinks(r.URL, middleware.Paginate{Limit: 10, Offset: 20}, data)
 
 				expectedFirst := "/test?limit=10&offset=0"
 				// possibly wrong, should return /test/?limit=10&offset=10
@@ -39,7 +41,7 @@ var _ = Describe("Handler", func() {
 				Expect(links.Previous).To(Equal(expectedPreviousPtr))
 				Expect(links.Last).To(Equal(expectedLastPtr))
 
-				Expect(links).To(Equal(Links{
+				Expect(links).To(Equal(middleware.Links{
 					First:    expectedFirst,
 					Next:     expectedNextPtr,
 					Previous: expectedPreviousPtr,
@@ -68,7 +70,7 @@ var _ = Describe("Handler", func() {
 			req, err := http.NewRequest("GET", requestString, nil)
 			Expect(err).To(BeNil())
 
-			expectedPaginate := Paginate{
+			expectedPaginate := middleware.Paginate{
 				Limit:  limit,
 				Offset: offset,
 			}
@@ -77,7 +79,7 @@ var _ = Describe("Handler", func() {
 
 			rr := httptest.NewRecorder()
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				pagination := r.Context().Value(PaginateKey).(Paginate)
+				pagination := r.Context().Value(middleware.PaginateKey).(middleware.Paginate)
 				Expect(pagination).To(Equal(expectedPaginate))
 
 				handlerCalled = true
@@ -85,7 +87,7 @@ var _ = Describe("Handler", func() {
 
 			router := chi.NewRouter()
 			router.Route("/", func(sub chi.Router) {
-				sub.Use(PaginationCtx)
+				sub.Use(middleware.PaginationCtx)
 				sub.Get("/test", applicationHandler)
 			})
 
@@ -108,12 +110,12 @@ var _ = Describe("Handler", func() {
 	DescribeTable("Test that the proper PaginatedResponse is returned from GetPaginatedResponse",
 		func(limit, offset int, data interface{}, expectedCount int, expectedFirst, expectedLast, expectedNext, expectedPrevious string, expectedData interface{}, expectedError error) {
 			// Make a paginate struct
-			paginate := Paginate{
+			paginate := middleware.Paginate{
 				Limit:  limit,
 				Offset: offset,
 			}
 
-			var expectedResponse *PaginatedResponse
+			var expectedResponse *middleware.PaginatedResponse
 			if expectedError == nil {
 				var expectedNextPtr *string
 				var expectedPreviousPtr *string
@@ -129,11 +131,11 @@ var _ = Describe("Handler", func() {
 				}
 
 				// Make PaginatedResponse with expected values
-				expectedResponse = &PaginatedResponse{
-					Meta: Meta{
+				expectedResponse = &middleware.PaginatedResponse{
+					Meta: middleware.Meta{
 						Count: expectedCount,
 					},
-					Links: Links{
+					Links: middleware.Links{
 						First:    expectedFirst,
 						Last:     expectedLastPtr,
 						Next:     expectedNextPtr,
@@ -149,7 +151,7 @@ var _ = Describe("Handler", func() {
 			rr := httptest.NewRecorder()
 
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				resp, err := GetPaginatedResponse(r.URL, paginate, data)
+				resp, err := middleware.GetPaginatedResponse(r.URL, paginate, data)
 
 				if expectedError != nil {
 					Expect(err.Error()).To(Equal(expectedError.Error()))

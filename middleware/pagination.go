@@ -90,7 +90,7 @@ func GetPaginatedResponse(url *url.URL, p Paginate, data interface{}) (*Paginate
 
 	return &PaginatedResponse{
 		Meta:  getMeta(data),
-		Links: getLinks(url, p, data),
+		Links: GetLinks(url, p, data),
 		Data:  indexSlice(data, p.Offset, p.Offset+p.Limit),
 	}, nil
 }
@@ -178,7 +178,7 @@ func getLastLink(url *url.URL, count, limit, offset int) *string {
 	return &last
 }
 
-func getLinks(url *url.URL, p Paginate, data interface{}) Links {
+func GetLinks(url *url.URL, p Paginate, data interface{}) Links {
 	result := Links{First: getFirstLink(url, p.Limit, p.Offset)}
 	count := lenSlice(data)
 	if count <= p.Limit && p.Offset == 0 {

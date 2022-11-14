@@ -23,7 +23,7 @@ var _ = Describe("Handler", func() {
 			rr := httptest.NewRecorder()
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				// (url *url.URL, p Paginate, data interface{})
-				links := middleware.getLinks(r.URL, middleware.Paginate{Limit: 10, Offset: 20}, data)
+				links := middleware.GetLinks(r.URL, middleware.Paginate{Limit: 10, Offset: 20}, data)
 
 				expectedFirst := "/test?limit=10&offset=0"
 				// possibly wrong, should return /test/?limit=10&offset=10

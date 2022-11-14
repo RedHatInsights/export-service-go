@@ -22,7 +22,7 @@ var _ = Describe("Handler", func() {
 	DescribeTable("Test EnforcePSK function",
 		func(useHeader, useMultipleHeaders bool, header string, expectedStatus int) {
 			// set the user's config to validExportConfig
-			middleware.cfg = validExportConfig
+			middleware.Cfg = validExportConfig
 
 			req, err := http.NewRequest("GET", "/test", nil)
 			Expect(err).To(BeNil())

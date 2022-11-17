@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
@@ -26,6 +27,8 @@ import (
 
 var _ = Context("Set up test DB", func() {
 	var db = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
+
+	dbStartTime := time.Now()
 
 	fmt.Println("STARTING TEST DB...")
 	if err := db.Start(); err != nil {
@@ -61,6 +64,8 @@ var _ = Context("Set up test DB", func() {
 		panic(err)
 	}
 
+	fmt.Println("TEST DB STARTED IN: ", time.Since(dbStartTime))
+
 	AfterEach(func() {
 		fmt.Println("...STOPPING TEST DB")
 		err := db.Stop()
@@ -69,7 +74,7 @@ var _ = Context("Set up test DB", func() {
 		}
 	})
 
-	Describe("Should allow users to manage their exports", func() {
+	Describe("The public API", func() {
 
 		BeforeEach(func() {
 			fmt.Println("...CLEANING DB...")

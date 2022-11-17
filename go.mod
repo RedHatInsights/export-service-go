@@ -9,9 +9,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.5
 	github.com/confluentinc/confluent-kafka-go v1.8.2
+	github.com/fergusstrange/embedded-postgres v1.19.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-openapi/runtime v0.23.3
 	github.com/google/uuid v1.3.0
+	github.com/lib/pq v1.10.7 // indirect
 	github.com/onsi/ginkgo/v2 v2.3.1
 	github.com/onsi/gomega v1.22.1
 	github.com/prometheus/client_golang v1.12.1

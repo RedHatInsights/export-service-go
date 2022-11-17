@@ -49,6 +49,7 @@ type URLParams struct {
 	ResourceUUID uuid.UUID
 }
 
+// TODO: Seperate database struct and request struct
 type ExportPayload struct {
 	ID          uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created"`

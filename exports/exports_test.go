@@ -2,14 +2,13 @@ package exports_test
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/go-chi/chi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,9 +24,14 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
-var _ = Describe("Public API", func() {
-	var exportHandler *exports.Export
-	// var mock sqlmock.Sqlmock
+var _ = Context("Set up test DB", func() {
+	var db = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
+
+	fmt.Println("STARTING TEST DB...")
+	if err := db.Start(); err != nil {
+		fmt.Println("Error starting embedded postgres: ", err)
+		panic(err)
+	}
 
 	cfg := config.ExportCfg
 	cfg.Debug = true
@@ -39,53 +43,70 @@ var _ = Describe("Public API", func() {
 		emiddleware.EnforceUserIdentity,
 	)
 
-	BeforeEach(func() {
-		var db *sql.DB
-		db, _, err := sqlmock.New()
-		Expect(err).ShouldNot(HaveOccurred())
+	dsn := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 
-		gdb, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
-		Expect(err).ShouldNot(HaveOccurred())
+	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	Expect(err).ShouldNot(HaveOccurred())
 
-		exportHandler = &exports.Export{
-			Bucket:    cfg.StorageConfig.Bucket,
-			Client:    es3.Client,
-			DB:        &models.ExportDB{DB: gdb},
-			KafkaChan: make(chan *kafka.Message),
-			Log:       logger.Log,
+	exportHandler := &exports.Export{
+		Bucket:    cfg.StorageConfig.Bucket,
+		Client:    es3.Client,
+		DB:        &models.ExportDB{DB: gdb},
+		KafkaChan: make(chan *kafka.Message),
+		Log:       logger.Log,
+	}
+
+	if err := gdb.AutoMigrate(&models.ExportPayload{}); err != nil {
+		fmt.Println("failed to migrate db", "error", err)
+		panic(err)
+	}
+
+	AfterEach(func() {
+		fmt.Println("...STOPPING TEST DB")
+		err := db.Stop()
+		if err != nil {
+			fmt.Println("Error stopping embedded postgres: ", err)
 		}
-
 	})
 
-	It("can create a new export request", func() {
+	Describe("Should allow users to manage their exports", func() {
 
-		exportRequest := models.ExportPayload{
-			Name:   "Example Export Request",
-			Format: "json",
-		}
-		exportRequestJson, err := json.Marshal(exportRequest)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		req, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequestJson))
-		req.Header.Set("Content-Type", "application/json")
-		Expect(err).ShouldNot(HaveOccurred())
-
-		rr := httptest.NewRecorder()
-
-		handler := http.HandlerFunc(exportHandler.PostExport)
-
-		router.Route("/api/export/v1", func(sub chi.Router) {
-			sub.Post("/exports", handler)
+		BeforeEach(func() {
+			fmt.Println("...CLEANING DB...")
+			gdb.Exec("DELETE FROM export_payloads")
 		})
 
-		router.ServeHTTP(rr, req)
+		It("can create a new export request", func() {
 
-		fmt.Println("Body: ", rr.Body.String())
-		Expect(rr.Code).To(Equal(http.StatusOK))
+			exportRequest := models.ExportPayload{
+				Name:   "Test Export Request",
+				Format: "json",
+			}
+			exportRequestJson, err := json.Marshal(exportRequest)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			req, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequestJson))
+			req.Header.Set("Content-Type", "application/json")
+			Expect(err).ShouldNot(HaveOccurred())
+
+			rr := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(exportHandler.PostExport)
+
+			router.Route("/api/export/v1", func(sub chi.Router) {
+				sub.Post("/exports", handler)
+			})
+
+			// Use regex to expect an insert
+			router.ServeHTTP(rr, req)
+
+			fmt.Println("Body: ", rr.Body.String())
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+		})
+		// It("can list all export requests")
+		// It("can check the status of an export request")
+		// It("can send kafka messages to the export sources")
+		// It("can get a specific export request by ID and download the file")
+		// It("can delete a specific export request by ID")
 	})
-	// It("can list all export requests")
-	// It("can check the status of an export request")
-	// It("can send kafka messages to the export sources")
-	// It("can get a specific export request by ID and download the file")
-	// It("can delete a specific export request by ID")
 })

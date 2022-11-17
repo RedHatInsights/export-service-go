@@ -25,6 +25,8 @@ var (
 	log = logger.Log
 )
 
+// TODO: Need to open the explicitly open the DB connection and pass it
+// Remove that logic from this init function
 func init() {
 	dbcfg := cfg.DBConfig
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", dbcfg.User, dbcfg.Password, dbcfg.Hostname, dbcfg.Port, dbcfg.Name, dbcfg.SSLCfg.SSLMode)

@@ -25,31 +25,41 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
-var _ = Context("Set up test DB", func() {
-	var db = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
-
+func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, *gorm.DB, error) {
 	dbStartTime := time.Now()
-
 	fmt.Println("STARTING TEST DB...")
+
+	var db = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
 	if err := db.Start(); err != nil {
 		fmt.Println("Error starting embedded postgres: ", err)
-		panic(err)
+		return nil, nil, err
 	}
 
+	dsn := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		fmt.Println("Error connecting to embedded postgres: ", err)
+		return nil, nil, err
+	}
+
+	if err := gdb.AutoMigrate(&models.ExportPayload{}); err != nil {
+		fmt.Println("failed to migrate db", "error", err)
+		return nil, nil, err
+	}
+
+	fmt.Println("TEST DB STARTED IN: ", time.Since(dbStartTime))
+	return db, gdb, nil
+}
+
+var _ = Context("Set up test DB", func() {
 	cfg := config.ExportCfg
 	cfg.Debug = true
 
-	router := chi.NewRouter()
-	router.Use(
-		emiddleware.InjectDebugUserIdentity,
-		identity.EnforceIdentity,
-		emiddleware.EnforceUserIdentity,
-	)
-
-	dsn := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-
-	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	Expect(err).ShouldNot(HaveOccurred())
+	db, gdb, err := CreateTestDB(*cfg)
+	if err != nil {
+		fmt.Println("Error creating test DB: ", err)
+		panic(err)
+	}
 
 	exportHandler := &exports.Export{
 		Bucket:    cfg.StorageConfig.Bucket,
@@ -59,19 +69,19 @@ var _ = Context("Set up test DB", func() {
 		Log:       logger.Log,
 	}
 
-	if err := gdb.AutoMigrate(&models.ExportPayload{}); err != nil {
-		fmt.Println("failed to migrate db", "error", err)
-		panic(err)
-	}
-
-	fmt.Println("TEST DB STARTED IN: ", time.Since(dbStartTime))
+	router := chi.NewRouter()
+	router.Use(
+		emiddleware.InjectDebugUserIdentity,
+		identity.EnforceIdentity,
+		emiddleware.EnforceUserIdentity,
+	)
 
 	AfterEach(func() {
-		fmt.Println("...STOPPING TEST DB")
 		err := db.Stop()
 		if err != nil {
 			fmt.Println("Error stopping embedded postgres: ", err)
 		}
+		fmt.Println("...STOPPED TEST DB")
 	})
 
 	Describe("The public API", func() {
@@ -94,15 +104,12 @@ var _ = Context("Set up test DB", func() {
 			req.Header.Set("Content-Type", "application/json")
 			Expect(err).ShouldNot(HaveOccurred())
 
-			rr := httptest.NewRecorder()
-
 			handler := http.HandlerFunc(exportHandler.PostExport)
-
 			router.Route("/api/export/v1", func(sub chi.Router) {
 				sub.Post("/exports", handler)
 			})
 
-			// Use regex to expect an insert
+			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 
 			fmt.Println("Body: ", rr.Body.String())

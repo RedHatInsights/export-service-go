@@ -2,7 +2,6 @@ package exports_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -51,11 +50,15 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 	return db, gdb, nil
 }
 
+func GenerateExportRequest(name string, format string, sources string) (exportRequest []byte) {
+	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
+}
+
 var _ = Context("Set up test DB", func() {
 	cfg := config.ExportCfg
 	cfg.Debug = true
 
-	db, gdb, err := CreateTestDB(*cfg)
+	_, gdb, err := CreateTestDB(*cfg)
 	if err != nil {
 		fmt.Println("Error creating test DB: ", err)
 		panic(err)
@@ -76,12 +79,19 @@ var _ = Context("Set up test DB", func() {
 		emiddleware.EnforceUserIdentity,
 	)
 
+	router.Route("/api/export/v1", func(sub chi.Router) {
+		sub.Post("/exports", exportHandler.PostExport)
+	})
+
 	AfterEach(func() {
-		err := db.Stop()
-		if err != nil {
-			fmt.Println("Error stopping embedded postgres: ", err)
-		}
-		fmt.Println("...STOPPED TEST DB")
+		// TODO: Fix this so that the db is cleaned up after all tests complete
+		// Currently manually closing the DB using `fuser -k 5432/tcp` after tests complete
+		//
+		// err := db.Stop()
+		// if err != nil {
+		// 	fmt.Println("Error stopping embedded postgres: ", err)
+		// }
+		// fmt.Println("...STOPPED TEST DB")
 	})
 
 	Describe("The public API", func() {
@@ -91,30 +101,32 @@ var _ = Context("Set up test DB", func() {
 			gdb.Exec("DELETE FROM export_payloads")
 		})
 
-		It("can create a new export request", func() {
+		DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
 
-			exportRequest := models.ExportPayload{
-				Name:   "Test Export Request",
-				Format: "json",
-			}
-			exportRequestJson, err := json.Marshal(exportRequest)
-			Expect(err).ShouldNot(HaveOccurred())
+			exportRequestJson := GenerateExportRequest(
+				name,
+				format,
+				sources,
+			)
+
+			rr := httptest.NewRecorder()
 
 			req, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequestJson))
 			req.Header.Set("Content-Type", "application/json")
+
 			Expect(err).ShouldNot(HaveOccurred())
 
-			handler := http.HandlerFunc(exportHandler.PostExport)
-			router.Route("/api/export/v1", func(sub chi.Router) {
-				sub.Post("/exports", handler)
-			})
-
-			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 
 			fmt.Println("Body: ", rr.Body.String())
-			Expect(rr.Code).To(Equal(http.StatusAccepted))
-		})
+			Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
+			Expect(rr.Code).To(Equal(expectedStatus))
+		},
+			Entry("with valid request", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "", http.StatusAccepted),
+			Entry("with no expiration", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
+			Entry("with an invalid format", "Test Export Request", "abcde", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "Invalid format", http.StatusBadRequest),
+			Entry("With no sources", "Test Export Request", "json", "", "No sources provided", http.StatusBadRequest),
+		)
 		// It("can list all export requests")
 		// It("can check the status of an export request")
 		// It("can send kafka messages to the export sources")

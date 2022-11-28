@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/go-chi/chi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -24,81 +20,43 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
-func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, *gorm.DB, error) {
-	dbStartTime := time.Now()
-	fmt.Println("STARTING TEST DB...")
-
-	var db = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
-	if err := db.Start(); err != nil {
-		fmt.Println("Error starting embedded postgres: ", err)
-		return nil, nil, err
-	}
-
-	dsn := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		fmt.Println("Error connecting to embedded postgres: ", err)
-		return nil, nil, err
-	}
-
-	if err := gdb.AutoMigrate(&models.ExportPayload{}); err != nil {
-		fmt.Println("failed to migrate db", "error", err)
-		return nil, nil, err
-	}
-
-	fmt.Println("TEST DB STARTED IN: ", time.Since(dbStartTime))
-	return db, gdb, nil
-}
-
 func GenerateExportRequest(name string, format string, sources string) (exportRequest []byte) {
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
 
-var _ = Context("Set up test DB", func() {
+var _ = Context("Set up export handler", func() {
 	cfg := config.ExportCfg
 	cfg.Debug = true
 
-	_, gdb, err := CreateTestDB(*cfg)
-	if err != nil {
-		fmt.Println("Error creating test DB: ", err)
-		panic(err)
-	}
+	var exportHandler *exports.Export
+	var router *chi.Mux
 
-	exportHandler := &exports.Export{
-		Bucket:    cfg.StorageConfig.Bucket,
-		Client:    es3.Client,
-		DB:        &models.ExportDB{DB: gdb},
-		KafkaChan: make(chan *kafka.Message),
-		Log:       logger.Log,
-	}
+	BeforeEach(func() {
+		exportHandler = &exports.Export{
+			Bucket:    cfg.StorageConfig.Bucket,
+			Client:    es3.Client,
+			DB:        &models.ExportDB{DB: testGormDB},
+			KafkaChan: make(chan *kafka.Message),
+			Log:       logger.Log,
+		}
 
-	router := chi.NewRouter()
-	router.Use(
-		emiddleware.InjectDebugUserIdentity,
-		identity.EnforceIdentity,
-		emiddleware.EnforceUserIdentity,
-	)
+		router = chi.NewRouter()
+		router.Use(
+			emiddleware.InjectDebugUserIdentity,
+			identity.EnforceIdentity,
+			emiddleware.EnforceUserIdentity,
+		)
 
-	router.Route("/api/export/v1", func(sub chi.Router) {
-		sub.Post("/exports", exportHandler.PostExport)
-	})
-
-	AfterEach(func() {
-		// TODO: Fix this so that the db is cleaned up after all tests complete
-		// Currently manually closing the DB using `fuser -k 5432/tcp` after tests complete
-		//
-		// err := db.Stop()
-		// if err != nil {
-		// 	fmt.Println("Error stopping embedded postgres: ", err)
-		// }
-		// fmt.Println("...STOPPED TEST DB")
+		router.Route("/api/export/v1", func(sub chi.Router) {
+			sub.Post("/exports", exportHandler.PostExport)
+		})
 	})
 
 	Describe("The public API", func() {
 
 		BeforeEach(func() {
 			fmt.Println("...CLEANING DB...")
-			gdb.Exec("DELETE FROM export_payloads")
+			testGormDB.Exec("DELETE FROM export_payloads")
 		})
 
 		DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {

@@ -58,6 +58,17 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		errors.BadRequestError(w, err.Error())
 		return
 	}
+
+	sources, err := payload.GetSources()
+	if err != nil {
+		errors.BadRequestError(w, err.Error())
+		return
+	}
+	if len(sources) == 0 {
+		errors.BadRequestError(w, "no sources provided")
+		return
+	}
+
 	payload.RequestID = reqID
 	payload.User = user
 	if err := e.DB.Create(&payload); err != nil {

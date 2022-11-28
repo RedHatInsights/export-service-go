@@ -23,6 +23,22 @@ const (
 	JSON PayloadFormat = "json"
 )
 
+func (pf *PayloadFormat) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	switch s {
+	case "csv":
+		*pf = CSV
+	case "json":
+		*pf = JSON
+	default:
+		return fmt.Errorf("unknown payload format: %s", s)
+	}
+	return nil
+}
+
 type PayloadStatus string
 
 const (

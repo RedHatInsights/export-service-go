@@ -124,8 +124,8 @@ var _ = Context("Set up test DB", func() {
 		},
 			Entry("with valid request", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "", http.StatusAccepted),
 			Entry("with no expiration", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
-			Entry("with an invalid format", "Test Export Request", "abcde", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "Invalid format", http.StatusBadRequest),
-			Entry("With no sources", "Test Export Request", "json", "", "No sources provided", http.StatusBadRequest),
+			Entry("with an invalid format", "Test Export Request", "abcde", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "unknown payload format", http.StatusBadRequest),
+			Entry("With no sources", "Test Export Request", "json", "", "no sources provided", http.StatusBadRequest),
 		)
 		// It("can list all export requests")
 		// It("can check the status of an export request")

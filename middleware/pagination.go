@@ -60,7 +60,7 @@ func indexSlice(data interface{}, start, stop int) interface{} {
 		if len == 0 {
 			return []interface{}{}
 		}
-		if start > len {
+		if start >= len {
 			return []interface{}{}
 		}
 		if stop > len {
@@ -143,7 +143,7 @@ func getNextLink(url *url.URL, count, limit, offset int) *string {
 }
 
 func getPreviousLink(url *url.URL, count, limit, offset int) *string {
-	if offset <= 0 {
+	if offset <= 0 || offset >= count {
 		return nil
 	}
 	previousURL := url
@@ -184,13 +184,8 @@ func GetLinks(url *url.URL, p Paginate, data interface{}) Links {
 	}
 
 	result.Next = getNextLink(url, count, p.Limit, p.Offset)
-	result.Last = getLastLink(url, count, p.Limit, p.Offset)
-	if count <= p.Offset {
-		result.Previous = &result.Last
-		return result
-	}
-
 	result.Previous = getPreviousLink(url, count, p.Limit, p.Offset)
+	result.Last = getLastLink(url, count, p.Limit, p.Offset)
 
 	return result
 }

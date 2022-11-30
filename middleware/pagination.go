@@ -182,9 +182,15 @@ func GetLinks(url *url.URL, p Paginate, data interface{}) Links {
 		result.Last = result.First
 		return result
 	}
+
 	result.Next = getNextLink(url, count, p.Limit, p.Offset)
-	result.Previous = getPreviousLink(url, count, p.Limit, p.Offset)
 	result.Last = getLastLink(url, count, p.Limit, p.Offset)
+	if count <= p.Offset {
+		result.Previous = &result.Last
+		return result
+	}
+
+	result.Previous = getPreviousLink(url, count, p.Limit, p.Offset)
 
 	return result
 }

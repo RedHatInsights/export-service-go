@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 
 	"github.com/redhatinsights/export-service-go/middleware"
@@ -16,40 +17,32 @@ import (
 var _ = Describe("Handler", func() {
 	Describe("Test getLinks function", func() {
 		It("should return the proper Links struct", func() {
-			req, err := http.NewRequest("GET", "/test", nil)
-			Expect(err).To(BeNil())
-
 			data := make([]int, 100)
 
-			rr := httptest.NewRecorder()
-			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				// (url *url.URL, p Paginate, data interface{})
-				links := middleware.GetLinks(r.URL, middleware.Paginate{Limit: 10, Offset: 20}, data)
+			// construct the url
+			url := &url.URL{
+				Path: "/test",
+			}
 
-				expectedFirst := "/test?limit=10&offset=0"
-				Expect(links.First).To(Equal(expectedFirst))
+			links := middleware.GetLinks(url, middleware.Paginate{Limit: 10, Offset: 20}, data)
 
-				expectedNext := "/test?limit=10&offset=30"
-				expectedPrevious := "/test?limit=10&offset=10"
-				expectedLast := "/test?limit=10&offset=90"
+			expectedFirst := "/test?limit=10&offset=0"
+			Expect(links.First).To(Equal(expectedFirst))
 
-				Expect(links.Next).To(Equal(&expectedNext))
-				Expect(links.Previous).To(Equal(&expectedPrevious))
-				Expect(links.Last).To(Equal(expectedLast))
+			expectedNext := "/test?limit=10&offset=30"
+			expectedPrevious := "/test?limit=10&offset=10"
+			expectedLast := "/test?limit=10&offset=90"
 
-				Expect(links).To(Equal(middleware.Links{
-					First:    expectedFirst,
-					Next:     &expectedNext,
-					Previous: &expectedPrevious,
-					Last:     expectedLast,
-				}))
-			})
+			Expect(links.Next).To(Equal(&expectedNext))
+			Expect(links.Previous).To(Equal(&expectedPrevious))
+			Expect(links.Last).To(Equal(expectedLast))
 
-			router := chi.NewRouter()
-			router.Route("/", func(sub chi.Router) {
-				sub.Get("/test", applicationHandler)
-			})
-			router.ServeHTTP(rr, req)
+			Expect(links).To(Equal(middleware.Links{
+				First:    expectedFirst,
+				Next:     &expectedNext,
+				Previous: &expectedPrevious,
+				Last:     expectedLast,
+			}))
 		})
 	})
 

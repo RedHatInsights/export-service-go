@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("Handler", func() {
 	DescribeTable("Test EnforceUserIdentity middleware",
-		func(useContext bool, userType, accountNumber, orgID, username string, testIdentity string, expectedStatus int) {
+		func(accountNumber, orgID, username string, testIdentity string, expectedStatus int) {
 			req, err := http.NewRequest("GET", "/test", nil)
 			Expect(err).To(BeNil())
 
@@ -54,16 +54,16 @@ var _ = Describe("Handler", func() {
 			// The middleware would pass a bad context
 			Expect(handlerCalled).To(Equal(expectedStatus == http.StatusOK))
 		},
-		Entry("Test with no header", false, nil, nil, nil, nil, "", http.StatusBadRequest),
-		Entry("Test with incorrect user type", true, "Associate", "540155", "1979710", "username",
+		Entry("Test with no header", nil, nil, nil, "", http.StatusBadRequest),
+		Entry("Test with incorrect user type", "540155", "1979710", "username",
 			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "org_id": "1979710", "internal": {"org_id": "1979710"}, "type": "Associate", "user": {"username": "username", "email": "boring@boring.mail.com", "first_name": "Jake", "last_name": "Logan", "is_active": true, "is_org_admin": false, "is_internal": true, "locale": "North America", "user_id": "1010101"} } }`,
 			http.StatusBadRequest,
 		),
-		Entry("Test with valid context", true, "User", "540155", "1979710", "username",
+		Entry("Test with valid context", "540155", "1979710", "username",
 			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "org_id": "1979710", "internal": {"org_id": "1979710"}, "type": "User", "user": {"username": "username", "email": "boring@boring.mail.com", "first_name": "Jake", "last_name": "Logan", "is_active": true, "is_org_admin": false, "is_internal": true, "locale": "North America", "user_id": "1010101"} } }`,
 			http.StatusOK,
 		),
-		Entry("Test without org_id", true, "User", "540155", "", "username",
+		Entry("Test without org_id", "540155", "", "username",
 			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "internal": {}, "type": "User", "user": {"username": "username", "email": "boring@boring.mail.com", "first_name": "Jake", "last_name": "Logan", "is_active": true, "is_org_admin": false, "is_internal": true, "locale": "North America", "user_id": "1010101"} } }`,
 			http.StatusBadRequest,
 		),

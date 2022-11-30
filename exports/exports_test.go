@@ -2,12 +2,13 @@ package exports_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -20,8 +21,16 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
-func GenerateExportRequest(name string, format string, sources string) (exportRequest []byte) {
+func GenerateExportRequestBody(name, format, sources string) (exportRequest []byte) {
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
+}
+
+func CreateExportRequest(name, format, sources string) *http.Request {
+	exportRequest := GenerateExportRequestBody(name, format, sources)
+	request, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequest))
+	Expect(err).To(BeNil())
+	request.Header.Set("Content-Type", "application/json")
+	return request
 }
 
 var _ = Context("Set up export handler", func() {
@@ -49,6 +58,10 @@ var _ = Context("Set up export handler", func() {
 
 		router.Route("/api/export/v1", func(sub chi.Router) {
 			sub.Post("/exports", exportHandler.PostExport)
+			sub.With(emiddleware.PaginationCtx).Get("/exports", exportHandler.ListExports)
+			sub.Get("/exports/{exportUUID}/status", exportHandler.GetExportStatus)
+			sub.Delete("/exports/{exportUUID}", exportHandler.DeleteExport)
+			sub.Get("/exports/{exportUUID}", exportHandler.GetExport)
 		})
 	})
 
@@ -60,35 +73,114 @@ var _ = Context("Set up export handler", func() {
 		})
 
 		DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
-
-			exportRequestJson := GenerateExportRequest(
-				name,
-				format,
-				sources,
-			)
-
 			rr := httptest.NewRecorder()
 
-			req, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequestJson))
-			req.Header.Set("Content-Type", "application/json")
-
-			Expect(err).ShouldNot(HaveOccurred())
-
+			req := CreateExportRequest(name, format, sources)
 			router.ServeHTTP(rr, req)
-
-			fmt.Println("Body: ", rr.Body.String())
-			Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
 			Expect(rr.Code).To(Equal(expectedStatus))
+			Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
 		},
 			Entry("with valid request", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "", http.StatusAccepted),
 			Entry("with no expiration", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
 			Entry("with an invalid format", "Test Export Request", "abcde", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "unknown payload format", http.StatusBadRequest),
 			Entry("With no sources", "Test Export Request", "json", "", "no sources provided", http.StatusBadRequest),
 		)
-		// It("can list all export requests")
-		// It("can check the status of an export request")
+
+		It("can list all export requests", func() {
+			rr := httptest.NewRecorder()
+
+			// Generate 3 export requests
+			for i := 1; i <= 3; i++ {
+				req := CreateExportRequest(
+					fmt.Sprintf("Test Export Request %d", i),
+					"json",
+					`{"application":"exampleApp", "resource":"exampleResource"}`,
+				)
+
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusAccepted))
+			}
+
+			req, err := http.NewRequest("GET", "/api/export/v1/exports", nil)
+			req.Header.Set("Content-Type", "application/json")
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+		})
+
+		It("can check the status of an export request", func() {
+			rr := httptest.NewRecorder()
+
+			req := CreateExportRequest(
+				"Test Export Request",
+				"json",
+				`{"application":"exampleApp", "resource":"exampleResource"}`,
+			)
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+
+			// Grab the 'id' from the response
+			var exportResponse map[string]interface{}
+			err := json.Unmarshal(rr.Body.Bytes(), &exportResponse)
+			Expect(err).ShouldNot(HaveOccurred())
+			exportUUID := exportResponse["id"].(string)
+
+			// Check the status of the export request
+			req, err = http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s/status", exportUUID), nil)
+			req.Header.Set("Content-Type", "application/json")
+
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+			Expect(rr.Body.String()).To(ContainSubstring(`"status":"pending"`))
+		})
+
 		// It("can send kafka messages to the export sources")
+
 		// It("can get a specific export request by ID and download the file")
-		// It("can delete a specific export request by ID")
+
+		It("can delete a specific export request by ID", func() {
+			rr := httptest.NewRecorder()
+
+			req := CreateExportRequest(
+				"Test Export Request",
+				"json",
+				`{"application":"exampleApp", "resource":"exampleResource"}`,
+			)
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+
+			// Grab the 'id' from the export request
+			var exportResponse map[string]interface{}
+			err := json.Unmarshal(rr.Body.Bytes(), &exportResponse)
+			Expect(err).ShouldNot(HaveOccurred())
+			exportUUID := exportResponse["id"].(string)
+
+			fmt.Println("EXPORT UUID: ", exportUUID)
+
+			// Delete the export request
+			req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/export/v1/exports/%s", exportUUID), nil)
+			req.Header.Set("Content-Type", "application/json")
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+			fmt.Print("Response Body: ", rr.Body.String())
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+
+			// Check that the export was deleted
+			rr = httptest.NewRecorder()
+			req, err = http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s", exportUUID), nil)
+			req.Header.Set("Content-Type", "application/json")
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusNotFound))
+			Expect(rr.Body.String()).To(ContainSubstring("not found"))
+		})
 	})
 })

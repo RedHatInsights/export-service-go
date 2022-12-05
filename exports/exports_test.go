@@ -140,9 +140,9 @@ var _ = Context("Set up export handler", func() {
 			Expect(rr.Body.String()).To(ContainSubstring(`"status":"pending"`))
 		})
 
+		// TODO:
 		// It("can send kafka messages to the export sources")
-
-		// It("can get a specific export request by ID and download the file")
+		// It("can get a completed export request by ID and download it")
 
 		It("can delete a specific export request by ID", func() {
 			rr := httptest.NewRecorder()

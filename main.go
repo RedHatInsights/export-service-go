@@ -188,10 +188,18 @@ func main() {
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer(kafkaProducerMessagesChan)
 
+	DB, err := db.OpenDB(*cfg)
+	if err != nil {
+		log.Panic("failed to open database", "error", err)
+	}
+	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {
+		log.Panic("failed to migrate database", "error", err)
+	}
+
 	external := exports.Export{
 		Bucket:    cfg.StorageConfig.Bucket,
 		Client:    client,
-		DB:        &models.ExportDB{DB: db.DB},
+		DB:        &models.ExportDB{DB: DB},
 		KafkaChan: kafkaProducerMessagesChan,
 		Log:       log,
 	}
@@ -200,7 +208,7 @@ func main() {
 	internal := exports.Internal{
 		Cfg:        cfg,
 		Compressor: compressor,
-		DB:         &models.ExportDB{DB: db.DB},
+		DB:         &models.ExportDB{DB: DB},
 		Log:        log,
 	}
 	psrv := createPrivateServer(internal)

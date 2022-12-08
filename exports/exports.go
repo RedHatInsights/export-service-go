@@ -14,14 +14,12 @@ import (
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/errors"
-	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
@@ -29,11 +27,11 @@ import (
 
 // Export holds any dependencies necessary for the external api endpoints
 type Export struct {
-	Bucket    string
-	Client    *s3.Client
-	DB        models.DBInterface
-	Log       *zap.SugaredLogger
-	KafkaChan chan *kafka.Message
+	Bucket              string
+	Client              *s3.Client
+	DB                  models.DBInterface
+	Log                 *zap.SugaredLogger
+	RequestAppResources RequestApplicationResources
 }
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
@@ -84,41 +82,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	go e.sendPayload(payload, r)
-}
-
-// sendPayload converts the individual sources of a payload into
-// kafka messages which are then sent to the producer through the
-// `messagesChan`
-func (e *Export) sendPayload(payload models.ExportPayload, r *http.Request) {
-	sources, err := payload.GetSources()
-	if err != nil {
-		e.Log.Errorw("failed unmarshalling sources", "error", err)
-		return
-	}
-	for _, source := range sources {
-		headers := ekafka.KafkaHeader{
-			Application: source.Application,
-			IDheader:    r.Header["X-Rh-Identity"][0],
-		}
-		kpayload := ekafka.KafkaMessage{
-			ExportUUID:   payload.ID,
-			Format:       string(payload.Format),
-			Application:  source.Application,
-			ResourceName: source.Resource,
-			ResourceUUID: source.ID,
-			Filters:      source.Filters,
-			IDHeader:     r.Header["X-Rh-Identity"][0],
-		}
-		msg, err := kpayload.ToMessage(headers)
-		if err != nil {
-			e.Log.Errorw("failed to create kafka message", "error", err)
-			return
-		}
-		e.Log.Debug("sending kafka message to the producer")
-		e.KafkaChan <- msg // TODO: what should we do if the message is never sent to the producer?
-		e.Log.Infof("sent kafka message to the producer: %+v", msg)
-	}
+	go e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], payload)
 }
 
 // func buildQuery(q url.Values) (map[string]interface{}, error) {

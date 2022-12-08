@@ -188,12 +188,14 @@ func main() {
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer(kafkaProducerMessagesChan)
 
+	kafkaRequestAppResources, err := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
+
 	external := exports.Export{
-		Bucket:    cfg.StorageConfig.Bucket,
-		Client:    client,
-		DB:        &models.ExportDB{DB: db.DB},
-		KafkaChan: kafkaProducerMessagesChan,
-		Log:       log,
+		Bucket:              cfg.StorageConfig.Bucket,
+		Client:              client,
+		DB:                  &models.ExportDB{DB: db.DB},
+		RequestAppResources: kafkaRequestAppResources,
+		Log:                 log,
 	}
 	wsrv := createPublicServer(external)
 

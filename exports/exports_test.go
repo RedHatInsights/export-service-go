@@ -2,12 +2,13 @@ package exports_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -40,13 +41,27 @@ var _ = Context("Set up export handler", func() {
 	var exportHandler *exports.Export
 	var router *chi.Mux
 
+	var mu sync.Mutex // required to prevent data race when tests are run in parallel
+	ResourceRequest := false
+	madeResourceRequest := &ResourceRequest
+	var mockRequestApplicationResources = func(mr *bool) exports.RequestApplicationResources {
+		return func(ctx context.Context, identity string, payload models.ExportPayload) error {
+			mu.Lock()
+			defer mu.Unlock()
+			*mr = true
+			fmt.Println("KAFKA MESSAGE SENT: ", *mr)
+			return nil
+		}
+	}
+	requestAppResources := mockRequestApplicationResources(madeResourceRequest)
+
 	BeforeEach(func() {
 		exportHandler = &exports.Export{
-			Bucket:    cfg.StorageConfig.Bucket,
-			Client:    es3.Client,
-			DB:        &models.ExportDB{DB: testGormDB},
-			KafkaChan: make(chan *kafka.Message),
-			Log:       logger.Log,
+			Bucket:              cfg.StorageConfig.Bucket,
+			Client:              es3.Client,
+			DB:                  &models.ExportDB{DB: testGormDB},
+			RequestAppResources: requestAppResources,
+			Log:                 logger.Log,
 		}
 
 		router = chi.NewRouter()
@@ -70,6 +85,9 @@ var _ = Context("Set up export handler", func() {
 		BeforeEach(func() {
 			fmt.Println("...CLEANING DB...")
 			testGormDB.Exec("DELETE FROM export_payloads")
+			mu.Lock()
+			defer mu.Unlock()
+			*madeResourceRequest = false
 		})
 
 		DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
@@ -141,7 +159,23 @@ var _ = Context("Set up export handler", func() {
 		})
 
 		// TODO:
-		// It("can send kafka messages to the export sources")
+		It("sends a request message to the export sources", func() {
+			rr := httptest.NewRecorder()
+
+			mu.Lock()
+			defer mu.Unlock()
+
+			req := CreateExportRequest(
+				"Test Export Request",
+				"json",
+				`{"application":"exampleApp", "resource":"exampleResource"}`,
+			)
+
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+			Expect(madeResourceRequest).To(BeTrue())
+
+		})
 		// It("can get a completed export request by ID and download it")
 
 		It("can delete a specific export request by ID", func() {

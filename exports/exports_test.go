@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 
 	"github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
@@ -41,19 +40,15 @@ var _ = Context("Set up export handler", func() {
 	var exportHandler *exports.Export
 	var router *chi.Mux
 
-	var mu sync.Mutex // required to prevent data race when tests are run in parallel
-	ResourceRequest := false
-	madeResourceRequest := &ResourceRequest
-	var mockRequestApplicationResources = func(mr *bool) exports.RequestApplicationResources {
+	wasKafkaMessageSent := false
+	var mockRequestApplicationResources = func(ms *bool) exports.RequestApplicationResources {
 		return func(ctx context.Context, identity string, payload models.ExportPayload) error {
-			mu.Lock()
-			defer mu.Unlock()
-			*mr = true
-			fmt.Println("KAFKA MESSAGE SENT: ", *mr)
+			*ms = true
+			fmt.Println("KAFKA MESSAGE SENT: ", *ms)
 			return nil
 		}
 	}
-	requestAppResources := mockRequestApplicationResources(madeResourceRequest)
+	requestAppResources := mockRequestApplicationResources(&wasKafkaMessageSent)
 
 	BeforeEach(func() {
 		exportHandler = &exports.Export{
@@ -85,9 +80,7 @@ var _ = Context("Set up export handler", func() {
 		BeforeEach(func() {
 			fmt.Println("...CLEANING DB...")
 			testGormDB.Exec("DELETE FROM export_payloads")
-			mu.Lock()
-			defer mu.Unlock()
-			*madeResourceRequest = false
+			wasKafkaMessageSent = false
 		})
 
 		DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
@@ -162,9 +155,6 @@ var _ = Context("Set up export handler", func() {
 		It("sends a request message to the export sources", func() {
 			rr := httptest.NewRecorder()
 
-			mu.Lock()
-			defer mu.Unlock()
-
 			req := CreateExportRequest(
 				"Test Export Request",
 				"json",
@@ -173,7 +163,7 @@ var _ = Context("Set up export handler", func() {
 
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
-			Expect(madeResourceRequest).To(BeTrue())
+			Expect(wasKafkaMessageSent).To(BeTrue())
 
 		})
 		// It("can get a completed export request by ID and download it")

@@ -57,6 +57,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	testDB.Stop()
+	err := testDB.Stop()
+	Expect(err).To(BeNil())
 	fmt.Println("TEST DB STOPPED")
 })

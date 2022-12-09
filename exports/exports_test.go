@@ -37,51 +37,10 @@ var _ = Describe("The public API", func() {
 	cfg := config.ExportCfg
 	cfg.Debug = true
 
-	var exportHandler *exports.Export
-	var router *chi.Mux
-	var wasKafkaMessageSent bool
-
-	BeforeEach(func() {
-		fmt.Println("STARTING TEST...KAFKA SENT: FALSE")
-		wasKafkaMessageSent = false
-		wasKafkaMessageSentPtr := &wasKafkaMessageSent
-		var mockRequestApplicationResources = func(ms *bool) exports.RequestApplicationResources {
-			return func(ctx context.Context, identity string, payload models.ExportPayload) error {
-				*ms = true
-				fmt.Println("KAFKA SENT: TRUE ", *ms)
-				return nil
-			}
-		}
-		requestAppResources := mockRequestApplicationResources(wasKafkaMessageSentPtr)
-
-		exportHandler = &exports.Export{
-			Bucket:              cfg.StorageConfig.Bucket,
-			Client:              es3.Client,
-			DB:                  &models.ExportDB{DB: testGormDB},
-			RequestAppResources: requestAppResources,
-			Log:                 logger.Log,
-		}
-
-		router = chi.NewRouter()
-		router.Use(
-			emiddleware.InjectDebugUserIdentity,
-			identity.EnforceIdentity,
-			emiddleware.EnforceUserIdentity,
-		)
-
-		router.Route("/api/export/v1", func(sub chi.Router) {
-			sub.Post("/exports", exportHandler.PostExport)
-			sub.With(emiddleware.PaginationCtx).Get("/exports", exportHandler.ListExports)
-			sub.Get("/exports/{exportUUID}/status", exportHandler.GetExportStatus)
-			sub.Delete("/exports/{exportUUID}", exportHandler.DeleteExport)
-			sub.Get("/exports/{exportUUID}", exportHandler.GetExport)
-		})
-
-		fmt.Println("...CLEANING DB...")
-		testGormDB.Exec("DELETE FROM export_payloads")
-	})
-
 	DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
+
+		router := setupTest(mockReqeustApplicationResouces)
+
 		rr := httptest.NewRecorder()
 
 		req := CreateExportRequest(name, format, sources)
@@ -96,6 +55,9 @@ var _ = Describe("The public API", func() {
 	)
 
 	It("can list all export requests", func() {
+
+		router := setupTest(mockReqeustApplicationResouces)
+
 		rr := httptest.NewRecorder()
 
 		// Generate 3 export requests
@@ -122,6 +84,9 @@ var _ = Describe("The public API", func() {
 	})
 
 	It("can check the status of an export request", func() {
+
+		router := setupTest(mockReqeustApplicationResouces)
+
 		rr := httptest.NewRecorder()
 
 		req := CreateExportRequest(
@@ -151,6 +116,16 @@ var _ = Describe("The public API", func() {
 
 	// TODO:
 	It("sends a request message to the export sources", func() {
+
+		var wasKafkaMessageSent bool
+
+		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) error {
+			wasKafkaMessageSent = true
+			return nil
+		}
+
+		router := setupTest(mockKafkaCall)
+
 		rr := httptest.NewRecorder()
 		// wasKafkaMessageSent = false // when setting to false here instead of line 46, the test fails with 'WARNING: DATA RACE'
 
@@ -161,13 +136,16 @@ var _ = Describe("The public API", func() {
 		)
 
 		router.ServeHTTP(rr, req)
+
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
 		Expect(wasKafkaMessageSent).To(BeTrue())
-
 	})
 	// It("can get a completed export request by ID and download it")
 
 	It("can delete a specific export request by ID", func() {
+
+		router := setupTest(mockReqeustApplicationResouces)
+
 		rr := httptest.NewRecorder()
 
 		req := CreateExportRequest(
@@ -206,3 +184,43 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring("not found"))
 	})
 })
+
+func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload) error {
+	fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
+	return nil
+}
+
+func setupTest(requestAppResources exports.RequestApplicationResources) chi.Router {
+	var exportHandler *exports.Export
+	var router *chi.Mux
+
+	fmt.Println("STARTING TEST")
+
+	exportHandler = &exports.Export{
+		Bucket:              "cfg.StorageConfig.Bucket",
+		Client:              es3.Client,
+		DB:                  &models.ExportDB{DB: testGormDB},
+		RequestAppResources: requestAppResources,
+		Log:                 logger.Log,
+	}
+
+	router = chi.NewRouter()
+	router.Use(
+		emiddleware.InjectDebugUserIdentity,
+		identity.EnforceIdentity,
+		emiddleware.EnforceUserIdentity,
+	)
+
+	router.Route("/api/export/v1", func(sub chi.Router) {
+		sub.Post("/exports", exportHandler.PostExport)
+		sub.With(emiddleware.PaginationCtx).Get("/exports", exportHandler.ListExports)
+		sub.Get("/exports/{exportUUID}/status", exportHandler.GetExportStatus)
+		sub.Delete("/exports/{exportUUID}", exportHandler.DeleteExport)
+		sub.Get("/exports/{exportUUID}", exportHandler.GetExport)
+	})
+
+	fmt.Println("...CLEANING DB...")
+	testGormDB.Exec("DELETE FROM export_payloads")
+
+	return router
+}

@@ -8,14 +8,17 @@ import (
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/export-service-go/config"
+	"github.com/redhatinsights/export-service-go/models"
 )
 
-var testDB *embeddedpostgres.EmbeddedPostgres
-var testGormDB *gorm.DB
+var (
+	testDB     *embeddedpostgres.EmbeddedPostgres
+	testGormDB *gorm.DB
+)
 
 func TestExports(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -26,7 +29,7 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 	dbStartTime := time.Now()
 	fmt.Println("STARTING TEST DB...")
 
-	var db = embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
+	db := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(5432).Logger(nil))
 	if err := db.Start(); err != nil {
 		fmt.Println("Error starting embedded postgres: ", err)
 		return nil, nil, err

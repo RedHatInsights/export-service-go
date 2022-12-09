@@ -12,13 +12,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhatinsights/platform-go-middlewares/identity"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 func GenerateExportRequestBody(name, format, sources string) (exportRequest []byte) {
@@ -38,7 +39,6 @@ var _ = Describe("The public API", func() {
 	cfg.Debug = true
 
 	DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
-
 		router := setupTest(mockReqeustApplicationResouces)
 
 		rr := httptest.NewRecorder()
@@ -55,7 +55,6 @@ var _ = Describe("The public API", func() {
 	)
 
 	It("can list all export requests", func() {
-
 		router := setupTest(mockReqeustApplicationResouces)
 
 		rr := httptest.NewRecorder()
@@ -84,7 +83,6 @@ var _ = Describe("The public API", func() {
 	})
 
 	It("can check the status of an export request", func() {
-
 		router := setupTest(mockReqeustApplicationResouces)
 
 		rr := httptest.NewRecorder()
@@ -116,12 +114,10 @@ var _ = Describe("The public API", func() {
 
 	// TODO:
 	It("sends a request message to the export sources", func() {
-
 		var wasKafkaMessageSent bool
 
-		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) error {
+		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) {
 			wasKafkaMessageSent = true
-			return nil
 		}
 
 		router := setupTest(mockKafkaCall)
@@ -143,7 +139,6 @@ var _ = Describe("The public API", func() {
 	// It("can get a completed export request by ID and download it")
 
 	It("can delete a specific export request by ID", func() {
-
 		router := setupTest(mockReqeustApplicationResouces)
 
 		rr := httptest.NewRecorder()
@@ -185,9 +180,8 @@ var _ = Describe("The public API", func() {
 	})
 })
 
-func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload) error {
+func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload) {
 	fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
-	return nil
 }
 
 func setupTest(requestAppResources exports.RequestApplicationResources) chi.Router {

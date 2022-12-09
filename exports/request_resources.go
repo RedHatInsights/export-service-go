@@ -14,20 +14,19 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
-type RequestApplicationResources func(ctx context.Context, identity string, payload models.ExportPayload) error
+type RequestApplicationResources func(ctx context.Context, identity string, payload models.ExportPayload)
 
-func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message, log *zap.SugaredLogger) (RequestApplicationResources, error) {
-
+func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message, log *zap.SugaredLogger) RequestApplicationResources {
 	// sendPayload converts the individual sources of a payload into
 	// kafka messages which are then sent to the producer through the
 	// `messagesChan`
-	return func(ctx context.Context, identity string, payload models.ExportPayload) error {
+	return func(ctx context.Context, identity string, payload models.ExportPayload) {
 		go func() {
 			sources, err := payload.GetSources()
 			if err != nil {
 				log.Errorw("failed unmarshalling sources", "error", err)
 				// FIXME:
-				//return err
+				// return err
 				return
 			}
 
@@ -59,6 +58,5 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message, log *zap.Su
 				log.Infof("sent kafka message to the producer: %+v", msg)
 			}
 		}()
-		return nil
-	}, nil
+	}
 }

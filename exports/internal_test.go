@@ -5,13 +5,14 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	"github.com/redhatinsights/export-service-go/s3"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 var _ = Context("Set up internal handler", func() {
@@ -46,7 +47,6 @@ var _ = Context("Set up internal handler", func() {
 	})
 
 	Describe("The internal API", func() {
-
 		BeforeEach(func() {
 			fmt.Println("...CLEANING DB...")
 			testGormDB.Exec("DELETE FROM export_payloads")

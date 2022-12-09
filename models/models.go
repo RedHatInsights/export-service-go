@@ -1,8 +1,6 @@
 /*
-
 Copyright 2022 Red Hat Inc.
 SPDX-License-Identifier: Apache-2.0
-
 */
 package models
 
@@ -197,11 +195,11 @@ const (
 )
 
 // GetAllSourcesStatus gets the status for all of the sources. This function can return these different states:
-//   *  StatusError - failed to retrieve sources
-//   *  StatusComplete - sources are all complete as success
-//   *  StatusPending - sources are still pending
-//   *  StatusPartial - sources are all complete, some sources are a failure
-//   *  StatusFailed - all sources have failed
+//   - StatusError - failed to retrieve sources
+//   - StatusComplete - sources are all complete as success
+//   - StatusPending - sources are still pending
+//   - StatusPartial - sources are all complete, some sources are a failure
+//   - StatusFailed - all sources have failed
 func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
 	sources, err := ep.GetSources()
 	if err != nil {

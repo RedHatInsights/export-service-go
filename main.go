@@ -1,8 +1,6 @@
 /*
-
 Copyright 2022 Red Hat Inc.
 SPDX-License-Identifier: Apache-2.0
-
 */
 package main
 
@@ -24,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -195,15 +194,15 @@ func main() {
 	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {
 		log.Panic("failed to migrate database", "error", err)
 	}
-  
-  kafkaRequestAppResources, err := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
+
+	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
 
 	external := exports.Export{
-		Bucket:    cfg.StorageConfig.Bucket,
-		Client:    client,
-		DB:        &models.ExportDB{DB: DB},
+		Bucket:              cfg.StorageConfig.Bucket,
+		Client:              client,
+		DB:                  &models.ExportDB{DB: DB},
 		RequestAppResources: kafkaRequestAppResources,
-		Log:       log,
+		Log:                 log,
 	}
 	wsrv := createPublicServer(external)
 

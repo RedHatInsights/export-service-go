@@ -188,21 +188,29 @@ func main() {
 	log.Infof("created kafka producer: %s", producer.String())
 	go producer.StartProducer(kafkaProducerMessagesChan)
 
-	kafkaRequestAppResources, err := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
+	DB, err := db.OpenDB(*cfg)
+	if err != nil {
+		log.Panic("failed to open database", "error", err)
+	}
+	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {
+		log.Panic("failed to migrate database", "error", err)
+	}
+  
+  kafkaRequestAppResources, err := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
 
 	external := exports.Export{
-		Bucket:              cfg.StorageConfig.Bucket,
-		Client:              client,
-		DB:                  &models.ExportDB{DB: db.DB},
+		Bucket:    cfg.StorageConfig.Bucket,
+		Client:    client,
+		DB:        &models.ExportDB{DB: DB},
 		RequestAppResources: kafkaRequestAppResources,
-		Log:                 log,
+		Log:       log,
 	}
 	wsrv := createPublicServer(external)
 
 	internal := exports.Internal{
 		Cfg:        cfg,
 		Compressor: compressor,
-		DB:         &models.ExportDB{DB: db.DB},
+		DB:         &models.ExportDB{DB: DB},
 		Log:        log,
 	}
 	psrv := createPrivateServer(internal)

@@ -82,7 +82,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	go e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], payload)
+	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], payload)
 }
 
 // func buildQuery(q url.Values) (map[string]interface{}, error) {

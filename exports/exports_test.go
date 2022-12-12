@@ -136,6 +136,7 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
 		Expect(wasKafkaMessageSent).To(BeTrue())
 	})
+
 	// It("can get a completed export request by ID and download it")
 
 	It("can delete a specific export request by ID", func() {
@@ -157,15 +158,12 @@ var _ = Describe("The public API", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		exportUUID := exportResponse["id"].(string)
 
-		fmt.Println("EXPORT UUID: ", exportUUID)
-
 		// Delete the export request
 		req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/export/v1/exports/%s", exportUUID), nil)
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
 		router.ServeHTTP(rr, req)
-		fmt.Print("Response Body: ", rr.Body.String())
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
 
 		// Check that the export was deleted
@@ -192,7 +190,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 
 	exportHandler = &exports.Export{
 		Bucket:              "cfg.StorageConfig.Bucket",
-		Client:              es3.Client,
+		StorageHandler:      &es3.MockStorageHandler{},
 		DB:                  &models.ExportDB{DB: testGormDB},
 		RequestAppResources: requestAppResources,
 		Log:                 logger.Log,

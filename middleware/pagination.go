@@ -58,7 +58,7 @@ func indexSlice(data interface{}, start, stop int) interface{} {
 		if len == 0 {
 			return []interface{}{}
 		}
-		if start > len {
+		if start >= len {
 			return []interface{}{}
 		}
 		if stop > len {
@@ -72,14 +72,23 @@ func indexSlice(data interface{}, start, stop int) interface{} {
 // GetPaginatedResponse accepts the pagination settings and full data list and returns
 // the paginated data.
 func GetPaginatedResponse(url *url.URL, p Paginate, data interface{}) (*PaginatedResponse, error) {
+	if data == nil {
+		return nil, fmt.Errorf("invalid data set: data cannot be nil")
+	}
+
 	// use lenSlice as error checker. lenSlice returns -1 if the data is not a slice.
 	// Paginated data must be a slice
 	if lenSlice(data) == -1 {
 		return nil, fmt.Errorf("invalid data set: must be a slice")
 	}
+
+	if p.Limit < 0 || p.Offset < 0 {
+		return nil, fmt.Errorf("invalid negative value for limit or offset")
+	}
+
 	return &PaginatedResponse{
 		Meta:  getMeta(data),
-		Links: getLinks(url, p, data),
+		Links: GetLinks(url, p, data),
 		Data:  indexSlice(data, p.Offset, p.Offset+p.Limit),
 	}, nil
 }
@@ -103,25 +112,27 @@ type Links struct {
 	// Previous represents the previous page of paginated data.
 	Previous *string `json:"previous"`
 	// Last represents the last page of paginated data.
-	Last *string `json:"last"`
+	Last string `json:"last"`
 }
 
-func getFirstLink(url *url.URL) string {
+func getFirstLink(url *url.URL, limit, offset int) string {
 	firstURL := url
 	q := firstURL.Query()
-	q.Del("offset")
+	q.Set("offset", fmt.Sprintf("%d", 0))
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	firstURL.RawQuery = q.Encode()
 	return firstURL.String()
 }
 
 func getNextLink(url *url.URL, count, limit, offset int) *string {
-	if offset+limit > count {
+	if offset+limit >= count {
 		return nil
 	}
 	nextURL := url
 	q := nextURL.Query()
 	q.Set("offset", fmt.Sprintf("%d", limit+offset))
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	nextURL.RawQuery = q.Encode()
 	next := nextURL.String()
@@ -130,17 +141,19 @@ func getNextLink(url *url.URL, count, limit, offset int) *string {
 }
 
 func getPreviousLink(url *url.URL, count, limit, offset int) *string {
-	if offset <= 0 {
+	if offset <= 0 || offset >= count {
 		return nil
 	}
 	previousURL := url
 	q := previousURL.Query()
 
 	if offset-limit <= 0 {
-		q.Del("offset")
+		q.Set("offset", fmt.Sprintf("%d", 0))
 	} else {
 		q.Set("offset", fmt.Sprintf("%d", offset-limit))
 	}
+
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	previousURL.RawQuery = q.Encode()
 	previous := previousURL.String()
@@ -148,27 +161,26 @@ func getPreviousLink(url *url.URL, count, limit, offset int) *string {
 	return &previous
 }
 
-func getLastLink(url *url.URL, count, limit, offset int) *string {
-	if count-limit <= 0 {
-		return nil
-	}
+func getLastLink(url *url.URL, count, limit, offset int) string {
 	lastURL := url
 	q := lastURL.Query()
 	q.Set("offset", fmt.Sprintf("%d", count-limit))
+	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	lastURL.RawQuery = q.Encode()
 	last := lastURL.String()
 
-	return &last
+	return last
 }
 
-func getLinks(url *url.URL, p Paginate, data interface{}) Links {
-	result := Links{First: getFirstLink(url)}
+func GetLinks(url *url.URL, p Paginate, data interface{}) Links {
+	result := Links{First: getFirstLink(url, p.Limit, p.Offset)}
 	count := lenSlice(data)
 	if count <= p.Limit && p.Offset == 0 {
-		result.Last = &result.First
+		result.Last = result.First
 		return result
 	}
+
 	result.Next = getNextLink(url, count, p.Limit, p.Offset)
 	result.Previous = getPreviousLink(url, count, p.Limit, p.Offset)
 	result.Last = getLastLink(url, count, p.Limit, p.Offset)
@@ -191,6 +203,12 @@ func PaginationCtx(next http.Handler) http.Handler {
 				errors.BadRequestError(w, fmt.Errorf("invalid limit: %w", err))
 				return
 			}
+
+			if lim < 0 {
+				errors.BadRequestError(w, fmt.Errorf("invalid limt: %d", lim))
+				return
+			}
+
 			pagination.Limit = lim
 		}
 
@@ -201,6 +219,12 @@ func PaginationCtx(next http.Handler) http.Handler {
 				errors.BadRequestError(w, fmt.Errorf("invalid offset: %w", err))
 				return
 			}
+
+			if off < 0 {
+				errors.BadRequestError(w, fmt.Errorf("invalid offset: %d", off))
+				return
+			}
+
 			pagination.Offset = off
 		}
 

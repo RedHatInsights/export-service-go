@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
@@ -26,7 +25,7 @@ import (
 // Export holds any dependencies necessary for the external api endpoints
 type Export struct {
 	Bucket              string
-	Client              *s3.Client
+	StorageHandler      es3.StorageHandler
 	DB                  models.DBInterface
 	Log                 *zap.SugaredLogger
 	RequestAppResources RequestApplicationResources
@@ -146,9 +145,9 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &export.S3Key}
+	// input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &export.S3Key}
 
-	out, err := es3.GetObject(r.Context(), e.Client, &input)
+	out, err := e.StorageHandler.GetObject(r.Context(), export.S3Key)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
 		errors.InternalServerError(w, err)
@@ -159,8 +158,12 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
 	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(out.Body); err != nil {
+	if _, err := buf.ReadFrom(out); err != nil {
 		e.Log.Errorf("failed to read body: %w", err)
+	}
+	err = out.Close()
+	if err != nil {
+		e.Log.Errorf("failed to close body: %w", err)
 	}
 	errors.Logerr(w.Write(buf.Bytes()))
 }

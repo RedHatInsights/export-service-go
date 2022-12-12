@@ -33,6 +33,10 @@ lint:
 build:
 	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
 
+build-local:
+	go build -o export-service cmd/export-service/*.go
+	go build -o export-service-main main.go
+
 spec:
 ifeq (, $(shell which yq))
 	echo "yq is not installed"
@@ -82,3 +86,6 @@ sample-request-internal-upload:
 
 make test:
 	ginkgo -r --race --randomize-all --randomize-suites
+
+test-sql:
+	go test ./... -tags=sql -count=1

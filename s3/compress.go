@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/models"
@@ -21,6 +22,7 @@ import (
 type Compressor struct {
 	Bucket string
 	Log    *zap.SugaredLogger
+	Client s3.Client
 }
 
 // S3ListObjectsAPI defines the interface for the ListObjectsV2 function.
@@ -30,6 +32,15 @@ type S3ListObjectsAPI interface {
 	ListObjectsV2(ctx context.Context,
 		params *s3.ListObjectsV2Input,
 		optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
+}
+
+type StorageHandler interface {
+	Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error)
+	Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error)
+	Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
+	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error
+	GetObject(ctx context.Context, key string) (io.ReadCloser, error)
+	ProcessSources(db models.DBInterface, uid uuid.UUID)
 }
 
 func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2Input) (*s3.ListObjectsV2Output, error) {
@@ -148,4 +159,153 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 		Body:   body,
 	}
 	return uploader.Upload(ctx, input)
+}
+
+func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
+	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
+
+	if err := payload.SetStatusRunning(db); err != nil {
+		c.Log.Errorw("failed to set running status", "error", err)
+		return err
+	}
+
+	_, uploadErr := c.Upload(ctx, body, &c.Bucket, &filename)
+	if uploadErr != nil {
+		c.Log.Errorf("error during upload: %v", uploadErr)
+		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
+		if err := payload.SetSourceStatus(db, urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {
+			c.Log.Errorw("failed to set source status after failed upload", "error", err)
+			return uploadErr
+		}
+		return uploadErr
+	}
+
+	return nil
+}
+
+func (c *Compressor) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+	input := &s3.GetObjectInput{Bucket: &c.Bucket, Key: &key}
+	//return GetObject(ctx, &c.Client, input)
+	s3Object, err := GetObject(ctx, &c.Client, input)
+	if err != nil {
+		return nil, err
+	}
+	return s3Object.Body, err
+}
+
+func (c *Compressor) compressPayload(db models.DBInterface, payload *models.ExportPayload) {
+	t, filename, s3key, err := c.Compress(context.TODO(), payload)
+	if err != nil {
+		c.Log.Errorw("failed to compress payload", "error", err)
+		if err := payload.SetStatusFailed(db); err != nil {
+			c.Log.Errorw("failed to set status failed", "error", err)
+			return
+		}
+	}
+
+	c.Log.Infof("done uploading %s", filename)
+	ready, err := payload.GetAllSourcesStatus()
+	if err != nil {
+		c.Log.Errorf("failed to get all source status: %v", err)
+		return
+	}
+
+	switch ready {
+	case models.StatusComplete:
+		err = payload.SetStatusComplete(db, &t, s3key)
+	case models.StatusPartial:
+		err = payload.SetStatusPartial(db, &t, s3key)
+	}
+
+	if err != nil {
+		c.Log.Errorw("failed updating model status", "error", err)
+		return
+	}
+}
+
+func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
+	payload, err := db.Get(uid)
+	if err != nil {
+		c.Log.Errorf("failed to get payload: %v", err)
+		return
+	}
+	ready, err := payload.GetAllSourcesStatus()
+	if err != nil {
+		c.Log.Errorf("failed to get all source status: %v", err)
+		return
+	}
+	switch ready {
+	case models.StatusComplete, models.StatusPartial:
+		if payload.Status == models.Running {
+			c.Log.Infow("ready for zipping", "export-uuid", payload.ID)
+			go c.compressPayload(db, payload) // start a go-routine to not block
+		}
+	case models.StatusPending:
+		return
+	case models.StatusFailed:
+		c.Log.Infof("all sources for payload %s reported as failure", payload.ID)
+		if err := payload.SetStatusFailed(db); err != nil {
+			c.Log.Errorw("failed updating model status after sources failed", "error", err)
+		}
+	}
+}
+
+type MockStorageHandler struct {
+}
+
+func (mc *MockStorageHandler) Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error) {
+	fmt.Println("Ran mockStorageHandler.Compress")
+	return time.Now(), "filename", "s3key", nil
+}
+
+func (mc *MockStorageHandler) Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error) {
+	fmt.Println("Ran mockStorageHandler.Download")
+	return 0, nil
+}
+
+func (mc *MockStorageHandler) Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
+	fmt.Println("Ran mockStorageHandler.Upload")
+	return nil, nil
+}
+
+func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
+	fmt.Println("Ran mockStorageHandler.CreateObject")
+	return nil
+}
+
+func (mc *MockStorageHandler) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+	fmt.Println("Ran mockStorageHandler.GetObject")
+
+	return nil, nil
+}
+
+func (mc *MockStorageHandler) ProcessSources(db models.DBInterface, uid uuid.UUID) {
+	// set status to complete
+	payload, err := db.Get(uid)
+	if err != nil {
+		fmt.Printf("failed to get payload: %v", err)
+		return
+	}
+	ready, err := payload.GetAllSourcesStatus()
+	if err != nil {
+		fmt.Printf("failed to get all source status: %v", err)
+		return
+	}
+	switch ready {
+	case models.StatusComplete, models.StatusPartial:
+		if err := payload.SetStatusComplete(db, nil, ""); err != nil {
+			fmt.Printf("failed updating model status: %v", err)
+			return
+		}
+	case models.StatusPending:
+		return
+	case models.StatusFailed:
+		fmt.Printf("all sources for payload %s reported as failure", payload.ID)
+		if err := payload.SetStatusFailed(db); err != nil {
+			fmt.Printf("failed updating model status after sources failed: %v", err)
+			return
+		}
+	}
+
+	fmt.Println("Ran mockStorageHandler.ProcessSources")
 }

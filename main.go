@@ -197,9 +197,15 @@ func main() {
 
 	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
 
+	storageHandler := es3.Compressor{
+		Bucket: cfg.StorageConfig.Bucket,
+		Log:    log,
+		Client: *client,
+	}
+
 	external := exports.Export{
 		Bucket:              cfg.StorageConfig.Bucket,
-		Client:              client,
+		StorageHandler:      &storageHandler,
 		DB:                  &models.ExportDB{DB: DB},
 		RequestAppResources: kafkaRequestAppResources,
 		Log:                 log,

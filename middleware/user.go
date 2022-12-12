@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	cfg = config.ExportCfg
+	Cfg = config.ExportCfg
 	log = logger.Log
 )
 
@@ -33,7 +33,7 @@ var (
 // when operating in DEBUG mode. ** Only used during testing.
 func InjectDebugUserIdentity(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if cfg.Debug {
+		if Cfg.Debug {
 			rawHeaders := r.Header["X-Rh-Identity"]
 
 			// request does not have the x-rh-id header

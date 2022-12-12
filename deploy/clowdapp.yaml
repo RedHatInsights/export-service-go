@@ -55,6 +55,29 @@ objects:
             cpu: 500m
             memory: 512Mi
 
+    jobs:
+    - name: cleaner
+      schedule: ${CLEANER_SCHEDULE}
+      restartPolicy: OnFailure
+      concurrencyPolicy: Replace
+      podSpec:
+        image: ${IMAGE}:${IMAGE_TAG}
+        command:
+        - ./export-service-go
+        - expired_export_cleaner
+        env:
+        - name: LOG_LEVEL
+          value: ${LOG_LEVEL}
+        - name: DB_SSLMODE
+          value: ${DB_SSLMODE}
+        resources:
+          limits:
+            cpu: 200m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+
 
 parameters:
   - description: Cpu limit of service
@@ -82,3 +105,5 @@ parameters:
     value: "false"
   - name: OPEN_API_FILEPATH
     value: /var/tmp/openapi.json
+  - name: CLEANER_SCHEDULE
+    value: "* 1 * * *"

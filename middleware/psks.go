@@ -33,7 +33,7 @@ func EnforcePSK(next http.Handler) http.Handler {
 			return
 		}
 
-		if !SliceContainsString(cfg.Psks, psk[0]) {
+		if !SliceContainsString(Cfg.Psks, psk[0]) {
 			errors.JSONError(w, "invalid x-rh-exports-psk header", http.StatusUnauthorized)
 			return
 		}

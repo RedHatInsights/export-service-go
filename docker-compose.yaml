@@ -42,6 +42,7 @@ services:
       - log_statement=all
 
   s3:
+    container_name: s3
     image: minio/minio
     ports:
       - 9099:9099

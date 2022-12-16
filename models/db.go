@@ -15,13 +15,13 @@ import (
 
 // APIExport represents select fields of the ExportPayload which are returned to the user
 type APIExport struct {
-	ID          uuid.UUID  `json:"id"`
-	Name        string     `json:"name"`
-	CreatedAt   time.Time  `json:"created"`
-	CompletedAt *time.Time `json:"completed,omitempty"`
-	Expires     *time.Time `json:"expires,omitempty"`
-	Format      string     `json:"format"`
-	Status      string     `json:"status"`
+	ID        uuid.UUID  `json:"id"`
+	Name      string     `json:"name"`
+	Created   time.Time  `json:"created"`
+	Completed *time.Time `json:"completed,omitempty"`
+	Expires   *time.Time `json:"expires,omitempty"`
+	Format    string     `json:"format"`
+	Status    string     `json:"status"`
 }
 
 type ExportDB struct {

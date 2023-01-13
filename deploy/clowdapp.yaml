@@ -47,6 +47,8 @@ objects:
           value: ${ENABLE_CLOUDWATCH_LOGGING}
         - name: OPENAPIFILEPATH
           value: ${OPEN_API_FILEPATH}
+        - name: EXPORT_SERVICE_BUCKET
+          value: ${EXPORT_SERVICE_BUCKET}
         # The following environment variable may need to be a vault secret in the future
         - name: EXPORTS_PSKS
           value: ${EXPORTS_PSKS}

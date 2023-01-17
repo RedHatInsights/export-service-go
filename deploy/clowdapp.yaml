@@ -43,6 +43,13 @@ objects:
           periodSeconds: 5
           successThreshold: 1
           timeoutSeconds: 120
+        resources:
+          limits:
+            cpu: ${{CPU_LIMIT}}
+            memory: ${MEMORY_LIMIT}
+          requests:
+            cpu: 500m
+            memory: 512Mi
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}
@@ -55,13 +62,26 @@ objects:
         # The following environment variable may need to be a vault secret in the future
         - name: EXPORTS_PSKS
           value: ${EXPORTS_PSKS}
-        resources:
-          limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
-          requests:
-            cpu: 500m
-            memory: 512Mi
+        initContainers:
+        - args:
+          - export-service
+          - migrate_db
+          - upgrade
+          env:
+          - name: LOG_LEVEL
+            value: ${LOG_LEVEL}
+          - name: DB_SSLMODE
+            value: ${DB_SSLMODE}
+          image: ${IMAGE}:${IMAGE_TAG}
+          name: export-service-init
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+
     database:
       name: export-service
       version: 12
@@ -80,7 +100,7 @@ objects:
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
-        - ./export-service-go
+        - export-service
         - expired_export_cleaner
         env:
         - name: LOG_LEVEL

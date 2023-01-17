@@ -191,9 +191,6 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	if err != nil {
 		log.Panic("failed to open database", "error", err)
 	}
-	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {
-		log.Panic("failed to migrate database", "error", err)
-	}
 
 	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
 

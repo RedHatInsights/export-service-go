@@ -12,6 +12,7 @@ require (
 	github.com/fergusstrange/embedded-postgres v1.19.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-openapi/runtime v0.23.3
+	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/onsi/ginkgo/v2 v2.3.1
@@ -19,7 +20,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
-	github.com/spf13/cobra v0.0.3 // indirect
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.11.0
 	go.uber.org/zap v1.21.0
 	gorm.io/datatypes v1.0.6

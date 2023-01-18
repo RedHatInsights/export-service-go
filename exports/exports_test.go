@@ -26,7 +26,7 @@ func generateExportRequestBody(name, format, sources string) (exportRequest []by
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
 
-func CreateExportRequest(name, format, sources string) *http.Request {
+func createExportRequest(name, format, sources string) *http.Request {
 	exportRequest := generateExportRequestBody(name, format, sources)
 	request, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequest))
 	Expect(err).To(BeNil())
@@ -43,7 +43,7 @@ var _ = Describe("The public API", func() {
 
 		rr := httptest.NewRecorder()
 
-		req := CreateExportRequest(name, format, sources)
+		req := createExportRequest(name, format, sources)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
@@ -61,7 +61,7 @@ var _ = Describe("The public API", func() {
 
 		// Generate 3 export requests
 		for i := 1; i <= 3; i++ {
-			req := CreateExportRequest(
+			req := createExportRequest(
 				fmt.Sprintf("Test Export Request %d", i),
 				"json",
 				`{"application":"exampleApp", "resource":"exampleResource"}`,
@@ -87,7 +87,7 @@ var _ = Describe("The public API", func() {
 
 		rr := httptest.NewRecorder()
 
-		req := CreateExportRequest(
+		req := createExportRequest(
 			"Test Export Request",
 			"json",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
@@ -123,7 +123,7 @@ var _ = Describe("The public API", func() {
 
 		rr := httptest.NewRecorder()
 
-		req := CreateExportRequest(
+		req := createExportRequest(
 			"Test Export Request",
 			"json",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
@@ -142,7 +142,7 @@ var _ = Describe("The public API", func() {
 
 		rr := httptest.NewRecorder()
 
-		req := CreateExportRequest(
+		req := createExportRequest(
 			"Test Export Request",
 			"json",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,

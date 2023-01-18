@@ -163,6 +163,9 @@ func init() {
 		config.MetricsPort = cfg.MetricsPort
 		config.PrivatePort = *cfg.PrivatePort
 
+		exportBucket := options.GetString("EXPORT_SERVICE_BUCKET")
+		exportBucketInfo := clowder.ObjectBuckets[exportBucket]
+
 		config.DBConfig = dbConfig{
 			User:     cfg.Database.Username,
 			Password: cfg.Database.Password,
@@ -201,7 +204,7 @@ func init() {
 		endpoint := fmt.Sprintf("%s:%d", cfg.ObjectStore.Hostname, cfg.ObjectStore.Port)
 		bucket := cfg.ObjectStore.Buckets[0]
 		config.StorageConfig = storageConfig{
-			Bucket:    bucket.Name,
+			Bucket:    exportBucketInfo.RequestedName,
 			Endpoint:  endpoint,
 			AccessKey: *bucket.AccessKey,
 			SecretKey: *bucket.SecretKey,

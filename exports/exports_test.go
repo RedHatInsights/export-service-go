@@ -112,7 +112,6 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring(`"status":"pending"`))
 	})
 
-	// TODO:
 	It("sends a request message to the export sources", func() {
 		var wasKafkaMessageSent bool
 
@@ -123,7 +122,6 @@ var _ = Describe("The public API", func() {
 		router := setupTest(mockKafkaCall)
 
 		rr := httptest.NewRecorder()
-		// wasKafkaMessageSent = false // when setting to false here instead of line 46, the test fails with 'WARNING: DATA RACE'
 
 		req := CreateExportRequest(
 			"Test Export Request",

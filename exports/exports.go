@@ -145,8 +145,6 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// input := s3.GetObjectInput{Bucket: &e.Bucket, Key: &export.S3Key}
-
 	out, err := e.StorageHandler.GetObject(r.Context(), export.S3Key)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)

@@ -22,12 +22,12 @@ import (
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-func GenerateExportRequestBody(name, format, sources string) (exportRequest []byte) {
+func generateExportRequestBody(name, format, sources string) (exportRequest []byte) {
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
 
 func CreateExportRequest(name, format, sources string) *http.Request {
-	exportRequest := GenerateExportRequestBody(name, format, sources)
+	exportRequest := generateExportRequestBody(name, format, sources)
 	request, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequest))
 	Expect(err).To(BeNil())
 	request.Header.Set("Content-Type", "application/json")

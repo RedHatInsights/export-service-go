@@ -1,8 +1,6 @@
 /*
-
 Copyright 2022 Red Hat Inc.
 SPDX-License-Identifier: Apache-2.0
-
 */
 package main
 
@@ -24,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -196,12 +195,20 @@ func main() {
 		log.Panic("failed to migrate database", "error", err)
 	}
 
+	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
+
+	storageHandler := es3.Compressor{
+		Bucket: cfg.StorageConfig.Bucket,
+		Log:    log,
+		Client: *client,
+	}
+
 	external := exports.Export{
-		Bucket:    cfg.StorageConfig.Bucket,
-		Client:    client,
-		DB:        &models.ExportDB{DB: DB},
-		KafkaChan: kafkaProducerMessagesChan,
-		Log:       log,
+		Bucket:              cfg.StorageConfig.Bucket,
+		StorageHandler:      &storageHandler,
+		DB:                  &models.ExportDB{DB: DB},
+		RequestAppResources: kafkaRequestAppResources,
+		Log:                 log,
 	}
 	wsrv := createPublicServer(external)
 

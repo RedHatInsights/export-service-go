@@ -102,7 +102,7 @@ func init() {
 
 	// Minio defaults
 	options.SetDefault("MINIO_HOST", "localhost")
-	options.SetDefault("MINIO_PORT", "9000")
+	options.SetDefault("MINIO_PORT", "9099")
 	options.SetDefault("MINIO_SSL", false)
 
 	// Kafka defaults

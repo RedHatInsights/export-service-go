@@ -23,8 +23,8 @@ objects:
         livenessProbe:        
           failureThreshold: 3
           httpGet:
-            path: /
-            port: 8000
+            path: /healthz
+            port: 9000
             scheme: HTTP
           initialDelaySeconds: 35
           periodSeconds: 5
@@ -33,8 +33,8 @@ objects:
         readinessProbe:
           failureThreshold: 3
           httpGet:
-            path: /
-            port: 8000
+            path: /readyz
+            port: 9000
             scheme: HTTP
           initialDelaySeconds: 35
           periodSeconds: 5

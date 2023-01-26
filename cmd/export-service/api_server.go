@@ -167,7 +167,7 @@ func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, cfg.OpenAPIFilePath)
 }
 
-func main() {
+func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
 		"publicport", cfg.PublicPort,

@@ -18,7 +18,7 @@ RUN go mod download
 # Now copy the rest of the files for build
 COPY . .
 # Build the binary
-RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service
+RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-service/*.go
 ############################
 # STEP 2 build a small image
 ############################

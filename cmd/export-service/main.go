@@ -27,6 +27,16 @@ func createRootCommand(cfg *config.ExportConfig, log *zap.SugaredLogger) *cobra.
 
 	rootCmd.AddCommand(expiredExportCleanerCmd)
 
+	var apiServerCmd = &cobra.Command{
+		Use:   "api_server",
+		Short: "Run the api server",
+		Run: func(cmd *cobra.Command, args []string) {
+			startApiServer(cfg, log)
+		},
+	}
+
+	rootCmd.AddCommand(apiServerCmd)
+
 	return rootCmd
 }
 

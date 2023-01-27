@@ -20,6 +20,9 @@ objects:
       # Details about running pod
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}     
+        command:
+        - export-service-go
+        - api_server
         livenessProbe:        
           failureThreshold: 3
           httpGet:

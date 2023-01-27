@@ -144,7 +144,7 @@ func init() {
 
 	config.StorageConfig = storageConfig{
 		Bucket:    "exports-bucket",
-		Endpoint:  fmt.Sprintf("http://%s:%s", options.GetString("MINIO_HOST"), options.GetString("MINIO_PORT")),
+		Endpoint:  buildBaseHttpUrl(options.GetBool("MINIO_SSL"), options.GetString("MINIO_HOST"), options.GetInt("MINIO_PORT")),
 		AccessKey: options.GetString("AWS_ACCESS_KEY"),
 		SecretKey: options.GetString("AWS_SECRET_ACCESS_KEY"),
 		UseSSL:    options.GetBool("MINIO_SSL"),
@@ -201,11 +201,10 @@ func init() {
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
 
-		endpoint := fmt.Sprintf("%s:%d", cfg.ObjectStore.Hostname, cfg.ObjectStore.Port)
 		bucket := cfg.ObjectStore.Buckets[0]
 		config.StorageConfig = storageConfig{
 			Bucket:    exportBucketInfo.RequestedName,
-			Endpoint:  endpoint,
+			Endpoint:  buildBaseHttpUrl(cfg.ObjectStore.Tls, cfg.ObjectStore.Hostname, cfg.ObjectStore.Port),
 			AccessKey: *bucket.AccessKey,
 			SecretKey: *bucket.SecretKey,
 			UseSSL:    cfg.ObjectStore.Tls,
@@ -213,4 +212,13 @@ func init() {
 	}
 
 	ExportCfg = config
+}
+
+func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {
+	var protocol string = "http"
+	if tlsEnabled {
+		protocol = "https"
+	}
+
+	return fmt.Sprintf("%s://%s:%d", protocol, hostname, port)
 }

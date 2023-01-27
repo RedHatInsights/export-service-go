@@ -59,8 +59,11 @@ docker-up-no-server: docker-up-db
 monitor-topic:
 	$(OCI_TOOL) exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests
 
-run-api: build-local
+run-api: build-local migrate_db
 	DEBUG=true MINIO_PORT=9099 AWS_ACCESS_KEY=minio AWS_SECRET_ACCESS_KEY=minioadmin PSKS=testing-a-psk PUBLICPORT=8000 METRICSPORT=9090 PRIVATEPORT=10010 PGSQL_PORT=5432 ./export-service api_server
+
+migrate_db: build-local
+	PGSQL_PORT=5432 ./export-service migrate_db upgrade
 
 run: docker-up-no-server run-api
 

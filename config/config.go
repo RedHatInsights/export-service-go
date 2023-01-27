@@ -138,7 +138,7 @@ func init() {
 		Port:     options.GetString("PGSQL_PORT"),
 		Name:     options.GetString("PGSQL_DATABASE"),
 		SSLCfg: dbSSLConfig{
-			SSLMode: "prefer",
+			SSLMode: "disable",
 		},
 	}
 

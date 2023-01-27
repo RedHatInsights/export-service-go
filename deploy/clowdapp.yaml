@@ -67,6 +67,10 @@ objects:
       version: 12
     objectStore:
     - ${EXPORT_SERVICE_BUCKET}
+    kafkaTopics:
+    - replicas: 3
+      partitions: 64
+      topicName: platform.export.requests
 
     jobs:
     - name: cleaner

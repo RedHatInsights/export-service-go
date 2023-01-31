@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	export_logger "github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
@@ -294,28 +295,31 @@ func (c *Compressor) compressPayload(db models.DBInterface, payload *models.Expo
 }
 
 func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
+
+	logger := c.Log.With(export_logger.ExportIDField(uid.String()))
+
 	payload, err := db.Get(uid)
 	if err != nil {
-		c.Log.Errorf("failed to get payload: %v", err)
+		logger.Errorf("failed to get payload: %v", err)
 		return
 	}
 	ready, err := payload.GetAllSourcesStatus()
 	if err != nil {
-		c.Log.Errorf("failed to get all source status: %v", err)
+		logger.Errorf("failed to get all source status: %v", err)
 		return
 	}
 	switch ready {
 	case models.StatusComplete, models.StatusPartial:
 		if payload.Status == models.Running {
-			c.Log.Infow("ready for zipping", "export-uuid", payload.ID)
+			logger.Infow("ready for zipping", "export-uuid", payload.ID)
 			go c.compressPayload(db, payload) // start a go-routine to not block
 		}
 	case models.StatusPending:
 		return
 	case models.StatusFailed:
-		c.Log.Infof("all sources for payload %s reported as failure", payload.ID)
+		logger.Infof("all sources for payload %s reported as failure", payload.ID)
 		if err := payload.SetStatusFailed(db); err != nil {
-			c.Log.Errorw("failed updating model status after sources failed", "error", err)
+			logger.Errorw("failed updating model status after sources failed", "error", err)
 		}
 	}
 }

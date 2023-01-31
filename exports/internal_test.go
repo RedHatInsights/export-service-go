@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -36,7 +37,7 @@ var _ = Context("Set up internal handler", func() {
 			Log:        logger.Log,
 		}
 
-		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) {
+		mockKafkaCall := func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 		}
 
 		exportHandler := &exports.Export{

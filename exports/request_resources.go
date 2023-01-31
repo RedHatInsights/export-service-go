@@ -14,13 +14,13 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
-type RequestApplicationResources func(ctx context.Context, identity string, payload models.ExportPayload)
+type RequestApplicationResources func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload)
 
-func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message, log *zap.SugaredLogger) RequestApplicationResources {
+func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestApplicationResources {
 	// sendPayload converts the individual sources of a payload into
 	// kafka messages which are then sent to the producer through the
 	// `messagesChan`
-	return func(ctx context.Context, identity string, payload models.ExportPayload) {
+	return func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 		go func() {
 			sources, err := payload.GetSources()
 			if err != nil {

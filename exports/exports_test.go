@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap"
 
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
@@ -410,7 +411,7 @@ var _ = Describe("The public API", func() {
 	It("sends a request message to the export sources", func() {
 		var wasKafkaMessageSent bool
 
-		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) {
+		mockKafkaCall := func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 			wasKafkaMessageSent = true
 		}
 
@@ -473,7 +474,7 @@ var _ = Describe("The public API", func() {
 	})
 })
 
-func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload) {
+func mockReqeustApplicationResouces(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 	// fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }
 

@@ -63,6 +63,16 @@ type URLParams struct {
 	ResourceUUID uuid.UUID
 }
 
+// QueryParams for the /export/v1/exports endpoint
+type QueryParams struct {
+	Name        string    `json:"name"`
+	Created     time.Time `json:"created"`
+	Expires     time.Time `json:"expires"`
+	Status      string    `json:"status"`
+	Application string    `json:"application"`
+	Resource    string    `json:"resource"`
+}
+
 // TODO: Seperate database struct and request struct
 type ExportPayload struct {
 	ID          uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`

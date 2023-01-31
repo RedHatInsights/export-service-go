@@ -30,7 +30,7 @@ type ExportDB struct {
 }
 
 type DBInterface interface {
-	APIList(user User) (result []*APIExport, err error)
+	APIList(user User, params *QueryParams) (result []*APIExport, err error)
 
 	Create(payload *ExportPayload) error
 	Delete(exportUUID uuid.UUID, user User) error
@@ -82,10 +82,33 @@ func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *Expor
 	return
 }
 
-func (edb *ExportDB) APIList(user User) (result []*APIExport, err error) {
-	err = (edb.DB.Model(&ExportPayload{}).
-		Where(&ExportPayload{User: user}).
-		Find(&result).Error)
+func (edb *ExportDB) APIList(user User, params *QueryParams) (result []*APIExport, err error) {
+	db := edb.DB.Model(&ExportPayload{}).Where(&ExportPayload{User: user})
+
+	// filter by name, export status, created, expires, application, resource
+	if params.Name != "" {
+		db = db.Where("export_paylods.name = ?", params.Name)
+	}
+
+	if params.Status != "" {
+		db = db.Where("export_paylods.status = ?", params.Status)
+	}
+
+	if !params.Created.IsZero() {
+		db = db.Where("export_paylods.created_at >= ?", params.Created.String())
+		db = db.Where("export_paylods.created_at < ?", params.Created.AddDate(0, 0, 1).String())
+	}
+
+	if !params.Expires.IsZero() {
+		db = db.Where("export_paylods.expires >= ?", params.Expires)
+		db = db.Where("export_paylods.expires < ?", params.Expires.AddDate(0, 0, 1))
+	}
+
+	// TODO: filtering by application and resource needs to be implemented with a sources table
+	// Currently, the sources is stored as json in the table, which is not efficient to parse
+
+	err = db.Find(&result).Error
+
 	return
 }
 

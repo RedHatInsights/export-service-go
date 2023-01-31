@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
@@ -80,6 +81,105 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+	})
+
+	FDescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
+		router := setupTest(mockReqeustApplicationResouces)
+
+		rr := httptest.NewRecorder()
+
+		// Generate 3 export requests
+		for i := 1; i <= 3; i++ {
+			req := createExportRequest(
+				fmt.Sprintf("Test Export Request %d", i),
+				"json",
+				`{"application":"exampleApp", "resource":"exampleResource"}`,
+			)
+
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+		}
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", filter), nil)
+		req.Header.Set("Content-Type", "application/json")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+		Expect(rr.Code).To(Equal(expectedStatus))
+		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
+	},
+		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusAccepted),
+		Entry("by status", "status=complete", "Test Export Request 1", http.StatusAccepted),
+		Entry("by created at (given date)", "created=2021-01-01T00:00:00Z", "Test Export Request 1", http.StatusAccepted),
+		Entry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "Test Export Request 1", http.StatusAccepted),
+		FEntry("by improper created at", "created=spring", "", http.StatusBadRequest),
+		Entry("by expires", "expires=2023-01-01T00:00:00Z", "Test Export Request 1", http.StatusAccepted),
+		Entry("by improper expires", "expires=nextyear", "", http.StatusBadRequest),
+	)
+
+	Describe("can filter exports by date", func() {
+		It("with created at in date format", func() {
+			router := populateTestData()
+
+			rr := httptest.NewRecorder()
+
+			today := time.Now().Format("2006-01-02")
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", today), nil)
+
+			req.Header.Set("Content-Type", "application/json")
+
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+
+			Expect(rr.Code).To(Equal(http.StatusOK))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+		})
+
+		It("with created at in date-time format", func() {
+			router := setupTest(mockReqeustApplicationResouces)
+
+			rr := httptest.NewRecorder()
+
+			today := time.Now().Format(time.RFC3339)
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", today), nil)
+
+			req.Header.Set("Content-Type", "application/json")
+
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+
+			Expect(rr.Code).To(Equal(http.StatusOK))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+		})
+
+		It("with created at referring to yesterday", func() {
+			router := setupTest(mockReqeustApplicationResouces)
+
+			rr := httptest.NewRecorder()
+
+			yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", yesterday), nil)
+
+			req.Header.Set("Content-Type", "application/json")
+
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+
+			Expect(rr.Code).To(Equal(http.StatusOK))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 3"))
+		})
 	})
 
 	It("can check the status of an export request", func() {
@@ -211,6 +311,25 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 
 	fmt.Println("...CLEANING DB...")
 	testGormDB.Exec("DELETE FROM export_payloads")
+
+	return router
+}
+
+func populateTestData() chi.Router {
+	// define router
+	router := setupTest(mockReqeustApplicationResouces)
+
+	for i := 1; i <= 3; i++ {
+		req := createExportRequest(
+			fmt.Sprintf("Test Export Request %d", i),
+			"json",
+			`{"application":"exampleApp", "resource":"exampleResource"}`,
+		)
+
+		rr := httptest.NewRecorder()
+
+		router.ServeHTTP(rr, req)
+	}
 
 	return router
 }

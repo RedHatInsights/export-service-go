@@ -95,13 +95,11 @@ func (edb *ExportDB) APIList(user User, params *QueryParams) (result []*APIExpor
 	}
 
 	if !params.Created.IsZero() {
-		db = db.Where("export_payloads.created_at >= ?", params.Created.String())
-		db = db.Where("export_payloads.created_at < ?", params.Created.AddDate(0, 0, 1).String())
+		db = db.Where("export_payloads.created_at BETWEEN ? AND ?", params.Created.String(), params.Created.AddDate(0, 0, 1).String())
 	}
 
 	if !params.Expires.IsZero() {
-		db = db.Where("export_payloads.expires >= ?", params.Expires)
-		db = db.Where("export_payloads.expires < ?", params.Expires.AddDate(0, 0, 1))
+		db = db.Where("export_payloads.expires BETWEEN ? AND ?", params.Expires, params.Expires.AddDate(0, 0, 1))
 	}
 
 	// TODO: filtering by application and resource needs to be implemented with a sources table

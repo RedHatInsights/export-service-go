@@ -21,7 +21,7 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 	// created and expires should be date only, not date-time strings
 	format := "2006-01-02"
 	if created != "" {
-		result.Created, err = time.Parse(time.RFC822, created)
+		result.Created, err = time.Parse(format, created)
 		if err != nil {
 			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date-time", created)
 		}

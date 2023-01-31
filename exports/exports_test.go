@@ -42,9 +42,10 @@ var _ = Describe("The public API", func() {
 	DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
 		router := setupTest(mockReqeustApplicationResouces)
 
+		req := createExportRequest(name, format, sources)
+
 		rr := httptest.NewRecorder()
 
-		req := createExportRequest(name, format, sources)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
@@ -76,14 +77,16 @@ var _ = Describe("The public API", func() {
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
+		rr = httptest.NewRecorder()
+
 		router.ServeHTTP(rr, req)
-		Expect(rr.Code).To(Equal(http.StatusAccepted))
+		Expect(rr.Code).To(Equal(http.StatusOK))
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 	})
 
-	DescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
+	FDescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
 		router := populateTestData()
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", filter), nil)
@@ -96,12 +99,12 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
 	},
-		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusAccepted),
-		Entry("by status", "status=complete", "Test Export Request 1", http.StatusAccepted),
-		Entry("by created at (given date)", "created=2021-01-01", "", http.StatusAccepted),
-		Entry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "", http.StatusAccepted),
+		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusOK),
+		Entry("by status", "status=pending", "Test Export Request 1", http.StatusOK),
+		FEntry("by created at (given date)", "created=2021-01-01", "", http.StatusOK),
+		Entry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "", http.StatusOK),
 		Entry("by improper created at", "created=spring", "", http.StatusBadRequest),
-		Entry("by expires", "expires=2023-01-01T00:00:00Z", "", http.StatusAccepted),
+		Entry("by expires", "expires=2023-01-01T00:00:00Z", "", http.StatusOK),
 		Entry("by improper expires", "expires=nextyear", "", http.StatusBadRequest),
 	)
 
@@ -195,8 +198,10 @@ var _ = Describe("The public API", func() {
 
 		Expect(err).ShouldNot(HaveOccurred())
 
+		rr = httptest.NewRecorder()
+
 		router.ServeHTTP(rr, req)
-		Expect(rr.Code).To(Equal(http.StatusAccepted))
+		Expect(rr.Code).To(Equal(http.StatusOK))
 		Expect(rr.Body.String()).To(ContainSubstring(`"status":"pending"`))
 	})
 

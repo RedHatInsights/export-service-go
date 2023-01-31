@@ -87,21 +87,21 @@ func (edb *ExportDB) APIList(user User, params *QueryParams) (result []*APIExpor
 
 	// filter by name, export status, created, expires, application, resource
 	if params.Name != "" {
-		db = db.Where("export_paylods.name = ?", params.Name)
+		db = db.Where("export_payloads.name = ?", params.Name)
 	}
 
 	if params.Status != "" {
-		db = db.Where("export_paylods.status = ?", params.Status)
+		db = db.Where("export_payloads.status = ?", params.Status)
 	}
 
 	if !params.Created.IsZero() {
-		db = db.Where("export_paylods.created_at >= ?", params.Created.String())
-		db = db.Where("export_paylods.created_at < ?", params.Created.AddDate(0, 0, 1).String())
+		db = db.Where("export_payloads.created_at >= ?", params.Created.String())
+		db = db.Where("export_payloads.created_at < ?", params.Created.AddDate(0, 0, 1).String())
 	}
 
 	if !params.Expires.IsZero() {
-		db = db.Where("export_paylods.expires >= ?", params.Expires)
-		db = db.Where("export_paylods.expires < ?", params.Expires.AddDate(0, 0, 1))
+		db = db.Where("export_payloads.expires >= ?", params.Expires)
+		db = db.Where("export_payloads.expires < ?", params.Expires.AddDate(0, 0, 1))
 	}
 
 	// TODO: filtering by application and resource needs to be implemented with a sources table

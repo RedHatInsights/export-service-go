@@ -16,21 +16,17 @@ var (
 	log    = logger.Log
 )
 
+const defaultRegion = "us-east-1"
+
 func init() {
 	scfg := cfg.StorageConfig
 
 	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		if cfg.Debug {
-			return aws.Endpoint{
-				URL:               scfg.Endpoint,
-				HostnameImmutable: true,
-			}, nil
-		}
-
-		// returning EndpointNotFoundError will allow the service to fallback to it's default resolution
 		return aws.Endpoint{
-			URL: scfg.Endpoint,
-		}, &aws.EndpointNotFoundError{}
+			URL:               scfg.Endpoint,
+			SigningRegion:     defaultRegion,
+			HostnameImmutable: true,
+		}, nil
 	})
 
 	creds := aws.CredentialsProviderFunc(func(c context.Context) (aws.Credentials, error) {
@@ -41,7 +37,7 @@ func init() {
 	})
 
 	s3cfg := aws.Config{
-		Region:                      "us-east-1",
+		Region:                      defaultRegion,
 		Credentials:                 creds,
 		EndpointResolverWithOptions: resolver,
 	}

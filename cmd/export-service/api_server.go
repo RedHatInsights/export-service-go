@@ -167,7 +167,7 @@ func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, cfg.OpenAPIFilePath)
 }
 
-func main() {
+func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
 		"publicport", cfg.PublicPort,
@@ -190,9 +190,6 @@ func main() {
 	DB, err := db.OpenDB(*cfg)
 	if err != nil {
 		log.Panic("failed to open database", "error", err)
-	}
-	if err := DB.AutoMigrate(&models.ExportPayload{}); err != nil {
-		log.Panic("failed to migrate database", "error", err)
 	}
 
 	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)

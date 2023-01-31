@@ -21,7 +21,7 @@ objects:
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}     
         command:
-        - export-service-go
+        - export-service
         - api_server
         livenessProbe:        
           failureThreshold: 3

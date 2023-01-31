@@ -59,9 +59,11 @@ objects:
           value: ${OPEN_API_FILEPATH}
         - name: EXPORT_SERVICE_BUCKET
           value: ${EXPORT_SERVICE_BUCKET}
-        # The following environment variable may need to be a vault secret in the future
         - name: EXPORTS_PSKS
-          value: ${EXPORTS_PSKS}
+          valueFrom:
+            secretKeyRef:
+              name: export-service-psks
+              key: psk-list
         initContainers:
         - args:
           - export-service
@@ -114,6 +116,17 @@ objects:
           requests:
             cpu: 100m
             memory: 64Mi
+
+
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: export-service-psks
+    labels:
+      app: export-service
+  data:
+    psk-list: "dGVzdGluZy1hLXBzayx0ZXN0aW5nLWEtcHNrLTI="
+  type: Opaque
 
 
 parameters:

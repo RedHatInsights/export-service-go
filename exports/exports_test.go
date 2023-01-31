@@ -84,25 +84,13 @@ var _ = Describe("The public API", func() {
 	})
 
 	DescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
-		router := setupTest(mockReqeustApplicationResouces)
-
-		rr := httptest.NewRecorder()
-
-		// Generate 3 export requests
-		for i := 1; i <= 3; i++ {
-			req := createExportRequest(
-				fmt.Sprintf("Test Export Request %d", i),
-				"json",
-				`{"application":"exampleApp", "resource":"exampleResource"}`,
-			)
-
-			router.ServeHTTP(rr, req)
-			Expect(rr.Code).To(Equal(http.StatusAccepted))
-		}
+		router := populateTestData()
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", filter), nil)
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
+
+		rr := httptest.NewRecorder()
 
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))

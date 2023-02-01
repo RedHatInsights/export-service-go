@@ -86,7 +86,7 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 	})
 
-	FDescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
+	DescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
 		router := populateTestData()
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", filter), nil)
@@ -101,8 +101,8 @@ var _ = Describe("The public API", func() {
 	},
 		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusOK),
 		Entry("by status", "status=pending", "Test Export Request 1", http.StatusOK),
-		FEntry("by created at (given date)", "created=2021-01-01", "", http.StatusOK),
-		FEntry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "", http.StatusOK),
+		Entry("by created at (given date)", "created=2021-01-01", "", http.StatusOK),
+		Entry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "", http.StatusOK),
 		Entry("by improper created at", "created=spring", "", http.StatusBadRequest),
 		Entry("by expires", "expires=2023-01-01T00:00:00Z", "", http.StatusOK),
 		Entry("by improper expires", "expires=nextyear", "", http.StatusBadRequest),
@@ -131,7 +131,7 @@ var _ = Describe("The public API", func() {
 		})
 
 		It("with created at in date-time format", func() {
-			router := setupTest(mockReqeustApplicationResouces)
+			router := populateTestData()
 
 			rr := httptest.NewRecorder()
 

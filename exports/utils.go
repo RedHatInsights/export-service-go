@@ -8,6 +8,12 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
+const (
+	formatDate     = "2006-01-02"
+	formatDateLen  = 10
+	formatDateTime = time.RFC3339
+)
+
 func initQuery(q url.Values) (result models.QueryParams, err error) {
 	// all params are optional
 	result.Name = q.Get("name")
@@ -19,20 +25,32 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 	expires := q.Get("expires")
 
 	// created and expires should be date only, not date-time strings
-	format := "2006-01-02"
 	if created != "" {
-		result.Created, err = time.Parse(format, created)
+		result.Created, err = parseDate(created)
+
 		if err != nil {
-			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date-time", created)
+			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date in ISO 8601", expires)
 		}
 	}
 
 	if expires != "" {
-		result.Expires, err = time.Parse(format, expires)
+		result.Created, err = parseDate(expires)
 		if err != nil {
-			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date-time", expires)
+			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date in ISO 8601", expires)
 		}
 	}
+
+	return
+}
+
+func parseDate(str string) (result time.Time, err error) {
+	format := formatDateTime
+	// if the strings length is as long as formatDate then
+	if len(str) == formatDateLen {
+		format = formatDate
+	}
+
+	result, err = time.Parse(format, str)
 
 	return
 }

@@ -24,7 +24,7 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 	created := q.Get("created")
 	expires := q.Get("expires")
 
-	// created and expires should be date only, not date-time strings
+	// created and expires can be in either format above
 	if created != "" {
 		result.Created, err = parseDate(created)
 
@@ -45,7 +45,7 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 
 func parseDate(str string) (result time.Time, err error) {
 	format := formatDateTime
-	// if the strings length is as long as formatDate then
+
 	if len(str) == formatDateLen {
 		format = formatDate
 	}

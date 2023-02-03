@@ -65,12 +65,12 @@ type URLParams struct {
 
 // QueryParams for the /export/v1/exports endpoint
 type QueryParams struct {
-	Name        string    `json:"name"`
-	Created     time.Time `json:"created"`
-	Expires     time.Time `json:"expires"`
-	Status      string    `json:"status"`
-	Application string    `json:"application"`
-	Resource    string    `json:"resource"`
+	Name        string
+	Created     time.Time
+	Expires     time.Time
+	Status      string
+	Application string
+	Resource    string
 }
 
 // TODO: Seperate database struct and request struct

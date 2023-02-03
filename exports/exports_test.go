@@ -110,7 +110,7 @@ var _ = Describe("The public API", func() {
 
 	Describe("can filter exports by date", func() {
 		It("with created at in date format", func() {
-			router := populateTestData()
+			router := populateTestData() // check this function for logic on export creation
 
 			rr := httptest.NewRecorder()
 
@@ -125,8 +125,10 @@ var _ = Describe("The public API", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
-			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
-			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
+			// check the count of exports returned
+			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 		})
 
@@ -146,13 +148,14 @@ var _ = Describe("The public API", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
-			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
-			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 2"))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 		})
 
 		It("with created at referring to yesterday", func() {
-			router := setupTest(mockReqeustApplicationResouces)
+			router := populateTestData()
 
 			rr := httptest.NewRecorder()
 
@@ -167,9 +170,32 @@ var _ = Describe("The public API", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
-			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 3"))
+		})
+
+		It("with expires in date format", func() {
+			router := populateTestData()
+
+			rr := httptest.NewRecorder()
+
+			today := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires=%s", today), nil)
+
+			req.Header.Set("Content-Type", "application/json")
+
+			Expect(err).ShouldNot(HaveOccurred())
+
+			router.ServeHTTP(rr, req)
+
+			Expect(rr.Code).To(Equal(http.StatusOK))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
+			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 		})
 	})
 
@@ -324,5 +350,20 @@ func populateTestData() chi.Router {
 		router.ServeHTTP(rr, req)
 	}
 
+	oneDayAgo := time.Now().AddDate(0, 0, -1)
+	oneDayFromNow := time.Now().AddDate(0, 0, 1)
+
+	modifyExportCreated("Test Export Request 1", oneDayAgo)
+	modifyExportCreated("Test Export Request 2", oneDayFromNow)
+	modifyExportExpiry("Test Export Request 3", oneDayFromNow)
+
 	return router
+}
+
+func modifyExportCreated(exportName string, newDate time.Time) {
+	testGormDB.Exec("UPDATE export_payloads SET created_at = ? WHERE name = ?", newDate, exportName)
+}
+
+func modifyExportExpiry(exportName string, newDate time.Time) {
+	testGormDB.Exec("UPDATE export_payloads SET expires = ? WHERE name = ?", newDate, exportName)
 }

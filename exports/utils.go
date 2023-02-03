@@ -29,12 +29,12 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 		result.Created, err = parseDate(created)
 
 		if err != nil {
-			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date in ISO 8601", expires)
+			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date in ISO 8601", created)
 		}
 	}
 
 	if expires != "" {
-		result.Created, err = parseDate(expires)
+		result.Expires, err = parseDate(expires)
 		if err != nil {
 			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date in ISO 8601", expires)
 		}

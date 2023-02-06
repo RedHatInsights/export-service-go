@@ -75,38 +75,38 @@ type QueryParams struct {
 
 // TODO: Seperate database struct and request struct
 type ExportPayload struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
-	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created"`
-	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"-"`
-	CompletedAt *time.Time     `json:"completed,omitempty"`
-	Expires     *time.Time     `json:"expires,omitempty"`
-	RequestID   string         `json:"-"`
-	Name        string         `json:"name"`
-	Format      PayloadFormat  `gorm:"type:string" json:"format"`
-	Status      PayloadStatus  `gorm:"type:string" json:"status"`
-	Sources     datatypes.JSON `gorm:"type:json" json:"sources"`
-	S3Key       string         `json:"-"`
+	ID          uuid.UUID `gorm:"type:uuid;primarykey"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
+	CompletedAt *time.Time
+	Expires     *time.Time
+	RequestID   string
+	Name        string
+	Format      PayloadFormat `gorm:"type:string"`
+	Status      PayloadStatus `gorm:"type:string"`
+	S3Key       string
 	User
 }
 
 type Source struct {
-	ID          uuid.UUID      `json:"id"`
-	Application string         `json:"application"`
-	Status      ResourceStatus `json:"status"`
-	Resource    string         `json:"resource"`
-	Filters     datatypes.JSON `json:"filters"`
+	ID              uuid.UUID `gorm:"type:uuid;primarykey"`
+	ExportPayloadID uuid.UUID `gorm:"type:uuid;index"`
+	Application     string
+	Status          ResourceStatus
+	Resource        string
+	Filters         datatypes.JSON `gorm:"type:json"`
 	*SourceError
 }
 
 type SourceError struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Message string
+	Code    int
 }
 
 type User struct {
-	AccountID      string `json:"-"`
-	OrganizationID string `json:"-"`
-	Username       string `json:"-"`
+	AccountID      string
+	OrganizationID string
+	Username       string
 }
 
 func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {

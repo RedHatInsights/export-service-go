@@ -1,5 +1,6 @@
 name: ginkgo-test
 on:
+  push:
   pull_request:
     branches:
       - main

@@ -82,41 +82,25 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], payload)
 }
 
-// func buildQuery(q url.Values) (map[string]interface{}, error) {
-// 	result := map[string]interface{}{}
-
-// 	for k, v := range q {
-// 		if len(v) > 1 {
-// 			return nil, fmt.Errorf("query param `%s` has too many search values", k)
-// 		}
-// 		result[k] = v[0]
-// 	}
-
-// 	return result, nil
-// }
-
 // ListExports handle GET requests to the /exports endpoint.
 func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUserIdentity(r.Context())
 	page := middleware.GetPagination(r.Context())
 
 	q := r.URL.Query()
+
 	// offset/limit are for pagination so remove them so they are not inserted into the db query
 	q.Del("offset")
 	q.Del("limit")
-	// query, err := buildQuery(q)
-	// if err != nil {
-	// 	errors.BadRequestError(w, err.Error())
-	// 	return
-	// }
 
-	// exports := []*APIExport{}
-	// result := db.DB.Model(
-	// 	&models.ExportPayload{}).Where(
-	// 	&models.ExportPayload{User: user}).Where(
-	// 	query).Find(
-	// 	&exports)
-	exports, err := e.DB.APIList(user)
+	params, err := initQuery(q)
+	if err != nil {
+		e.Log.Errorw("error while parsing params", "error", err)
+		errors.BadRequestError(w, err.Error())
+		return
+	}
+
+	exports, err := e.DB.APIList(user, &params)
 	if err != nil {
 		errors.InternalServerError(w, err)
 		return
@@ -125,11 +109,13 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e.Log.Errorw("error while paginating data", "error", err)
 		errors.InternalServerError(w, err)
+		return
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
+		return
 	}
 }
 

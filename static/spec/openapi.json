@@ -57,18 +57,20 @@
           },
           {
             "name": "created",
+            "description": "Date follows the RFC3339 standard or YYYY-MM-DD",
             "in": "query",
             "schema": {
               "type": "string",
-              "format": "date-time"
+              "format": "date"
             }
           },
           {
             "name": "expires",
+            "description": "Date follows the RFC3339 standard or YYYY-MM-DD",
             "in": "query",
             "schema": {
               "type": "string",
-              "format": "date-time"
+              "format": "date"
             }
           },
           {

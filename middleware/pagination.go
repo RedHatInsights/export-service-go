@@ -21,6 +21,8 @@ const (
 	PaginateKey   paginationKey = iota
 	defaultLimit  int           = 100
 	defaultOffset int           = 0
+	defaultSortBy string        = "created"
+	defaultDir    string        = "asc"
 )
 
 // Pagination represents pagination parameters.
@@ -29,6 +31,10 @@ type Paginate struct {
 	Limit int
 	// Offset represents the starting index of the returned list of items.
 	Offset int
+	// Sort Direction - asc or desc
+	Dir string
+	// Sort by - name, created, or expires
+	SortBy string
 }
 
 // PaginatedResponse contains the paginated response data.
@@ -195,6 +201,8 @@ func PaginationCtx(next http.Handler) http.Handler {
 		pagination := Paginate{
 			Limit:  defaultLimit,
 			Offset: defaultOffset,
+			Dir:    defaultDir,
+			SortBy: defaultSortBy,
 		}
 		limit := r.URL.Query().Get("limit")
 		if limit != "" {
@@ -226,6 +234,30 @@ func PaginationCtx(next http.Handler) http.Handler {
 			}
 
 			pagination.Offset = off
+		}
+
+		sort := r.URL.Query().Get("sort")
+		if sort != "" {
+			switch sort {
+			case "name", "created", "expires":
+			default:
+				errors.BadRequestError(w, fmt.Errorf("sort does not match 'name', 'created', or 'expires': %s", sort))
+				return
+			}
+
+			pagination.SortBy = sort
+		}
+
+		dir := r.URL.Query().Get("dir")
+		if dir != "" {
+			switch dir {
+			case "asc", "desc":
+			default:
+				errors.BadRequestError(w, fmt.Errorf("dir does not match 'asc' or 'desc': %s", dir))
+				return
+			}
+
+			pagination.Dir = dir
 		}
 
 		ctx := context.WithValue(r.Context(), PaginateKey, pagination)

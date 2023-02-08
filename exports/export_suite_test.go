@@ -42,7 +42,7 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 		return nil, nil, err
 	}
 
-	if err := gdb.AutoMigrate(&models.ExportPayload{}); err != nil {
+	if err := gdb.AutoMigrate(&models.ExportPayload{}, &models.Source{}); err != nil { //TODO: These should probably match the migrations in the main app
 		fmt.Println("failed to migrate db", "error", err)
 		return nil, nil, err
 	}

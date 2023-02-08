@@ -14,15 +14,15 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
-type RequestApplicationResources func(ctx context.Context, identity string, payload models.ExportPayload)
+type RequestApplicationResources func(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface)
 
 func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message, log *zap.SugaredLogger) RequestApplicationResources {
 	// sendPayload converts the individual sources of a payload into
 	// kafka messages which are then sent to the producer through the
 	// `messagesChan`
-	return func(ctx context.Context, identity string, payload models.ExportPayload) {
+	return func(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface) { // TODO: Does it make sense to pass the DB here?
 		go func() {
-			sources, err := payload.GetSources()
+			sources, err := payload.GetSources(db)
 			if err != nil {
 				log.Errorw("failed unmarshalling sources", "error", err)
 				// FIXME:

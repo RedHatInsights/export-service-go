@@ -47,31 +47,33 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
 	user := middleware.GetUserIdentity(r.Context())
 
-	var payload models.ExportPayload
+	var payload ExportPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		errors.BadRequestError(w, err.Error())
 		return
 	}
 
-	sources, err := payload.GetSources()
-	if err != nil {
-		errors.BadRequestError(w, err.Error())
-		return
-	}
+	dbExport, sources := APIExportToDBExport(payload)
+	// sources, err := payload.GetSources(e.DB)
+	// if err != nil {
+	// 	errors.BadRequestError(w, err.Error())
+	// 	return
+	// }
 	if len(sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return
 	}
 
-	payload.RequestID = reqID
-	payload.User = user
-	if err := e.DB.Create(&payload); err != nil {
+	dbExport.RequestID = reqID
+	dbExport.User = user
+	if err := e.DB.Create(&dbExport); err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+
 	if err := json.NewEncoder(w).Encode(&payload); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
@@ -79,7 +81,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], payload)
+	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], dbExport, e.DB)
 }
 
 // ListExports handle GET requests to the /exports endpoint.
@@ -182,6 +184,7 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	if export == nil {
 		return
 	}
+
 	if err := json.NewEncoder(w).Encode(&export); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
@@ -213,4 +216,53 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	}
 
 	return export
+}
+
+// func ExportPayloadToAPIExport(payload models.ExportPayload, sources []*models.Source) ExportPayload {
+// 	apiPayload := ExportPayload{
+// 		ID:          payload.ID,
+// 		CreatedAt:   payload.CreatedAt,
+// 		CompletedAt: payload.CompletedAt,
+// 		Expires:     payload.Expires,
+// 		Name:        payload.Name,
+// 		Format:      string(payload.Format),
+// 		Status:      string(payload.Status),
+// 	}
+// 	for _, source := range sources {
+// 		apiPayload.Sources = append(apiPayload.Sources, Source{
+// 			ID:          source.ID,
+// 			Application: source.Application,
+// 			Status:      string(source.Status),
+// 			Resource:    source.Resource,
+// 			Filters:     source.Filters,
+// 			Message:     source.Message,
+// 			Code:        source.Code,
+// 		})
+// 	}
+
+// 	return apiPayload
+// }
+
+func APIExportToDBExport(apiPayload ExportPayload) (models.ExportPayload, []*models.Source) {
+	payload := models.ExportPayload{
+		ID:        uuid.New(),
+		CreatedAt: apiPayload.CreatedAt,
+		Expires:   apiPayload.Expires,
+		Name:      apiPayload.Name,
+		Format:    models.PayloadFormat(apiPayload.Format),
+		Status:    models.Pending,
+	}
+
+	var sources []*models.Source
+	for _, source := range apiPayload.Sources {
+		sources = append(sources, &models.Source{
+			ID:          uuid.New(),
+			Application: source.Application,
+			Status:      models.RPending,
+			Resource:    source.Resource,
+			Filters:     source.Filters,
+		})
+	}
+
+	return payload, sources
 }

@@ -66,7 +66,7 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, source, err := payload.GetSource(params.ResourceUUID)
+	_, source, err := payload.GetSource(i.DB, params.ResourceUUID)
 	if err != nil {
 		i.Log.Errorw("failed to get source: %w", err)
 		errors.InternalServerError(w, err.Error())
@@ -119,7 +119,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, source, err := payload.GetSource(params.ResourceUUID)
+	_, source, err := payload.GetSource(i.DB, params.ResourceUUID)
 	if err != nil {
 		i.Log.Errorf("failed to get source: %w", err)
 		errors.InternalServerError(w, err.Error())

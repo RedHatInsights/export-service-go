@@ -204,7 +204,7 @@ func (c *Compressor) compressPayload(db models.DBInterface, payload *models.Expo
 	}
 
 	c.Log.Infof("done uploading %s", filename)
-	ready, err := payload.GetAllSourcesStatus()
+	ready, err := payload.GetAllSourcesStatus(db)
 	if err != nil {
 		c.Log.Errorf("failed to get all source status: %v", err)
 		return
@@ -229,7 +229,7 @@ func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
 		c.Log.Errorf("failed to get payload: %v", err)
 		return
 	}
-	ready, err := payload.GetAllSourcesStatus()
+	ready, err := payload.GetAllSourcesStatus(db)
 	if err != nil {
 		c.Log.Errorf("failed to get all source status: %v", err)
 		return
@@ -286,7 +286,7 @@ func (mc *MockStorageHandler) ProcessSources(db models.DBInterface, uid uuid.UUI
 		fmt.Printf("failed to get payload: %v", err)
 		return
 	}
-	ready, err := payload.GetAllSourcesStatus()
+	ready, err := payload.GetAllSourcesStatus(db)
 	if err != nil {
 		fmt.Printf("failed to get all source status: %v", err)
 		return

@@ -84,13 +84,14 @@ type ExportPayload struct {
 	Name        string
 	Format      PayloadFormat `gorm:"type:string"`
 	Status      PayloadStatus `gorm:"type:string"`
+	Sources     []Source      `gorm:"foreignKey:ExportPayloadID"`
 	S3Key       string
 	User
 }
 
 type Source struct {
 	ID              uuid.UUID `gorm:"type:uuid;primarykey"`
-	ExportPayloadID uuid.UUID `gorm:"type:uuid;index"`
+	ExportPayloadID uuid.UUID `gorm:"type:uuid"`
 	Application     string
 	Status          ResourceStatus
 	Resource        string
@@ -109,24 +110,8 @@ type User struct {
 	Username       string
 }
 
-func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
-	ep.ID = uuid.New()
-	ep.Status = Pending
-	sources, err := ep.GetSources()
-	if err != nil {
-		return err
-	}
-	for _, source := range sources {
-		source.ID = uuid.New()
-		source.Status = RPending
-	}
-	out, err := json.Marshal(sources)
-	ep.Sources = out
-	return err
-}
-
-func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
-	sources, err := ep.GetSources()
+func (ep *ExportPayload) GetSource(db DBInterface, uid uuid.UUID) (int, *Source, error) {
+	sources, err := ep.GetSources(db)
 	if err != nil {
 		return -1, nil, fmt.Errorf("failed to get sources: %w", err)
 	}
@@ -138,9 +123,15 @@ func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 	return -1, nil, fmt.Errorf("source `%s` not found", uid)
 }
 
-func (ep *ExportPayload) GetSources() ([]*Source, error) {
+func (ep *ExportPayload) GetSources(db DBInterface) ([]*Source, error) { // TODO: Remove usage of pointers here
 	var sources []*Source
-	err := json.Unmarshal(ep.Sources, &sources)
+	//err := json.Unmarshal(ep.Sources, &sources)
+
+	sql := db.Raw("SELECT * FROM export_sources WHERE export_sources.export_payload_id = ?", ep.ID)
+	err := sql.Find(&sources).Error
+
+	fmt.Println("GET SOURCES123: ", sources, err)
+
 	return sources, err
 }
 
@@ -177,7 +168,7 @@ func (ep *ExportPayload) SetStatusRunning(db DBInterface) error {
 }
 
 func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
-	idx, _, err := ep.GetSource(uid)
+	_, _, err := ep.GetSource(db, uid)
 	if err != nil {
 		return fmt.Errorf("failed to get sources: %w", err)
 	}
@@ -185,12 +176,15 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 	var sql *gorm.DB
 	if sourceError == nil {
 		// set the status and remove 'code' and 'message' fields if they exist
-		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
+		//sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
+		sqlStr := fmt.Sprintf("UPDATE export_sources SET status = '%s' WHERE id='%s'", status, uid)
 		sql = db.Raw(sqlStr)
 	} else {
 		// set status and add 'code' and 'message' fields
 		// the `code` and `message` are user inputs, so they are parameterized to prevent sql injection
-		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || jsonb_build_object('status', '%s', 'code', ?::int, 'message', ?::text), true) WHERE id='%s'", idx, idx, status, ep.ID)
+		//sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || jsonb_build_object('status', '%s', 'code', ?::int, 'message', ?::text), true) WHERE id='%s'", idx, idx, status, ep.ID)
+		// TODO: Do we need to parameterize the code and message to prevent sql injection here as well?
+		sqlStr := fmt.Sprintf("UPDATE export_sources SET status = '%s', code = %d, message = '%s' WHERE id='%s'", status, sourceError.Code, sourceError.Message, uid)
 		sql = db.Raw(sqlStr, sourceError.Code, sourceError.Message)
 	}
 	return sql.Scan(&ep).Error
@@ -210,8 +204,8 @@ const (
 //   - StatusPending - sources are still pending
 //   - StatusPartial - sources are all complete, some sources are a failure
 //   - StatusFailed - all sources have failed
-func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
-	sources, err := ep.GetSources()
+func (ep *ExportPayload) GetAllSourcesStatus(db DBInterface) (int, error) {
+	sources, err := ep.GetSources(db)
 	if err != nil {
 		// we do not know the status of the sources. as far as we know, there is nothing to zip.
 		return StatusError, err

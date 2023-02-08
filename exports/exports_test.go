@@ -234,7 +234,7 @@ var _ = Describe("The public API", func() {
 	It("sends a request message to the export sources", func() {
 		var wasKafkaMessageSent bool
 
-		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) {
+		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface) {
 			wasKafkaMessageSent = true
 		}
 
@@ -295,7 +295,7 @@ var _ = Describe("The public API", func() {
 	})
 })
 
-func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload) {
+func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface) {
 	fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }
 

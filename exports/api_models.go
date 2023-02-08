@@ -49,10 +49,6 @@ type Source struct {
 	Status      string         `json:"status"`
 	Resource    string         `json:"resource"`
 	Filters     datatypes.JSON `json:"filters"`
-	*SourceError
-}
-
-type SourceError struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Message     string         `json:"message,omitempty"`
+	Code        int            `json:"code,omitempty"`
 }

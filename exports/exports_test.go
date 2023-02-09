@@ -293,7 +293,7 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring("data\":[]"))
 	})
 
-	FDescribeTable("can sort exports", func(params string, expectedFirst, expectedSecond, expectedThird, expectedFourth, expectedLast string) {
+	DescribeTable("can sort exports", func(params string, expectedFirst, expectedSecond, expectedThird, expectedFourth, expectedLast string) {
 		router := setupTest(mockReqeustApplicationResouces)
 
 		count := 5

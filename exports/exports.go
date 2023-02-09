@@ -55,11 +55,10 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbExport, sources := APIExportToDBExport(payload)
-	// sources, err := payload.GetSources(e.DB)
-	// if err != nil {
-	// 	errors.BadRequestError(w, err.Error())
-	// 	return
-	// }
+	apiExport := DBExportToAPI(dbExport, sources)
+
+	fmt.Println("apiExport", apiExport)
+
 	if len(sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return
@@ -74,7 +73,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := json.NewEncoder(w).Encode(&payload); err != nil {
+	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
@@ -218,32 +217,37 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	return export
 }
 
-// func ExportPayloadToAPIExport(payload models.ExportPayload, sources []*models.Source) ExportPayload {
-// 	apiPayload := ExportPayload{
-// 		ID:          payload.ID,
-// 		CreatedAt:   payload.CreatedAt,
-// 		CompletedAt: payload.CompletedAt,
-// 		Expires:     payload.Expires,
-// 		Name:        payload.Name,
-// 		Format:      string(payload.Format),
-// 		Status:      string(payload.Status),
-// 	}
-// 	for _, source := range sources {
-// 		apiPayload.Sources = append(apiPayload.Sources, Source{
-// 			ID:          source.ID,
-// 			Application: source.Application,
-// 			Status:      string(source.Status),
-// 			Resource:    source.Resource,
-// 			Filters:     source.Filters,
-// 			Message:     source.Message,
-// 			Code:        source.Code,
-// 		})
-// 	}
+func DBExportToAPI(payload models.ExportPayload, sources []models.Source) ExportPayload {
+	apiPayload := ExportPayload{
+		ID:          payload.ID,
+		CreatedAt:   payload.CreatedAt,
+		CompletedAt: payload.CompletedAt,
+		Expires:     payload.Expires,
+		Name:        payload.Name,
+		Format:      string(payload.Format),
+		Status:      string(payload.Status),
+	}
+	for _, source := range sources {
+		newSource := Source{
+			ID:          source.ID,
+			Application: source.Application,
+			Status:      string(source.Status),
+			Resource:    source.Resource,
+			Filters:     source.Filters,
+		}
 
-// 	return apiPayload
-// }
+		if source.SourceError != nil {
+			newSource.Message = &source.SourceError.Message
+			newSource.Code = &source.SourceError.Code
+		}
 
-func APIExportToDBExport(apiPayload ExportPayload) (models.ExportPayload, []*models.Source) {
+		apiPayload.Sources = append(apiPayload.Sources, newSource)
+	}
+
+	return apiPayload
+}
+
+func APIExportToDBExport(apiPayload ExportPayload) (models.ExportPayload, []models.Source) {
 	payload := models.ExportPayload{
 		ID:        uuid.New(),
 		CreatedAt: apiPayload.CreatedAt,
@@ -253,9 +257,9 @@ func APIExportToDBExport(apiPayload ExportPayload) (models.ExportPayload, []*mod
 		Status:    models.Pending,
 	}
 
-	var sources []*models.Source
+	var sources []models.Source
 	for _, source := range apiPayload.Sources {
-		sources = append(sources, &models.Source{
+		sources = append(sources, models.Source{
 			ID:          uuid.New(),
 			Application: source.Application,
 			Status:      models.RPending,

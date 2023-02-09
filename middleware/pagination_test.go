@@ -68,7 +68,7 @@ var _ = Describe("Handler", func() {
 				expectedPaginate = middleware.Paginate{
 					Limit:  l,
 					Offset: o,
-					SortBy: "created",
+					SortBy: "created_at",
 					Dir:    "asc",
 				}
 			}

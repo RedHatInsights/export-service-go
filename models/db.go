@@ -30,7 +30,7 @@ type ExportDB struct {
 }
 
 type DBInterface interface {
-	APIList(user User, params *QueryParams) (result []*APIExport, err error)
+	APIList(user User, params *QueryParams, offset, limit int, sort, dir string) (result []*APIExport, count int64, err error)
 
 	Create(payload *ExportPayload) error
 	Delete(exportUUID uuid.UUID, user User) error
@@ -82,7 +82,7 @@ func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *Expor
 	return
 }
 
-func (edb *ExportDB) APIList(user User, params *QueryParams) (result []*APIExport, err error) {
+func (edb *ExportDB) APIList(user User, params *QueryParams, offset, limit int, sort, dir string) (result []*APIExport, count int64, err error) {
 	db := edb.DB.Model(&ExportPayload{}).Where(&ExportPayload{User: user})
 
 	// filter by name, export status, created, expires, application, resource
@@ -104,6 +104,12 @@ func (edb *ExportDB) APIList(user User, params *QueryParams) (result []*APIExpor
 
 	// TODO: filtering by application and resource needs to be implemented with a sources table
 	// Currently, the sources is stored as json in the table, which is not efficient to parse
+
+	// count total records
+	db.Count(&count)
+
+	// order by sort and dir params
+	db = db.Order(fmt.Sprintf("%s %s", sort, dir)).Limit(limit).Offset(offset)
 
 	err = db.Find(&result).Error
 

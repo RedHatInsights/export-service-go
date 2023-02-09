@@ -89,10 +89,6 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
 
-	// offset/limit are for pagination so remove them so they are not inserted into the db query
-	q.Del("offset")
-	q.Del("limit")
-
 	params, err := initQuery(q)
 	if err != nil {
 		e.Log.Errorw("error while parsing params", "error", err)
@@ -100,12 +96,12 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exports, err := e.DB.APIList(user, &params)
+	exports, count, err := e.DB.APIList(user, &params, page.Offset, page.Limit, page.SortBy, page.Dir)
 	if err != nil {
 		errors.InternalServerError(w, err)
 		return
 	}
-	resp, err := middleware.GetPaginatedResponse(r.URL, page, exports)
+	resp, err := middleware.GetPaginatedResponse(r.URL, page, count, exports)
 	if err != nil {
 		e.Log.Errorw("error while paginating data", "error", err)
 		errors.InternalServerError(w, err)

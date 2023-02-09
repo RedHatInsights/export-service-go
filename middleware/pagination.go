@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strconv"
 
 	"github.com/redhatinsights/export-service-go/errors"
@@ -21,7 +20,7 @@ const (
 	PaginateKey   paginationKey = iota
 	defaultLimit  int           = 100
 	defaultOffset int           = 0
-	defaultSortBy string        = "created"
+	defaultSortBy string        = "created_at"
 	defaultDir    string        = "asc"
 )
 
@@ -33,7 +32,7 @@ type Paginate struct {
 	Offset int
 	// Sort Direction - asc or desc
 	Dir string
-	// Sort by - name, created, or expires
+	// Sort by - name, created (created_at), or expires
 	SortBy string
 }
 
@@ -42,71 +41,33 @@ type PaginatedResponse struct {
 	// Meta contains the response metadata.
 	Meta Meta `json:"meta"`
 	// Links contains the first, next, previous, and last links for the paginated data.
-	Links Links `json:"links"`
-	// Data is the paginated data
-	Data interface{} `json:"data"`
-}
-
-func lenSlice(data interface{}) int {
-	switch reflect.TypeOf(data).Kind() {
-	case reflect.Slice:
-		s := reflect.ValueOf(data)
-		return s.Len()
-	}
-	return -1
-}
-
-func indexSlice(data interface{}, start, stop int) interface{} {
-	switch reflect.TypeOf(data).Kind() {
-	case reflect.Slice:
-		s := reflect.ValueOf(data)
-		len := s.Len()
-		if len == 0 {
-			return []interface{}{}
-		}
-		if start >= len {
-			return []interface{}{}
-		}
-		if stop > len {
-			stop = len
-		}
-		return s.Slice(start, stop).Interface()
-	}
-	return -1
+	Links Links       `json:"links"`
+	Data  interface{} `json:"data"`
 }
 
 // GetPaginatedResponse accepts the pagination settings and full data list and returns
 // the paginated data.
-func GetPaginatedResponse(url *url.URL, p Paginate, data interface{}) (*PaginatedResponse, error) {
+func GetPaginatedResponse(url *url.URL, p Paginate, count int64, data interface{}) (*PaginatedResponse, error) {
 	if data == nil {
 		return nil, fmt.Errorf("invalid data set: data cannot be nil")
 	}
 
-	// use lenSlice as error checker. lenSlice returns -1 if the data is not a slice.
-	// Paginated data must be a slice
-	if lenSlice(data) == -1 {
-		return nil, fmt.Errorf("invalid data set: must be a slice")
-	}
-
-	if p.Limit < 0 || p.Offset < 0 {
-		return nil, fmt.Errorf("invalid negative value for limit or offset")
-	}
-
 	return &PaginatedResponse{
-		Meta:  getMeta(data),
-		Links: GetLinks(url, p, data),
-		Data:  indexSlice(data, p.Offset, p.Offset+p.Limit),
+		Meta:  getMeta(count),
+		Links: GetLinks(url, p, count, data),
+		Data:  data,
 	}, nil
 }
 
 // Meta represents the response metadata.
 type Meta struct {
 	// Count represents the number of total items the query generated.
-	Count int `json:"count"`
+	Count int64 `json:"count"`
 }
 
-func getMeta(data interface{}) Meta {
-	return Meta{Count: lenSlice(data)}
+func getMeta(count int64) Meta {
+	// casting int
+	return Meta{Count: count}
 }
 
 // Links represents the first, next, previous, and last links of the paginated response.
@@ -131,8 +92,8 @@ func getFirstLink(url *url.URL, limit, offset int) string {
 	return firstURL.String()
 }
 
-func getNextLink(url *url.URL, count, limit, offset int) *string {
-	if offset+limit >= count {
+func getNextLink(url *url.URL, count int64, limit, offset int) *string {
+	if int64(offset+limit) >= count {
 		return nil
 	}
 	nextURL := url
@@ -146,8 +107,8 @@ func getNextLink(url *url.URL, count, limit, offset int) *string {
 	return &next
 }
 
-func getPreviousLink(url *url.URL, count, limit, offset int) *string {
-	if offset <= 0 || offset >= count {
+func getPreviousLink(url *url.URL, count int64, limit, offset int) *string {
+	if offset <= 0 || int64(offset) >= count {
 		return nil
 	}
 	previousURL := url
@@ -167,10 +128,10 @@ func getPreviousLink(url *url.URL, count, limit, offset int) *string {
 	return &previous
 }
 
-func getLastLink(url *url.URL, count, limit, offset int) string {
+func getLastLink(url *url.URL, count int64, limit, offset int) string {
 	lastURL := url
 	q := lastURL.Query()
-	q.Set("offset", fmt.Sprintf("%d", count-limit))
+	q.Set("offset", fmt.Sprintf("%d", count-int64(limit)))
 	q.Set("limit", fmt.Sprintf("%d", limit))
 
 	lastURL.RawQuery = q.Encode()
@@ -179,10 +140,9 @@ func getLastLink(url *url.URL, count, limit, offset int) string {
 	return last
 }
 
-func GetLinks(url *url.URL, p Paginate, data interface{}) Links {
+func GetLinks(url *url.URL, p Paginate, count int64, data interface{}) Links {
 	result := Links{First: getFirstLink(url, p.Limit, p.Offset)}
-	count := lenSlice(data)
-	if count <= p.Limit && p.Offset == 0 {
+	if count <= int64(p.Limit) && p.Offset == 0 {
 		result.Last = result.First
 		return result
 	}
@@ -239,13 +199,14 @@ func PaginationCtx(next http.Handler) http.Handler {
 		sort := r.URL.Query().Get("sort")
 		if sort != "" {
 			switch sort {
-			case "name", "created", "expires":
+			case "name", "expires":
+				pagination.SortBy = sort
+			case "created":
+				pagination.SortBy = "created_at"
 			default:
 				errors.BadRequestError(w, fmt.Errorf("sort does not match 'name', 'created', or 'expires': %s", sort))
 				return
 			}
-
-			pagination.SortBy = sort
 		}
 
 		dir := r.URL.Query().Get("dir")

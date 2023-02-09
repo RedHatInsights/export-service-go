@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -199,6 +200,205 @@ var _ = Describe("The public API", func() {
 		})
 	})
 
+	It("can offset and limit exports", func() {
+		// make a large amount of data
+		router := setupTest(mockReqeustApplicationResouces)
+
+		count := 200
+
+		for i := 1; i <= count; i++ {
+			req := createExportRequest(
+				fmt.Sprintf("Test Export Request %d", i),
+				"json",
+				`{"application":"exampleApp", "resource":"exampleResource"}`,
+			)
+
+			rr := httptest.NewRecorder()
+
+			router.ServeHTTP(rr, req)
+
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+		}
+
+		// now, test the offset and limit parameters
+		// invalid values are checked in the pagination middleware tests
+		rr := httptest.NewRecorder()
+
+		// a couple valid offset and limit
+		req, err := http.NewRequest("GET", "/api/export/v1/exports?offset=100&limit=10", nil)
+		req.Header.Set("Content-Type", "application/json")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+
+		Expect(rr.Code).To(Equal(http.StatusOK))
+		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 101"))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 110"))
+
+		rr = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=110&limit=10", nil)
+		req.Header.Set("Content-Type", "application/json")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+
+		Expect(rr.Code).To(Equal(http.StatusOK))
+		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 111"))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 120"))
+
+		// ----------------
+		// all the data
+		rr = httptest.NewRecorder()
+
+		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=0&limit=200", nil)
+		req.Header.Set("Content-Type", "application/json")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+
+		Expect(rr.Code).To(Equal(http.StatusOK))
+		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 200"))
+
+		// ----------------
+		// limit over the count
+		rr = httptest.NewRecorder()
+
+		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=0&limit=1000", nil)
+		req.Header.Set("Content-Type", "application/json")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+
+		Expect(rr.Code).To(Equal(http.StatusOK))
+		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
+		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 200"))
+
+		// ----------------
+		// offset over the count, empty data
+		rr = httptest.NewRecorder()
+
+		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=1000&limit=200", nil)
+		req.Header.Set("Content-Type", "application/json")
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+
+		Expect(rr.Code).To(Equal(http.StatusOK))
+		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
+		Expect(rr.Body.String()).To(ContainSubstring("data\":[]"))
+	})
+
+	FDescribeTable("can sort exports", func(params string, expectedFirst, expectedSecond, expectedThird, expectedFourth, expectedLast string) {
+		router := setupTest(mockReqeustApplicationResouces)
+
+		count := 5
+
+		for i := 1; i <= count; i++ {
+			req := createExportRequest(
+				fmt.Sprintf("Test Export Request %d", i),
+				"json",
+				`{"application":"exampleApp", "resource":"exampleResource"}`,
+			)
+
+			rr := httptest.NewRecorder()
+
+			router.ServeHTTP(rr, req)
+
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+		}
+
+		// ----------------
+		// modify the created at time of the first export
+		tenDaysFromNow := time.Now().AddDate(0, 0, 10)
+		modifyExportCreated("Test Export Request 1", tenDaysFromNow)
+
+		// modify the expires at time of the last export
+		OneDayAgo := time.Now().AddDate(0, 0, -1)
+		modifyExportExpires("Test Export Request 5", OneDayAgo)
+
+		// ----------------
+
+		rr := httptest.NewRecorder()
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", params), nil)
+
+		Expect(err).ShouldNot(HaveOccurred())
+
+		router.ServeHTTP(rr, req)
+
+		Expect(rr.Code).To(Equal(http.StatusOK))
+
+		expectedNames := []string{
+			expectedFirst,
+			expectedSecond,
+			expectedThird,
+			expectedFourth,
+			expectedLast,
+		}
+
+		recieved := getExportNames(rr)
+
+		for i, name := range expectedNames {
+			Expect(name).To(Equal(recieved[i]))
+		}
+
+	},
+		Entry("default of created asc", "",
+			"Test Export Request 2",
+			"Test Export Request 3",
+			"Test Export Request 4",
+			"Test Export Request 5",
+			"Test Export Request 1",
+		),
+		Entry("sort by created asc", "sort=created&dir=asc",
+			"Test Export Request 2",
+			"Test Export Request 3",
+			"Test Export Request 4",
+			"Test Export Request 5",
+			"Test Export Request 1",
+		),
+		Entry("sort by created desc", "sort=created&dir=desc",
+			"Test Export Request 1",
+			"Test Export Request 5",
+			"Test Export Request 4",
+			"Test Export Request 3",
+			"Test Export Request 2",
+		),
+		Entry("sort by expires asc", "sort=expires&dir=asc",
+			"Test Export Request 5",
+			"Test Export Request 1",
+			"Test Export Request 2",
+			"Test Export Request 3",
+			"Test Export Request 4",
+		),
+		Entry("sort by expires desc", "sort=expires&dir=desc",
+			"Test Export Request 4",
+			"Test Export Request 3",
+			"Test Export Request 2",
+			"Test Export Request 1",
+			"Test Export Request 5",
+		),
+		Entry("sort by name asc", "sort=name&dir=asc",
+			"Test Export Request 1",
+			"Test Export Request 2",
+			"Test Export Request 3",
+			"Test Export Request 4",
+			"Test Export Request 5",
+		),
+		Entry("sort by name desc", "sort=name&dir=desc",
+			"Test Export Request 5",
+			"Test Export Request 4",
+			"Test Export Request 3",
+			"Test Export Request 2",
+			"Test Export Request 1",
+		),
+	)
+
 	It("can check the status of an export request", func() {
 		router := setupTest(mockReqeustApplicationResouces)
 
@@ -355,7 +555,7 @@ func populateTestData() chi.Router {
 
 	modifyExportCreated("Test Export Request 1", oneDayAgo)
 	modifyExportCreated("Test Export Request 2", oneDayFromNow)
-	modifyExportExpiry("Test Export Request 3", oneDayFromNow)
+	modifyExportExpires("Test Export Request 3", oneDayFromNow)
 
 	return router
 }
@@ -364,6 +564,23 @@ func modifyExportCreated(exportName string, newDate time.Time) {
 	testGormDB.Exec("UPDATE export_payloads SET created_at = ? WHERE name = ?", newDate, exportName)
 }
 
-func modifyExportExpiry(exportName string, newDate time.Time) {
+func modifyExportExpires(exportName string, newDate time.Time) {
 	testGormDB.Exec("UPDATE export_payloads SET expires = ? WHERE name = ?", newDate, exportName)
+}
+
+func getExportNames(rr *httptest.ResponseRecorder) []string {
+	b, err := ioutil.ReadAll(rr.Body)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	var exportResponse map[string]interface{}
+	err = json.Unmarshal(b, &exportResponse)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	var exportNames []string
+
+	for _, export := range exportResponse["data"].([]interface{}) {
+		exportNames = append(exportNames, export.(map[string]interface{})["name"].(string))
+	}
+
+	return exportNames
 }

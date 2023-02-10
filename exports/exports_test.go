@@ -200,7 +200,7 @@ var _ = Describe("The public API", func() {
 		})
 	})
 
-	It("can offset and limit exports", func() {
+	DescribeTable("can offset and limit exports", func(param string, expectedFirst, expectedLast string) {
 		// make a large amount of data
 		router := setupTest(mockReqeustApplicationResouces)
 
@@ -220,12 +220,9 @@ var _ = Describe("The public API", func() {
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 		}
 
-		// now, test the offset and limit parameters
-		// invalid values are checked in the pagination middleware tests
 		rr := httptest.NewRecorder()
 
-		// a couple valid offset and limit
-		req, err := http.NewRequest("GET", "/api/export/v1/exports?offset=100&limit=10", nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", param), nil)
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -233,56 +230,28 @@ var _ = Describe("The public API", func() {
 
 		Expect(rr.Code).To(Equal(http.StatusOK))
 		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 101"))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 110"))
+		Expect(rr.Body.String()).To(ContainSubstring(expectedFirst))
+		Expect(rr.Body.String()).To(ContainSubstring(expectedLast))
+	},
+		Entry("offset 0, limit 10", "offset=0&limit=10", "Test Export Request 1", "Test Export Request 10"),
+		Entry("offset 10, limit 10", "offset=10&limit=10", "Test Export Request 11", "Test Export Request 20"),
+		Entry("offset 20, limit 10", "offset=20&limit=10", "Test Export Request 21", "Test Export Request 30"),
+		Entry("offset 100, limit 10", "offset=100&limit=10", "Test Export Request 101", "Test Export Request 110"),
+		Entry("offset 195, limit 10", "offset=195&limit=10", "Test Export Request 196", "Test Export Request 200"),
+		Entry("offset 0, limit 200", "offset=0&limit=200", "Test Export Request 1", "Test Export Request 200"),
+		Entry("offset over count, limit 200", "offset=1000&limit=200", "", ""),
+		Entry("limit over count", "offset=0&limit=1000", "Test Export Request 1", "Test Export Request 200"),
+	)
 
-		rr = httptest.NewRecorder()
-		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=110&limit=10", nil)
-		req.Header.Set("Content-Type", "application/json")
-		Expect(err).ShouldNot(HaveOccurred())
+	It("with offset > count, returns empty data", func() {
+		router := populateTestData()
 
-		router.ServeHTTP(rr, req)
+		count := 3
 
-		Expect(rr.Code).To(Equal(http.StatusOK))
-		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 111"))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 120"))
+		rr := httptest.NewRecorder()
 
-		// ----------------
-		// all the data
-		rr = httptest.NewRecorder()
+		req, err := http.NewRequest("GET", "/api/export/v1/exports?offset=1000&limit=200", nil)
 
-		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=0&limit=200", nil)
-		req.Header.Set("Content-Type", "application/json")
-		Expect(err).ShouldNot(HaveOccurred())
-
-		router.ServeHTTP(rr, req)
-
-		Expect(rr.Code).To(Equal(http.StatusOK))
-		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 200"))
-
-		// ----------------
-		// limit over the count
-		rr = httptest.NewRecorder()
-
-		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=0&limit=1000", nil)
-		req.Header.Set("Content-Type", "application/json")
-		Expect(err).ShouldNot(HaveOccurred())
-
-		router.ServeHTTP(rr, req)
-
-		Expect(rr.Code).To(Equal(http.StatusOK))
-		Expect(rr.Body.String()).To(ContainSubstring(fmt.Sprintf("count\":%d", count)))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
-		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 200"))
-
-		// ----------------
-		// offset over the count, empty data
-		rr = httptest.NewRecorder()
-
-		req, err = http.NewRequest("GET", "/api/export/v1/exports?offset=1000&limit=200", nil)
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 

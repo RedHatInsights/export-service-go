@@ -1,0 +1,28 @@
+{
+    "exported_by": "",
+    "export_date": "2023-02-14T17:08:42-05:00",
+    "export_org_id": "org123",
+    "file_meta": [
+        {
+            "filename": "68e47c6e-9e17-49c1-8df0-755f1558d45b.json",
+            "application": "exampleApplication",
+            "resource": "exampleResource",
+            "filters": {
+                "endDate": "2022-03-01T00:00:00Z",
+                "productId": "RHEL",
+                "startDate": "2022-01-01T00:00:00Z"
+            }
+        },
+        {
+            "filename": "b73a5eac-3b48-40c1-be68-52ff0a388743.json",
+            "application": "exampleApplication",
+            "resource": "anotherExampleResource",
+            "filters": {
+                "endDate": "2022-04-01T00:00:00Z",
+                "productId": "Ansible",
+                "startDate": "2022-02-01T00:00:00Z"
+            }
+        }
+    ],
+    "help_string": "Contained in this archive are your requested resources. If you need help or have any questions, please contact our team on slack @crc-pipeline-team."
+}

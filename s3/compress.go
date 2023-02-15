@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -36,28 +35,6 @@ type S3ListObjectsAPI interface {
 		optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
 }
 
-// struct used to fill the README.md and meta.json files in the tar
-type ExportMeta struct {
-	ExportBy    string           `json:"exported_by"`
-	ExportDate  string           `json:"export_date"`
-	ExportOrgID string           `json:"export_org_id"`
-	FileMeta    []ExportFileMeta `json:"file_meta"`
-	HelpString  string           `json:"help_string"`
-}
-
-// details for each file in the tar
-type ExportFileMeta struct {
-	Filename    string `json:"filename"`
-	Application string `json:"application"`
-	Resource    string `json:"resource"`
-	// Filters are a key-value pair of the filters used to create the export
-	Filters map[string]string `json:"filters"`
-}
-
-const (
-	helpString = `Contained in this archive are your requested resources. If you need help or have any questions, please contact our team on slack @crc-pipeline-team.`
-)
-
 type StorageHandler interface {
 	Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error)
 	Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error)
@@ -71,7 +48,7 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 	return api.ListObjectsV2(c, input)
 }
 
-func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filename, s3key string, m *models.ExportPayload) error {
+func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filename, s3key string, meta ExportMeta, sources []*models.Source) error {
 	input := &s3.ListObjectsV2Input{
 		Bucket: &c.Bucket,
 		Prefix: &prefix,
@@ -88,18 +65,12 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 		return fmt.Errorf("failed to list bucket objects: %w", err)
 	}
 
-	// parse the models.ExportPayload.Sources into the models.Source struct
-	var sources []models.Source
-	if err := json.Unmarshal([]byte(m.Sources), &sources); err != nil {
-		return fmt.Errorf("failed to unmarshal sources: %w", err)
-	}
-
 	for _, obj := range resp.Contents {
 
 		c.Log.Infof("downloading s3://%s/%s...", c.Bucket, *obj.Key)
 		basename := filepath.Base(*obj.Key)
 
-		// save var id from the basename without the extension
+		// save id from the basename without the extension
 		id := strings.Split(basename, ".")[0]
 
 		f, err := os.CreateTemp("", basename)
@@ -114,25 +85,13 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 			return fmt.Errorf("failed to get file info: %w", err)
 		}
 
-		for _, source := range sources {
-			if source.ID.String() == id {
-				// parse Filters json into a map[string]string
-				var filters map[string]string
-				if err := json.Unmarshal([]byte(source.Filters), &filters); err != nil {
-					return fmt.Errorf("failed to unmarshal filters: %w", err)
-				}
+		tempFileMeta, err := findFileMeta(id, basename, sources)
 
-				// set the ExportFileMeta struct fields
-				fileMeta = append(fileMeta, ExportFileMeta{
-					Filename:    basename,
-					Application: source.Application,
-					Resource:    source.Resource,
-					Filters:     filters,
-				})
-
-				break
-			}
+		if err != nil {
+			return fmt.Errorf("failed to parse file meta: %w", err)
 		}
+
+		fileMeta = append(fileMeta, *tempFileMeta)
 
 		header, err := tar.FileInfoHeader(fi, basename)
 		if err != nil {
@@ -149,17 +108,10 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 		c.Log.Infof("added file %s to payload", basename)
 	}
 
-	// create ExportMeta struct
-	meta := ExportMeta{
-		ExportBy:    m.User.Username,
-		ExportDate:  m.CreatedAt.Format(time.RFC3339),
-		ExportOrgID: m.User.OrganizationID,
-		FileMeta:    fileMeta,
-		HelpString:  helpString,
-	}
+	// add the file metadata to the ExportMeta struct
+	meta.FileMeta = fileMeta
 
-	// make a json file from the ExportMeta struct
-	metaJSON, err := json.Marshal(meta)
+	metaJSON, err := buildMeta(&meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal meta struct: %w", err)
 	}
@@ -178,51 +130,11 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 		return fmt.Errorf("failed to write meta.json: %w", err)
 	}
 
-	dataDetails := ""
-	for _, file := range fileMeta {
-		filterDetails := ""
-		for key, value := range file.Filters {
-			filterDetails += fmt.Sprintf(
-				`
-  - %s: %s`,
-				key, value)
-		}
+	readme, err := buildReadme(&meta, &fileMeta)
 
-		if filterDetails == "" {
-			filterDetails = "None"
-		}
-		dataDetails += fmt.Sprintf(`
-### %s
-- **Application**: %s
-- **Resource**: %s
-- **Filters**: %s
-`, file.Filename, file.Application, file.Resource, filterDetails)
+	if err != nil {
+		return fmt.Errorf("failed to build README.md: %w", err)
 	}
-
-	if dataDetails == "" {
-		dataDetails = "No data was found."
-	}
-	// next, make a README.md file containing the ExportMeta data in a readable format
-	readme := fmt.Sprintf(`# Export Manifest
-
-## Exported Information
-- **Exported by**: %s
-- **Org ID**: %s
-- **Export Date**: %s
-
-## Data Details
-This archive contains the following data:
-%s
-## Help and Support
-This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.
-
-You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
-`,
-		meta.ExportBy,
-		meta.ExportOrgID,
-		meta.ExportDate,
-		dataDetails,
-	)
 
 	// add the README.md file to the tar
 	readmeHeader := &tar.Header{
@@ -279,7 +191,19 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 	filename := fmt.Sprintf("%s-%s.tar.gz", t.Format(time.RFC3339), m.ID.String())
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
 
-	err := c.zipExport(ctx, t, prefix, filename, s3key, m)
+	sources, err := m.GetSources()
+	if err != nil {
+		return t, filename, s3key, fmt.Errorf("failed to get sources: %w", err)
+	}
+
+	meta := ExportMeta{
+		ExportBy:    m.User.Username,
+		ExportDate:  m.CreatedAt.Format(time.RFC3339),
+		ExportOrgID: m.User.OrganizationID,
+		HelpString:  helpString,
+	}
+
+	err = c.zipExport(ctx, t, prefix, filename, s3key, meta, sources)
 	return t, filename, s3key, err
 }
 

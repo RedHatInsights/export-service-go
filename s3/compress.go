@@ -111,7 +111,7 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 	// add the file metadata to the ExportMeta struct
 	meta.FileMeta = fileMeta
 
-	metaJSON, err := buildMeta(&meta)
+	metaJSON, err := BuildMeta(&meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal meta struct: %w", err)
 	}
@@ -130,7 +130,7 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 		return fmt.Errorf("failed to write meta.json: %w", err)
 	}
 
-	readme, err := buildReadme(&meta, &fileMeta)
+	readme, err := BuildReadme(&meta)
 
 	if err != nil {
 		return fmt.Errorf("failed to build README.md: %w", err)

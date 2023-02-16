@@ -52,16 +52,16 @@ func findFileMeta(id, basename string, sources []*models.Source) (*ExportFileMet
 	return nil, nil
 }
 
-func buildMeta(meta *ExportMeta) ([]byte, error) {
+func BuildMeta(meta *ExportMeta) ([]byte, error) {
 	// make a json file from the ExportMeta struct
 	metaJSON, err := json.Marshal(meta)
 
 	return metaJSON, err
 }
 
-func buildReadme(meta *ExportMeta, fileMeta *[]ExportFileMeta) (string, error) {
+func BuildReadme(meta *ExportMeta) (string, error) {
 	dataDetails := ""
-	for _, file := range *fileMeta {
+	for _, file := range meta.FileMeta {
 		filterDetails := ""
 		for key, value := range file.Filters {
 			filterDetails += fmt.Sprintf(
@@ -82,7 +82,9 @@ func buildReadme(meta *ExportMeta, fileMeta *[]ExportFileMeta) (string, error) {
 	}
 
 	if dataDetails == "" {
-		dataDetails = "No data was found."
+		dataDetails = `
+No data was found.
+`
 	}
 	// next, make a README.md file containing the ExportMeta data in a readable format
 	readme := fmt.Sprintf(`# Export Manifest

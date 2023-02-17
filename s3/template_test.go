@@ -94,9 +94,7 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 					Filename:    "filename",
 					Application: "application",
 					Resource:    "resource",
-					Filters: map[string]string{
-						"filter_key": "filter_value",
-					},
+					Filters:     map[string]string{},
 				},
 			},
 			HelpString: "Help me!",
@@ -114,8 +112,7 @@ This archive contains the following data:
 ### filename
 - **Application**: application
 - **Resource**: resource
-- **Filters**: 
-  - filter_key: filter_value
+- **Filters**: None
 
 ## Help and Support
 This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.

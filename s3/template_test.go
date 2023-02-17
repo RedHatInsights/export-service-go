@@ -141,9 +141,9 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 					Application: "application2",
 					Resource:    "resource2",
 					Filters: map[string]string{
-						"filter_key":  "filter_value",
-						"filter_key2": "filter_value2",
-						"filter_key3": "filter_value3",
+						"filter_key": "filter_value",
+						"filter_key": "filter_value",
+						"filter_key": "filter_value",
 					},
 				},
 			},
@@ -170,8 +170,8 @@ This archive contains the following data:
 - **Resource**: resource2
 - **Filters**: 
   - filter_key: filter_value
-  - filter_key2: filter_value2
-  - filter_key3: filter_value3
+  - filter_key: filter_value
+  - filter_key: filter_value
 
 ## Help and Support
 This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.

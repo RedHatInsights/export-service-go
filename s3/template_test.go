@@ -1,6 +1,8 @@
 package s3_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/export-service-go/s3"
@@ -138,8 +140,7 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 					Application: "application2",
 					Resource:    "resource2",
 					Filters: map[string]string{
-						"filter_key":  "filter_value",
-						"filter_key1": "filter_value1",
+						"filter_key": "filter_value",
 					},
 				},
 			},
@@ -166,7 +167,6 @@ This archive contains the following data:
 - **Resource**: resource2
 - **Filters**: 
   - filter_key: filter_value
-  - filter_key1: filter_value1
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
@@ -175,4 +175,47 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 `,
 		),
 	)
+
+	It("test the filters are right", func() {
+		filters := map[string]string{
+			"filter_key":  "filter_value",
+			"filter_key2": "filter_value2",
+			"filter_key3": "filter_value3",
+			"filter_key4": "filter_value4",
+			"filter_key5": "filter_value5",
+		}
+		// Make the ExportMeta struct
+		meta := s3.ExportMeta{
+			ExportBy:    "user",
+			ExportDate:  "date",
+			ExportOrgID: "org_id",
+			FileMeta: []s3.ExportFileMeta{
+				{
+					Filename:    "filename",
+					Application: "application",
+					Resource:    "resource",
+					Filters:     filters,
+				},
+			},
+			HelpString: "Help me!",
+		}
+
+		metaDump, err := s3.BuildMeta(&meta)
+
+		Expect(err).To(BeNil())
+
+		// Make sure each of the filters are in the metaDump
+		for key, value := range filters {
+			Expect(string(metaDump)).To(ContainSubstring(fmt.Sprintf("\"%s\":\"%s\"", key, value)))
+		}
+
+		// get the readme
+		readme, err := s3.BuildReadme(&meta)
+		Expect(err).To(BeNil())
+
+		// Make sure each of the filters are in the readme
+		for key, value := range filters {
+			Expect(string(readme)).To(ContainSubstring(fmt.Sprintf("%s: %s", key, value)))
+		}
+	})
 })

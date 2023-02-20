@@ -1,0 +1,18 @@
+{
+    "name": "Example export payload",
+    "description": "This is an example export payload",
+    "data": [
+        {
+            "timestamp": "2018-01-01T00:00:00Z",
+            "value": 1.0
+        },
+        {
+            "timestamp": "2018-01-01T00:00:01Z",
+            "value": 2.0
+        },
+        {
+            "timestamp": "2018-01-01T00:00:02Z",
+            "value": 3.0
+        }
+    ]
+}

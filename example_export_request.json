@@ -6,7 +6,21 @@
             "application": "exampleApplication",
             "resource": "exampleResource",
             "expires": "2023-01-01T00:00:00Z",
-            "filters": {}
+            "filters": {
+                "startDate": "2022-01-01T00:00:00Z",
+                "endDate": "2022-03-01T00:00:00Z",
+                "productId": "RHEL"
+            }
+        },
+        {
+            "application": "exampleApplication",
+            "resource": "anotherExampleResource",
+            "expires": "2023-01-02T00:00:00Z",
+            "filters": {
+                "startDate": "2022-02-01T00:00:00Z",
+                "endDate": "2022-04-01T00:00:00Z",
+                "productId": "Ansible"
+            }
         }
     ]
 }

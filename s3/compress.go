@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -47,17 +48,18 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 	return api.ListObjectsV2(c, input)
 }
 
-func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filename, s3key string) error {
+func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key string, meta ExportMeta, sources []*models.Source) error {
 	input := &s3.ListObjectsV2Input{
 		Bucket: &c.Bucket,
 		Prefix: &prefix,
 	}
 
+	var fileMeta []ExportFileMeta
+
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
 	tarWriter := tar.NewWriter(gzipWriter)
 
-	// resp, err := Client.ListObjectsV2(ctx, input)
 	resp, err := GetObjects(ctx, Client, input)
 	if err != nil {
 		return fmt.Errorf("failed to list bucket objects: %w", err)
@@ -67,6 +69,10 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 
 		c.Log.Infof("downloading s3://%s/%s...", c.Bucket, *obj.Key)
 		basename := filepath.Base(*obj.Key)
+
+		// save id from the basename without the extension
+		id := strings.Split(basename, ".")[0]
+
 		f, err := os.CreateTemp("", basename)
 		if err != nil {
 			return fmt.Errorf("failed to create temp file: %w", err)
@@ -78,6 +84,15 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 		if err != nil {
 			return fmt.Errorf("failed to get file info: %w", err)
 		}
+
+		tempFileMeta, err := findFileMeta(id, basename, sources)
+
+		if err != nil {
+			return fmt.Errorf("failed to parse file meta: %w", err)
+		}
+
+		fileMeta = append(fileMeta, *tempFileMeta)
+
 		header, err := tar.FileInfoHeader(fi, basename)
 		if err != nil {
 			return fmt.Errorf("failed to create file header: %w", err)
@@ -91,6 +106,48 @@ func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filenam
 			return fmt.Errorf("failed to copy data into tar file: %w", err)
 		}
 		c.Log.Infof("added file %s to payload", basename)
+	}
+
+	// add the file metadata to the ExportMeta struct
+	meta.FileMeta = fileMeta
+
+	metaJSON, err := BuildMeta(&meta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal meta struct: %w", err)
+	}
+
+	// add the json file to the tar
+	metaHeader := &tar.Header{
+		Name: "meta.json",
+		Mode: 0600,
+		Size: int64(len(metaJSON)),
+	}
+
+	if err := tarWriter.WriteHeader(metaHeader); err != nil {
+		return fmt.Errorf("failed to write header: %w", err)
+	}
+	if _, err := tarWriter.Write(metaJSON); err != nil {
+		return fmt.Errorf("failed to write meta.json: %w", err)
+	}
+
+	readme, err := BuildReadme(&meta)
+
+	if err != nil {
+		return fmt.Errorf("failed to build README.md: %w", err)
+	}
+
+	// add the README.md file to the tar
+	readmeHeader := &tar.Header{
+		Name: "README.md",
+		Mode: 0600,
+		Size: int64(len(readme)),
+	}
+
+	if err := tarWriter.WriteHeader(readmeHeader); err != nil {
+		return fmt.Errorf("failed to write header: %w", err)
+	}
+	if _, err := tarWriter.Write([]byte(readme)); err != nil {
+		return fmt.Errorf("failed to write README.md: %w", err)
 	}
 
 	// produce tar
@@ -134,7 +191,19 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 	filename := fmt.Sprintf("%s-%s.tar.gz", t.Format(time.RFC3339), m.ID.String())
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
 
-	err := c.zipExport(ctx, t, prefix, filename, s3key)
+	sources, err := m.GetSources()
+	if err != nil {
+		return t, filename, s3key, fmt.Errorf("failed to get sources: %w", err)
+	}
+
+	meta := ExportMeta{
+		ExportBy:    m.User.Username,
+		ExportDate:  m.CreatedAt.Format(time.RFC3339),
+		ExportOrgID: m.User.OrganizationID,
+		HelpString:  helpString,
+	}
+
+	err = c.zipExport(ctx, prefix, filename, s3key, meta, sources)
 	return t, filename, s3key, err
 }
 

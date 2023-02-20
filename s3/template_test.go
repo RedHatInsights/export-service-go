@@ -56,7 +56,7 @@ This archive contains the following data:
 No data was found.
 
 ## Help and Support
-This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
 You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,
@@ -80,7 +80,7 @@ This archive contains the following data:
 No data was found.
 
 ## Help and Support
-This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
 You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,
@@ -115,7 +115,7 @@ This archive contains the following data:
 - **Filters**: None
 
 ## Help and Support
-This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
 You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,
@@ -169,7 +169,7 @@ This archive contains the following data:
   - filter_key1: filter_value1
 
 ## Help and Support
-This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
 You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,

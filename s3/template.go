@@ -98,7 +98,7 @@ No data was found.
 This archive contains the following data:
 %s
 ## Help and Support
-This service is owned by the ConsoldeDot Pipeline team. If you have any questions, or need support with this service, please contact the team on slack @crc-pipeline-team.
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
 You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,

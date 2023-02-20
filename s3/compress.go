@@ -48,7 +48,7 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 	return api.ListObjectsV2(c, input)
 }
 
-func (c *Compressor) zipExport(ctx context.Context, t time.Time, prefix, filename, s3key string, meta ExportMeta, sources []*models.Source) error {
+func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key string, meta ExportMeta, sources []*models.Source) error {
 	input := &s3.ListObjectsV2Input{
 		Bucket: &c.Bucket,
 		Prefix: &prefix,
@@ -203,7 +203,7 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 		HelpString:  helpString,
 	}
 
-	err = c.zipExport(ctx, t, prefix, filename, s3key, meta, sources)
+	err = c.zipExport(ctx, prefix, filename, s3key, meta, sources)
 	return t, filename, s3key, err
 }
 

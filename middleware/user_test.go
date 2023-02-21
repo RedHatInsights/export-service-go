@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhatinsights/export-service-go/middleware"
-	"github.com/redhatinsights/export-service-go/models"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
@@ -30,7 +29,7 @@ var _ = Describe("Handler", func() {
 			rr := httptest.NewRecorder()
 			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				// Check that the context has the UserIdentity field
-				userIdentity := r.Context().Value(middleware.UserIdentityKey).(models.User)
+				userIdentity := r.Context().Value(middleware.UserIdentityKey).(middleware.User)
 
 				Expect(userIdentity.AccountID).To(Equal(accountNumber))
 				Expect(userIdentity.OrganizationID).To(Equal(orgID))

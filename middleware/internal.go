@@ -13,12 +13,18 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/redhatinsights/export-service-go/errors"
-	"github.com/redhatinsights/export-service-go/models"
+	//	"github.com/redhatinsights/export-service-go/models"
 )
 
 type internalKey int
 
 const urlParamsKey internalKey = iota
+
+type URLParams struct {
+	ExportUUID   uuid.UUID
+	Application  string
+	ResourceUUID uuid.UUID
+}
 
 // IsValidUUID is a helper function that checks if the given string is a valid uuid.
 func IsValidUUID(id string) bool {
@@ -47,7 +53,7 @@ func URLParamsCtx(next http.Handler) http.Handler {
 
 		application := chi.URLParam(r, "application")
 
-		params := &models.URLParams{
+		params := &URLParams{
 			ExportUUID:   exportUUID,
 			Application:  application,
 			ResourceUUID: resourceUUID,
@@ -59,6 +65,6 @@ func URLParamsCtx(next http.Handler) http.Handler {
 }
 
 // GetURLParams fetches the urlParams from the context.
-func GetURLParams(ctx context.Context) *models.URLParams {
-	return ctx.Value(urlParamsKey).(*models.URLParams)
+func GetURLParams(ctx context.Context) *URLParams {
+	return ctx.Value(urlParamsKey).(*URLParams)
 }

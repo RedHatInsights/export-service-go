@@ -33,7 +33,7 @@ const (
 	helpString = `Contained in this archive are your requested resources. If you need help or have any questions, please contact Red Hat Support.`
 )
 
-func findFileMeta(id, basename string, sources []*models.Source) (*ExportFileMeta, error) {
+func findFileMeta(id, basename string, sources []models.Source) (*ExportFileMeta, error) {
 	for _, source := range sources {
 		if source.ID.String() == id {
 			filters, err := source.GetFilters()

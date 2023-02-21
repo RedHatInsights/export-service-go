@@ -22,7 +22,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message, log *zap.Su
 	// `messagesChan`
 	return func(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface) { // TODO: Does it make sense to pass the DB here?
 		go func() {
-			sources, err := payload.GetSources(db)
+			sources, err := payload.GetSources()
 			if err != nil {
 				log.Errorw("failed unmarshalling sources", "error", err)
 				// FIXME:

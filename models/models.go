@@ -111,28 +111,27 @@ type User struct {
 }
 
 func (ep *ExportPayload) GetSource(db DBInterface, uid uuid.UUID) (int, *Source, error) {
-	sources, err := ep.GetSources(db)
+	sources, err := ep.GetSources()
 	if err != nil {
 		return -1, nil, fmt.Errorf("failed to get sources: %w", err)
 	}
 	for idx, source := range sources {
 		if source.ID == uid {
-			return idx, source, nil
+			return idx, &source, nil
 		}
 	}
 	return -1, nil, fmt.Errorf("source `%s` not found", uid)
 }
 
-func (ep *ExportPayload) GetSources(db DBInterface) ([]*Source, error) { // TODO: Remove usage of pointers here
-	var sources []*Source
-	//err := json.Unmarshal(ep.Sources, &sources)
+func (ep *ExportPayload) GetSources() ([]Source, error) { // TODO: Remove usage of pointers here
+	// //err := json.Unmarshal(ep.Sources, &sources)
 
-	sql := db.Raw("SELECT * FROM export_sources WHERE export_sources.export_payload_id = ?", ep.ID)
-	err := sql.Find(&sources).Error
+	// sql := db.Raw("SELECT * FROM export_sources WHERE export_sources.export_payload_id = ?", ep.ID)
+	// err := sql.Find(&sources).Error
 
-	fmt.Println("GET SOURCES123: ", sources, err)
+	fmt.Println("GET SOURCES123: ", ep.Sources)
 
-	return sources, err
+	return ep.Sources, nil
 }
 
 func (es *Source) GetFilters() (map[string]string, error) {
@@ -211,7 +210,7 @@ const (
 //   - StatusPartial - sources are all complete, some sources are a failure
 //   - StatusFailed - all sources have failed
 func (ep *ExportPayload) GetAllSourcesStatus(db DBInterface) (int, error) {
-	sources, err := ep.GetSources(db)
+	sources, err := ep.GetSources()
 	if err != nil {
 		// we do not know the status of the sources. as far as we know, there is nothing to zip.
 		return StatusError, err

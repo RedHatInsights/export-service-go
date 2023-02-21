@@ -135,6 +135,12 @@ func (ep *ExportPayload) GetSources(db DBInterface) ([]*Source, error) { // TODO
 	return sources, err
 }
 
+func (es *Source) GetFilters() (map[string]string, error) {
+	var filters map[string]string
+	err := json.Unmarshal([]byte(es.Filters), &filters)
+	return filters, err
+}
+
 func (ep *ExportPayload) SetStatusComplete(db DBInterface, t *time.Time, s3key string) error {
 	values := ExportPayload{
 		Status:      Complete,

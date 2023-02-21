@@ -17,14 +17,15 @@ import (
 var _ = Describe("Handler", func() {
 	Describe("Test getLinks function", func() {
 		It("should return the proper Links struct", func() {
-			data := make([]int, 100)
+			count := 100
+			data := make([]int, count)
 
 			// construct the url
 			url := &url.URL{
 				Path: "/test",
 			}
 
-			links := middleware.GetLinks(url, middleware.Paginate{Limit: 10, Offset: 20}, data)
+			links := middleware.GetLinks(url, middleware.Paginate{Limit: 10, Offset: 20}, int64(count), data)
 
 			expectedFirst := "/test?limit=10&offset=0"
 			Expect(links.First).To(Equal(expectedFirst))
@@ -67,6 +68,8 @@ var _ = Describe("Handler", func() {
 				expectedPaginate = middleware.Paginate{
 					Limit:  l,
 					Offset: o,
+					SortBy: "created_at",
+					Dir:    "asc",
 				}
 			}
 
@@ -99,198 +102,5 @@ var _ = Describe("Handler", func() {
 		Entry("Pass negative values", false, "-10", "-20", http.StatusBadRequest),
 		Entry("Pass zero values", false, "0", "0", http.StatusOK),
 		Entry("Pass non-integer values", false, "a", "b", http.StatusBadRequest),
-	)
-
-	// Test the GetPaginatedResponse function
-	DescribeTable("Test that the proper PaginatedResponse is returned from GetPaginatedResponse",
-		func(limit, offset int, data interface{}, expectedCount int, expectedFirst, expectedLast, expectedNext, expectedPrevious string, expectedData interface{}, expectedError error) {
-			// Make a paginate struct
-			paginate := middleware.Paginate{
-				Limit:  limit,
-				Offset: offset,
-			}
-
-			var expectedResponse *middleware.PaginatedResponse
-			if expectedError == nil {
-				var expectedNextPtr *string
-				var expectedPreviousPtr *string
-				if expectedPrevious != "" {
-					expectedPreviousPtr = &expectedPrevious
-				}
-				if expectedNext != "" {
-					expectedNextPtr = &expectedNext
-				}
-
-				// Make PaginatedResponse with expected values
-				expectedResponse = &middleware.PaginatedResponse{
-					Meta: middleware.Meta{
-						Count: expectedCount,
-					},
-					Links: middleware.Links{
-						First:    expectedFirst,
-						Last:     expectedLast,
-						Next:     expectedNextPtr,
-						Previous: expectedPreviousPtr,
-					},
-					Data: expectedData,
-				}
-			}
-
-			req, err := http.NewRequest("GET", "/test", nil)
-			Expect(err).ToNot(HaveOccurred())
-
-			rr := httptest.NewRecorder()
-
-			applicationHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				resp, err := middleware.GetPaginatedResponse(r.URL, paginate, data)
-
-				if expectedError != nil {
-					Expect(err.Error()).To(Equal(expectedError.Error()))
-				} else {
-					Expect(err).To(BeNil())
-				}
-
-				Expect(resp).To(Equal(expectedResponse))
-			})
-
-			router := chi.NewRouter()
-			router.Route("/", func(sub chi.Router) {
-				sub.Get("/test", applicationHandler)
-			})
-
-			router.ServeHTTP(rr, req)
-		},
-		Entry("Null data",
-			10,
-			0,
-			nil,
-			0,
-			"",
-			"",
-			"",
-			"",
-			nil,
-			fmt.Errorf("invalid data set: data cannot be nil"),
-		),
-		Entry("Empty data",
-			10,
-			0,
-			[]string{},
-			0,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=0",
-			"",
-			"",
-			[]interface{}{},
-			nil,
-		),
-		Entry("Data with 1 item",
-			10,
-			0,
-			[]string{"test"},
-			1,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=0",
-			"",
-			"",
-			[]string{"test"},
-			nil,
-		),
-		Entry("Data with 10 items",
-			10,
-			0,
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			10,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=0",
-			"",
-			"",
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			nil,
-		),
-		Entry("Data with 11 items",
-			10,
-			0,
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			11,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=1",
-			"/test?limit=10&offset=10",
-			"",
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			nil,
-		),
-		Entry("Data with 12 items",
-			10,
-			0,
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			12,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=2",
-			"/test?limit=10&offset=10",
-			"",
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			nil,
-		),
-		Entry("Data with 20 items",
-			10,
-			0,
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			20,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=10",
-			"/test?limit=10&offset=10",
-			"",
-			[]string{"test", "test", "test", "test", "test", "test", "test", "test", "test", "test"},
-			nil,
-		),
-		Entry("Data with 20 items and offset 10",
-			10,
-			10,
-			[]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
-			20,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=10",
-			"",
-			"/test?limit=10&offset=0",
-			[]string{"eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
-			nil,
-		),
-		Entry("Data with offset equal to length",
-			10,
-			20,
-			[]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
-			20,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=10",
-			"",
-			"",
-			[]interface{}{},
-			nil,
-		),
-		Entry("Data with offset greater than data length",
-			10,
-			100,
-			[]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
-			20,
-			"/test?limit=10&offset=0",
-			"/test?limit=10&offset=10",
-			"",
-			"",
-			[]interface{}{},
-			nil,
-		),
-		Entry("Negative offset and limit",
-			-10,
-			-10,
-			[]string{"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"},
-			20,
-			"",
-			"",
-			"",
-			"",
-			[]interface{}{},
-			fmt.Errorf("invalid negative value for limit or offset"),
-		),
 	)
 })

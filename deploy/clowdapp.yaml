@@ -2,17 +2,17 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: export--template
+  name: ${APP_NAME}
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
-    name: export-app
+    name: ${APP_NAME}
   spec:
     # The name of the ClowdEnvironment providing the services
     envName: ${ENV_NAME}
     testing:
-      iqePlugin: export-service
+      iqePlugin: ${APP_NAME}
     deployments:
     - name: service
       minReplicas: ${{MIN_REPLICAS}}
@@ -132,6 +132,10 @@ objects:
 
 
 parameters:
+  - name: APP_NAME
+    description: Application common name
+    requred: true
+    value: export-service
   - description: Cpu limit of service
     name: CPU_LIMIT
     value: "1"

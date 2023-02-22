@@ -19,13 +19,9 @@ import (
 
 type userIdentityKey int
 
-//type PayloadFormat string
-
 const (
 	UserIdentityKey userIdentityKey = iota
 	debugHeader     string          = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
-
-//	JSON            PayloadFormat   = "json"
 )
 
 var (

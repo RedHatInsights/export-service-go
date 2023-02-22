@@ -465,7 +465,7 @@ var _ = Describe("The public API", func() {
 })
 
 func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface) {
-	fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
+	// fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }
 
 func setupTest(requestAppResources exports.RequestApplicationResources) chi.Router {

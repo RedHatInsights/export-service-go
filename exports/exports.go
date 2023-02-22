@@ -54,12 +54,12 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbExport, sources := APIExportToDBExport(payload)
-	apiExport := DBExportToAPI(dbExport, sources)
+	dbExport := APIExportToDBExport(payload)
+	apiExport := DBExportToAPI(dbExport)
 
 	fmt.Println("apiExport", apiExport)
 
-	if len(sources) == 0 {
+	if len(dbExport.Sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return
 	}
@@ -213,7 +213,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	return export
 }
 
-func DBExportToAPI(payload models.ExportPayload, sources []models.Source) ExportPayload {
+func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 	apiPayload := ExportPayload{
 		ID:          payload.ID,
 		CreatedAt:   payload.CreatedAt,
@@ -223,7 +223,7 @@ func DBExportToAPI(payload models.ExportPayload, sources []models.Source) Export
 		Format:      string(payload.Format),
 		Status:      string(payload.Status),
 	}
-	for _, source := range sources {
+	for _, source := range payload.Sources {
 		newSource := Source{
 			ID:          source.ID,
 			Application: source.Application,
@@ -243,9 +243,11 @@ func DBExportToAPI(payload models.ExportPayload, sources []models.Source) Export
 	return apiPayload
 }
 
-func APIExportToDBExport(apiPayload ExportPayload) (models.ExportPayload, []models.Source) {
+func APIExportToDBExport(apiPayload ExportPayload) models.ExportPayload {
+	exportID := uuid.New()
+
 	payload := models.ExportPayload{
-		ID:        uuid.New(),
+		ID:        exportID,
 		CreatedAt: apiPayload.CreatedAt,
 		Expires:   apiPayload.Expires,
 		Name:      apiPayload.Name,
@@ -256,13 +258,16 @@ func APIExportToDBExport(apiPayload ExportPayload) (models.ExportPayload, []mode
 	var sources []models.Source
 	for _, source := range apiPayload.Sources {
 		sources = append(sources, models.Source{
-			ID:          uuid.New(),
-			Application: source.Application,
-			Status:      models.RPending,
-			Resource:    source.Resource,
-			Filters:     source.Filters,
+			ID:              uuid.New(),
+			ExportPayloadID: exportID,
+			Application:     source.Application,
+			Status:          models.RPending,
+			Resource:        source.Resource,
+			Filters:         source.Filters,
 		})
 	}
 
-	return payload, sources
+	payload.Sources = sources
+
+	return payload
 }

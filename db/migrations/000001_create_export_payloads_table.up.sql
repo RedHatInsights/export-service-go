@@ -14,13 +14,13 @@ CREATE TABLE export_payloads (
     username text
 );
 
-CREATE TABLE export_sources (
+CREATE TABLE sources (
     id uuid PRIMARY KEY,
     export_payload_id uuid REFERENCES export_payloads(id) ON DELETE CASCADE,
     application text NOT NULL,
     status text NOT NULL,
     resource text NOT NULL,
     filters jsonb,
-    error text,
+    code int,
     message text
 );

@@ -110,7 +110,7 @@ type User struct {
 	Username       string
 }
 
-func (ep *ExportPayload) GetSource(db DBInterface, uid uuid.UUID) (int, *Source, error) {
+func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
 		return -1, nil, fmt.Errorf("failed to get sources: %w", err)
@@ -123,12 +123,7 @@ func (ep *ExportPayload) GetSource(db DBInterface, uid uuid.UUID) (int, *Source,
 	return -1, nil, fmt.Errorf("source `%s` not found", uid)
 }
 
-func (ep *ExportPayload) GetSources() ([]Source, error) { // TODO: Remove usage of pointers here
-	// //err := json.Unmarshal(ep.Sources, &sources)
-
-	// sql := db.Raw("SELECT * FROM export_sources WHERE export_sources.export_payload_id = ?", ep.ID)
-	// err := sql.Find(&sources).Error
-
+func (ep *ExportPayload) GetSources() ([]Source, error) {
 	fmt.Println("GET SOURCES123: ", ep.Sources)
 
 	return ep.Sources, nil
@@ -173,7 +168,7 @@ func (ep *ExportPayload) SetStatusRunning(db DBInterface) error {
 }
 
 func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
-	_, _, err := ep.GetSource(db, uid)
+	_, _, err := ep.GetSource(uid)
 	if err != nil {
 		return fmt.Errorf("failed to get sources: %w", err)
 	}

@@ -97,7 +97,7 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exports, count, err := e.DB.APIList(user, &params, page.Offset, page.Limit, page.SortBy, page.Dir)
+	exports, count, err := e.DB.APIList(user, &params, page.Offset, page.Limit, page.SortBy, page.Dir) // TODO: use api model here
 	if err != nil {
 		errors.InternalServerError(w, err)
 		return
@@ -180,7 +180,9 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(&export); err != nil {
+	apiExport := DBExportToAPI(*export)
+
+	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}

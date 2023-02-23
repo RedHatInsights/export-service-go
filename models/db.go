@@ -63,6 +63,7 @@ func (edb *ExportDB) Delete(exportUUID uuid.UUID, user User) error {
 func (edb *ExportDB) Get(exportUUID uuid.UUID) (result *ExportPayload, err error) {
 	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID}).
+		Preload("Sources").
 		Take(&result)).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -74,6 +75,7 @@ func (edb *ExportDB) Get(exportUUID uuid.UUID) (result *ExportPayload, err error
 func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error) {
 	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID, User: user}).
+		Preload("Sources").
 		Take(&result)).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

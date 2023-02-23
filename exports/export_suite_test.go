@@ -1,6 +1,7 @@
 package exports_test
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -12,7 +13,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/models"
+	db_utils "github.com/redhatinsights/export-service-go/db"
+	"github.com/redhatinsights/export-service-go/logger"
 )
 
 var (
@@ -42,8 +44,15 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 		return nil, nil, err
 	}
 
-	if err := gdb.AutoMigrate(&models.ExportPayload{}); err != nil {
-		fmt.Println("failed to migrate db", "error", err)
+	dbConn, err := sql.Open("postgres", dsn)
+	if err != nil {
+		fmt.Println("Error connecting to postgres connection for running migrations: ", err)
+		return nil, nil, err
+	}
+
+	err = db_utils.PerformDbMigration(dbConn, logger.Log, "file://../db/migrations", "up")
+	if err != nil {
+		fmt.Println("Database migration failed: ", err)
 		return nil, nil, err
 	}
 

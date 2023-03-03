@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
@@ -34,25 +33,8 @@ import (
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-var (
-	cfg        *config.ExportConfig
-	log        *zap.SugaredLogger
-	compressor *es3.Compressor
-	client     *s3.Client
-)
-
-func init() {
-	cfg = config.ExportCfg
-	client = es3.Client
-	log = logger.Log
-	compressor = &es3.Compressor{
-		Bucket: cfg.StorageConfig.Bucket,
-		Log:    log,
-	}
-}
-
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func createPublicServer(external exports.Export) *http.Server {
+func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -77,8 +59,8 @@ func createPublicServer(external exports.Export) *http.Server {
 		)
 
 		// add external routes
-		r.Get("/openapi.json", serveOpenAPISpec) // OpenAPI Spec
-		r.Get("/ping", helloWorld)               // Hello World endpoint
+		r.Get("/openapi.json", serveOpenAPISpec(cfg)) // OpenAPI Spec
+		r.Get("/ping", helloWorld)                    // Hello World endpoint
 		r.Route("/exports", external.ExportRouter)
 	})
 
@@ -99,7 +81,7 @@ func createPublicServer(external exports.Export) *http.Server {
 	return &server
 }
 
-func createPrivateServer(internal exports.Internal) *http.Server {
+func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -163,8 +145,10 @@ func statusOK(w http.ResponseWriter, r *http.Request) {
 }
 
 // Serve OpenAPI spec json
-func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, cfg.OpenAPIFilePath)
+func serveOpenAPISpec(cfg *config.ExportConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, cfg.OpenAPIFilePath)
+	}
 }
 
 func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
@@ -197,7 +181,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	storageHandler := es3.Compressor{
 		Bucket: cfg.StorageConfig.Bucket,
 		Log:    log,
-		Client: *client,
+		Client: *es3.Client,
 	}
 
 	external := exports.Export{
@@ -207,15 +191,21 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		RequestAppResources: kafkaRequestAppResources,
 		Log:                 log,
 	}
-	wsrv := createPublicServer(external)
+	wsrv := createPublicServer(cfg, external)
+
+	compressor := es3.Compressor{
+		Bucket: cfg.StorageConfig.Bucket,
+		Log:    log,
+		Client: *es3.Client,
+	}
 
 	internal := exports.Internal{
 		Cfg:        cfg,
-		Compressor: compressor,
+		Compressor: &compressor,
 		DB:         &models.ExportDB{DB: DB},
 		Log:        log,
 	}
-	psrv := createPrivateServer(internal)
+	psrv := createPrivateServer(cfg, internal)
 	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})

@@ -14,7 +14,7 @@ import (
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/errors"
 	"github.com/redhatinsights/export-service-go/logger"
-	"github.com/redhatinsights/export-service-go/models"
+	//"github.com/redhatinsights/export-service-go/models"
 )
 
 type userIdentityKey int
@@ -28,6 +28,12 @@ var (
 	Cfg = config.ExportCfg
 	log = logger.Log
 )
+
+type User struct {
+	AccountID      string
+	OrganizationID string
+	Username       string
+}
 
 // InjectDebugUserIdentity is a middleware that set a valid x-rh-identity header
 // when operating in DEBUG mode. ** Only used during testing.
@@ -59,7 +65,7 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 			return
 		}
 
-		user := models.User{
+		user := User{
 			AccountID:      id.Identity.AccountNumber,
 			OrganizationID: id.Identity.OrgID,
 			Username:       id.Identity.User.Username,
@@ -72,6 +78,6 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 
 // GetUserIdentity is a helper function that return the x-rh-identity
 // stored in the request context.
-func GetUserIdentity(ctx context.Context) models.User {
-	return ctx.Value(UserIdentityKey).(models.User)
+func GetUserIdentity(ctx context.Context) User {
+	return ctx.Value(UserIdentityKey).(User)
 }

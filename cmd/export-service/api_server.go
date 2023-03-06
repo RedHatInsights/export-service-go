@@ -193,15 +193,9 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	}
 	wsrv := createPublicServer(cfg, external)
 
-	compressor := es3.Compressor{
-		Bucket: cfg.StorageConfig.Bucket,
-		Log:    log,
-		Client: *es3.Client,
-	}
-
 	internal := exports.Internal{
 		Cfg:        cfg,
-		Compressor: &compressor,
+		Compressor: &storageHandler,
 		DB:         &models.ExportDB{DB: DB},
 		Log:        log,
 	}

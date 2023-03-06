@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
@@ -233,6 +234,13 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
+	var failedUploads = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "failed_uploads_total",
+		Help: "The total number of failed S3 uploads.",
+	})
+
+	prometheus.MustRegister(failedUploads)
+
 	if err := payload.SetStatusRunning(db); err != nil {
 		c.Log.Errorw("failed to set running status", "error", err)
 		return err
@@ -240,6 +248,7 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 
 	_, uploadErr := c.Upload(ctx, body, &c.Bucket, &filename)
 	if uploadErr != nil {
+		defer failedUploads.Inc()
 		c.Log.Errorf("error during upload: %v", uploadErr)
 		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
 		if err := payload.SetSourceStatus(db, urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {

@@ -19,6 +19,14 @@ var httpReqs = prometheus.NewCounterVec(
 	[]string{"code", "method", "path"},
 )
 
+var failedUploads = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "failed_uploads_total",
+		Help: "Number of failed uploads by error type.",
+	},
+	[]string{"error_type"},
+)
+
 var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name: "http_response_time_seconds",
 	Help: "Duration of HTTP requests, partitioned by path.",
@@ -55,4 +63,5 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 func init() {
 	prometheus.MustRegister(httpReqs)
 	prometheus.MustRegister(httpDuration)
+	prometheus.MustRegister(failedUploads)
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/errors"
 	"github.com/redhatinsights/export-service-go/logger"
-	//"github.com/redhatinsights/export-service-go/models"
 )
 
 type userIdentityKey int

@@ -42,7 +42,7 @@ func (e *Export) ExportRouter(r chi.Router) {
 	})
 }
 
-func SwitchUser(user middleware.User) models.User {
+func mapUsertoModelUser(user middleware.User) models.User {
 	modelUser := models.User{
 		AccountID:      user.AccountID,
 		OrganizationID: user.OrganizationID,
@@ -56,7 +56,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
 	user := middleware.GetUserIdentity(r.Context())
 
-	modelUser := SwitchUser(user)
+	modelUser := mapUsertoModelUser(user)
 
 	var payload models.ExportPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
@@ -98,7 +98,7 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUserIdentity(r.Context())
 	page := middleware.GetPagination(r.Context())
 
-	modelUser := SwitchUser(user)
+	modelUser := mapUsertoModelUser(user)
 
 	q := r.URL.Query()
 
@@ -172,7 +172,7 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	modelUser := SwitchUser(user)
+	modelUser := mapUsertoModelUser(user)
 
 	if err := e.DB.Delete(exportUUID, modelUser); err != nil {
 		switch err {
@@ -208,7 +208,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	}
 
 	user := middleware.GetUserIdentity(r.Context())
-	modelUser := SwitchUser(user)
+	modelUser := mapUsertoModelUser(user)
 
 	export, err := e.DB.GetWithUser(exportUUID, modelUser)
 	if err != nil {

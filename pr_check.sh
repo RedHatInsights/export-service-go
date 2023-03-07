@@ -8,7 +8,7 @@ COMPONENT_NAME="$APP_NAME"  # name of app-sre "resourceTemplate" in deploy.yaml 
 IMAGE="quay.io/cloudservices/export-service"
 
 IQE_PLUGINS="export_service"
-#IQE_IMAGE_TAG="export-service-7b4b1d0c"
+#IQE_IMAGE_TAG="export-service-b4619e78"
 #IQE_MARKER_EXPRESSION="smoke"
 IQE_FILTER_EXPRESSION=""
 IQE_CJI_TIMEOUT="30m"

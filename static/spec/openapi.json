@@ -6,16 +6,16 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
-      "description": "development server"
-    },
-    {
-      "url": "https://console.redhat.com",
-      "description": "production server"
+      "url": "{server}/api/export/v1",
+      "variables": {
+        "server": {
+          "default": "http://localhost:8080"
+        }
+      }
     }
   ],
   "paths": {
-    "/api/export/v1/exports": {
+    "/exports": {
       "post": {
         "operationId": "createExport",
         "requestBody": {
@@ -148,7 +148,7 @@
         ]
       }
     },
-    "/api/export/v1/exports/{id}": {
+    "/exports/{id}": {
       "get": {
         "operationId": "downloadExport",
         "parameters": [
@@ -204,7 +204,7 @@
         ]
       }
     },
-    "/api/export/v1/exports/{id}/status": {
+    "/exports/{id}/status": {
       "get": {
         "operationId": "getExportStatus",
         "parameters": [
@@ -236,7 +236,7 @@
         ]
       }
     },
-    "/app/export/v1/upload/{id}/{application}/{resource}": {
+    "/upload/{id}/{application}/{resource}": {
       "post": {
         "operationId": "downloadExportUpload",
         "parameters": [
@@ -290,7 +290,7 @@
         ]
       }
     },
-    "/app/export/v1/error/{id}/{application}/{resource}": {
+    "/error/{id}/{application}/{resource}": {
       "post": {
         "operationId": "downloadExportError",
         "parameters": [
@@ -365,6 +365,16 @@
         "minLength": 36,
         "maxLength": 36
       },
+      "Status": {
+        "type": "string",
+        "enum": [
+          "partial",
+          "pending",
+          "running",
+          "complete",
+          "failed"
+        ]
+      },
       "ExportResource": {
         "type": "object",
         "required": [
@@ -372,6 +382,9 @@
           "resource"
         ],
         "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
           "application": {
             "type": "string"
           },
@@ -384,6 +397,9 @@
           },
           "filters": {
             "type": "object"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
           }
         }
       },
@@ -441,14 +457,13 @@
             "$ref": "#/components/schemas/Format"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "partial",
-              "pending",
-              "running",
-              "complete",
-              "failed"
-            ]
+            "$ref": "#/components/schemas/Status"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportResource"
+            }
           }
         }
       },

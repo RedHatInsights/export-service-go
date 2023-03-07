@@ -3,23 +3,21 @@ info:
   title: consoledot Export Service
   version: 0.1.0
 servers:
-  - url: http://localhost:8080
-    description: development server
-  - url: https://console.redhat.com
-    description: production server
+  - url: '{server}/api/export/v1'
+    variables:
+      server:
+        default: http://localhost:8080
 paths:
-
-# external
-  /api/export/v1/exports:
+  /exports:
     post:
       operationId: createExport
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ExportRequest"
+              $ref: '#/components/schemas/ExportRequest'
       responses:
-        200:
+        '200':
           description: Export scheduled
           content:
             application/json:
@@ -82,7 +80,7 @@ paths:
               - asc
               - desc
       responses:
-        200:
+        '200':
           description: Matching Exports
           content:
             application/json:
@@ -90,7 +88,7 @@ paths:
                 $ref: '#/components/schemas/ExportList'
       security:
         - 3ScaleIdentity: []
-  /api/export/v1/exports/{id}:
+  /exports/{id}:
     get:
       operationId: downloadExport
       parameters:
@@ -100,7 +98,7 @@ paths:
             $ref: '#/components/schemas/UUID'
           required: true
       responses:
-        200:
+        '200':
           description: Export data
           content:
             application/zip:
@@ -118,11 +116,11 @@ paths:
             $ref: '#/components/schemas/UUID'
           required: true
       responses:
-        202:
+        '202':
           description: Export deleted (if it existed)
       security:
         - 3ScaleIdentity: []
-  /api/export/v1/exports/{id}/status:
+  /exports/{id}/status:
     get:
       operationId: getExportStatus
       parameters:
@@ -132,7 +130,7 @@ paths:
             $ref: '#/components/schemas/UUID'
           required: true
       responses:
-        200:
+        '200':
           description: Export status
           content:
             application/json:
@@ -140,9 +138,7 @@ paths:
                 $ref: '#/components/schemas/ExportStatus'
       security:
         - 3ScaleIdentity: []
-
-#internal
-  /app/export/v1/upload/{id}/{application}/{resource}:
+  /upload/{id}/{application}/{resource}:
     post:
       operationId: downloadExportUpload
       parameters:
@@ -168,13 +164,13 @@ paths:
               type: string
               format: binary
       responses:
-        202:
+        '202':
           description: OK
       security:
         - psk: []
       tags:
         - internal
-  /app/export/v1/error/{id}/{application}/{resource}:
+  /error/{id}/{application}/{resource}:
     post:
       operationId: downloadExportError
       parameters:
@@ -202,13 +198,12 @@ paths:
           schema:
             type: string
       responses:
-        202:
+        '202':
           description: OK
       security:
         - psk: []
       tags:
         - internal
-
 components:
   schemas:
     Format:
@@ -219,15 +214,25 @@ components:
     UUID:
       type: string
       format: uuid
-      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       minLength: 36
       maxLength: 36
+    Status:
+      type: string
+      enum:
+        - partial
+        - pending
+        - running
+        - complete
+        - failed
     ExportResource:
       type: object
       required:
         - application
         - resource
       properties:
+        id:
+          $ref: '#/components/schemas/UUID'
         application:
           type: string
         resource:
@@ -237,6 +242,8 @@ components:
           format: date-time
         filters:
           type: object
+        status:
+          $ref: '#/components/schemas/Status'
     ExportRequest:
       type: object
       required:
@@ -277,13 +284,11 @@ components:
         format:
           $ref: '#/components/schemas/Format'
         status:
-          type: string
-          enum:
-            - partial
-            - pending
-            - running
-            - complete
-            - failed
+          $ref: '#/components/schemas/Status'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportResource'
     PageLinks:
       type: object
       properties:
@@ -328,10 +333,13 @@ components:
       type: apiKey
       in: header
       name: x-rh-identity
-      description: |
+      description: >
         Base64-encoded JSON identity header provided by 3Scale. Contains an
+
         account number of the user issuing the request. Format of the JSON:
+
         ```
+
         {
             "identity": {
                 "account_number": "account123",
@@ -345,6 +353,9 @@ components:
                 }
             }
         }
+
         ```
+
         Encoded (via `base64 -w0`):
+
         `eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K`

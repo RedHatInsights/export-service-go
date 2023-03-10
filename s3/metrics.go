@@ -5,7 +5,7 @@ import (
 )
 
 var failUploads = prometheus.NewCounter(prometheus.CounterOpts{
-	Name: "fail_uploads_total",
+	Name: "failed_s3_uploads",
 	Help: "The total number of failed S3 uploads.",
 })
 

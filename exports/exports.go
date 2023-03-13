@@ -58,7 +58,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	modelUser := mapUsertoModelUser(user)
 
-	var payload models.ExportPayload
+	var payload ExportPayload
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -67,18 +67,18 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbExport := APIExportToDBExport(payload)
-	apiExport := DBExportToAPI(dbExport)
+	payload = DBExportToAPI(dbExport)
 
-	fmt.Println("apiExport", apiExport)
+	fmt.Println("apiExport", payload)
 
 	if len(dbExport.Sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return
 	}
 
-	payload.RequestID = reqID
-	payload.User = modelUser
-	if err := e.DB.Create(&payload); err != nil {
+	dbExport.RequestID = reqID
+	dbExport.User = modelUser
+	if err := e.DB.Create(&dbExport); err != nil {
 
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
@@ -86,7 +86,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
+	if err := json.NewEncoder(w).Encode(&payload); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}

@@ -21,21 +21,22 @@ const (
 	JSON PayloadFormat = "json"
 )
 
-func (pf *PayloadFormat) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-	switch s {
-	case "csv":
-		*pf = CSV
-	case "json":
-		*pf = JSON
-	default:
-		return fmt.Errorf("unknown payload format: %s", s)
-	}
-	return nil
-}
+// TODO: Remove
+// func (pf *PayloadFormat) UnmarshalJSON(b []byte) error {
+// 	var s string
+// 	if err := json.Unmarshal(b, &s); err != nil {
+// 		return err
+// 	}
+// 	switch s {
+// 	case "csv":
+// 		*pf = CSV
+// 	case "json":
+// 		*pf = JSON
+// 	default:
+// 		return fmt.Errorf("unknown payload format: %s", s)
+// 	}
+// 	return nil
+// }
 
 type PayloadStatus string
 
@@ -125,6 +126,15 @@ func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 
 func (ep *ExportPayload) GetSources() ([]Source, error) {
 	fmt.Println("GET SOURCES123: ", ep.Sources)
+
+	switch ep.Format {
+	case "csv":
+		ep.Format = CSV
+	case "json":
+		ep.Format = JSON
+	default:
+		return nil, fmt.Errorf("unknown payload format: %s", ep.Format)
+	}
 
 	return ep.Sources, nil
 }

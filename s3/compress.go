@@ -240,6 +240,7 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 
 	_, uploadErr := c.Upload(ctx, body, &c.Bucket, &filename)
 	if uploadErr != nil {
+		failUploads.Inc()
 		c.Log.Errorf("error during upload: %v", uploadErr)
 		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
 		if err := payload.SetSourceStatus(db, urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {

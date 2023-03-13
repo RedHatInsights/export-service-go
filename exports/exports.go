@@ -42,12 +42,24 @@ func (e *Export) ExportRouter(r chi.Router) {
 	})
 }
 
+func mapUsertoModelUser(user middleware.User) models.User {
+	modelUser := models.User{
+		AccountID:      user.AccountID,
+		OrganizationID: user.OrganizationID,
+		Username:       user.Username,
+	}
+	return modelUser
+}
+
 // PostExport handles POST requests to the /exports endpoint.
 func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
 	user := middleware.GetUserIdentity(r.Context())
 
-	var payload ExportPayload
+	modelUser := mapUsertoModelUser(user)
+
+	var payload models.ExportPayload
+
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		errors.BadRequestError(w, err.Error())
@@ -64,9 +76,10 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbExport.RequestID = reqID
-	dbExport.User = user
-	if err := e.DB.Create(&dbExport); err != nil {
+	payload.RequestID = reqID
+	payload.User = modelUser
+	if err := e.DB.Create(&payload); err != nil {
+
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
@@ -88,6 +101,8 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUserIdentity(r.Context())
 	page := middleware.GetPagination(r.Context())
 
+	modelUser := mapUsertoModelUser(user)
+
 	q := r.URL.Query()
 
 	params, err := initQuery(q)
@@ -97,7 +112,8 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exports, count, err := e.DB.APIList(user, &params, page.Offset, page.Limit, page.SortBy, page.Dir) // TODO: use api model here
+	exports, count, err := e.DB.APIList(modelUser, &params, page.Offset, page.Limit, page.SortBy, page.Dir)
+
 	if err != nil {
 		errors.InternalServerError(w, err)
 		return
@@ -160,7 +176,9 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 	user := middleware.GetUserIdentity(r.Context())
 
-	if err := e.DB.Delete(exportUUID, user); err != nil {
+	modelUser := mapUsertoModelUser(user)
+
+	if err := e.DB.Delete(exportUUID, modelUser); err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
 			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
@@ -197,8 +215,9 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	}
 
 	user := middleware.GetUserIdentity(r.Context())
+	modelUser := mapUsertoModelUser(user)
 
-	export, err := e.DB.GetWithUser(exportUUID, user)
+	export, err := e.DB.GetWithUser(exportUUID, modelUser)
 	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:

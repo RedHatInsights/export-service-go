@@ -7,31 +7,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-// type PayloadStatus string
-
-// const (
-// 	Partial  PayloadStatus = "partial"
-// 	Pending  PayloadStatus = "pending"
-// 	Running  PayloadStatus = "running"
-// 	Complete PayloadStatus = "complete"
-// 	Failed   PayloadStatus = "failed"
-// )
-
-// type PayloadFormat string
-
-// const (
-// 	CSV  PayloadFormat = "csv"
-// 	JSON PayloadFormat = "json"
-// )
-
-// type ResourceStatus string
-
-// const (
-// 	RPending ResourceStatus = "pending"
-// 	RSuccess ResourceStatus = "success"
-// 	RFailed  ResourceStatus = "failed"
-// )
-
 type ExportPayload struct {
 	ID          string     `json:"id"`
 	CreatedAt   time.Time  `json:"created"`

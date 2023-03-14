@@ -156,17 +156,10 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 
 	var sql *gorm.DB
 	if sourceError == nil {
-		// set the status and remove 'code' and 'message' fields if they exist
-		//sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
-		sqlStr := fmt.Sprintf("UPDATE sources SET status = '%s' WHERE id='%s'", status, uid)
-		sql = db.Raw(sqlStr)
+		sql = db.Raw("UPDATE sources SET status = ? WHERE id = ?", status, uid)
 	} else {
-		// set status and add 'code' and 'message' fields
 		// the `code` and `message` are user inputs, so they are parameterized to prevent sql injection
-
-		// TODO: Do we need to parameterize the code and message to prevent sql injection here as well?
-		sqlStr := fmt.Sprintf("UPDATE sources SET status = '%s', code = %d, message = '%s' WHERE id='%s'", status, sourceError.Code, sourceError.Message, uid)
-		sql = db.Raw(sqlStr)
+		sql = db.Raw("UPDATE sources SET status = ?, code = ?, message = ? WHERE id = ?", status, sourceError.Code, sourceError.Message, uid)
 	}
 	return sql.Scan(&ep).Error
 }

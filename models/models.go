@@ -107,8 +107,6 @@ func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 }
 
 func (ep *ExportPayload) GetSources() ([]Source, error) {
-	fmt.Println("GET SOURCES123: ", ep.Sources)
-
 	return ep.Sources, nil
 }
 
@@ -187,7 +185,7 @@ const (
 //   - StatusPending - sources are still pending
 //   - StatusPartial - sources are all complete, some sources are a failure
 //   - StatusFailed - all sources have failed
-func (ep *ExportPayload) GetAllSourcesStatus(db DBInterface) (int, error) {
+func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
 	sources, err := ep.GetSources()
 	if err != nil {
 		// we do not know the status of the sources. as far as we know, there is nothing to zip.

@@ -73,8 +73,6 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	payload = DBExportToAPI(*dbExport)
 
-	fmt.Println("apiExport", payload)
-
 	if len(dbExport.Sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return

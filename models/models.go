@@ -21,23 +21,6 @@ const (
 	JSON PayloadFormat = "json"
 )
 
-// TODO: Remove
-// func (pf *PayloadFormat) UnmarshalJSON(b []byte) error {
-// 	var s string
-// 	if err := json.Unmarshal(b, &s); err != nil {
-// 		return err
-// 	}
-// 	switch s {
-// 	case "csv":
-// 		*pf = CSV
-// 	case "json":
-// 		*pf = JSON
-// 	default:
-// 		return fmt.Errorf("unknown payload format: %s", s)
-// 	}
-// 	return nil
-// }
-
 type PayloadStatus string
 
 const (
@@ -127,15 +110,6 @@ func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 func (ep *ExportPayload) GetSources() ([]Source, error) {
 	fmt.Println("GET SOURCES123: ", ep.Sources)
 
-	switch ep.Format {
-	case "csv":
-		ep.Format = CSV
-	case "json":
-		ep.Format = JSON
-	default:
-		return nil, fmt.Errorf("unknown payload format: %s", ep.Format)
-	}
-
 	return ep.Sources, nil
 }
 
@@ -193,9 +167,10 @@ func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status R
 		// set status and add 'code' and 'message' fields
 		// the `code` and `message` are user inputs, so they are parameterized to prevent sql injection
 		//sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || jsonb_build_object('status', '%s', 'code', ?::int, 'message', ?::text), true) WHERE id='%s'", idx, idx, status, ep.ID)
+
 		// TODO: Do we need to parameterize the code and message to prevent sql injection here as well?
 		sqlStr := fmt.Sprintf("UPDATE sources SET status = '%s', code = %d, message = '%s' WHERE id='%s'", status, sourceError.Code, sourceError.Message, uid)
-		sql = db.Raw(sqlStr, sourceError.Code, sourceError.Message)
+		sql = db.Raw(sqlStr)
 	}
 	return sql.Scan(&ep).Error
 }

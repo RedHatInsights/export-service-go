@@ -66,8 +66,12 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbExport := APIExportToDBExport(payload)
-	payload = DBExportToAPI(dbExport)
+	dbExport, err := APIExportToDBExport(payload)
+	if err != nil {
+		errors.BadRequestError(w, err.Error())
+		return
+	}
+	payload = DBExportToAPI(*dbExport)
 
 	fmt.Println("apiExport", payload)
 
@@ -78,7 +82,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	dbExport.RequestID = reqID
 	dbExport.User = modelUser
-	if err := e.DB.Create(&dbExport); err != nil {
+	if err := e.DB.Create(dbExport); err != nil {
 
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
@@ -93,7 +97,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], dbExport, e.DB)
+	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], *dbExport, e.DB)
 }
 
 // ListExports handle GET requests to the /exports endpoint.
@@ -236,7 +240,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 
 func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 	apiPayload := ExportPayload{
-		ID:          payload.ID,
+		ID:          payload.ID.String(),
 		CreatedAt:   payload.CreatedAt,
 		CompletedAt: payload.CompletedAt,
 		Expires:     payload.Expires,
@@ -264,23 +268,29 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 	return apiPayload
 }
 
-func APIExportToDBExport(apiPayload ExportPayload) models.ExportPayload {
-	exportID := uuid.New()
-
+func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error) {
 	payload := models.ExportPayload{
-		ID:        exportID,
 		CreatedAt: apiPayload.CreatedAt,
 		Expires:   apiPayload.Expires,
 		Name:      apiPayload.Name,
-		Format:    models.PayloadFormat(apiPayload.Format),
-		Status:    models.Pending,
+	}
+
+	// use the ID from the request if it's present
+	if apiPayload.ID != "" {
+		id, err := uuid.Parse(apiPayload.ID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid export ID: %s", apiPayload.ID)
+		}
+		payload.ID = id
+	} else {
+		payload.ID = uuid.New()
 	}
 
 	var sources []models.Source
 	for _, source := range apiPayload.Sources {
 		sources = append(sources, models.Source{
 			ID:              uuid.New(),
-			ExportPayloadID: exportID,
+			ExportPayloadID: payload.ID,
 			Application:     source.Application,
 			Status:          models.RPending,
 			Resource:        source.Resource,
@@ -290,5 +300,25 @@ func APIExportToDBExport(apiPayload ExportPayload) models.ExportPayload {
 
 	payload.Sources = sources
 
-	return payload
+	switch apiPayload.Format {
+	case "csv":
+		payload.Format = models.CSV
+	case "json":
+		payload.Format = models.JSON
+	default:
+		return nil, fmt.Errorf("unknown payload format: %s", apiPayload.Format)
+	}
+
+	switch apiPayload.Status {
+	case "complete":
+		payload.Status = models.Complete
+	case "partial":
+		payload.Status = models.Partial
+	case "failed":
+		payload.Status = models.Failed
+	default:
+		payload.Status = models.Pending // new payloads are pending by default
+	}
+
+	return &payload, nil
 }

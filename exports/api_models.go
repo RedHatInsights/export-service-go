@@ -33,7 +33,7 @@ import (
 // )
 
 type ExportPayload struct {
-	ID          uuid.UUID  `json:"id"`
+	ID          string     `json:"id"`
 	CreatedAt   time.Time  `json:"created"`
 	CompletedAt *time.Time `json:"completed,omitempty"`
 	Expires     *time.Time `json:"expires,omitempty"`

@@ -58,21 +58,21 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	modelUser := mapUsertoModelUser(user)
 
-	var payload ExportPayload
+	var apiExport ExportPayload
 
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err := json.NewDecoder(r.Body).Decode(&apiExport)
 	if err != nil {
 		errors.BadRequestError(w, err.Error())
 		return
 	}
 
-	dbExport, err := APIExportToDBExport(payload)
+	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
 		errors.BadRequestError(w, err.Error())
 		return
 	}
 
-	if len(payload.Sources) == 0 {
+	if len(apiExport.Sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return
 	}
@@ -88,14 +88,11 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 
-	payload = DBExportToAPI(*dbExport)
-	if err := json.NewEncoder(w).Encode(&payload); err != nil {
+	apiExport = DBExportToAPI(*dbExport)
+	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
-
-	fmt.Printf("dbExport: %+v\n", dbExport)
-	fmt.Printf("apiExport: %+v\n", payload)
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response

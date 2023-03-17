@@ -95,7 +95,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], *dbExport, e.DB)
+	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], *dbExport)
 }
 
 // ListExports handle GET requests to the /exports endpoint.

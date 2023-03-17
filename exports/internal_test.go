@@ -36,7 +36,7 @@ var _ = Context("Set up internal handler", func() {
 			Log:        logger.Log,
 		}
 
-		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload, db models.DBInterface) {
+		mockKafkaCall := func(ctx context.Context, identity string, payload models.ExportPayload) {
 		}
 
 		exportHandler := &exports.Export{

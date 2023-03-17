@@ -94,6 +94,9 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		errors.InternalServerError(w, err.Error())
 	}
 
+	fmt.Printf("dbExport: %+v\n", dbExport)
+	fmt.Printf("apiExport: %+v\n", payload)
+
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
 	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], *dbExport)

@@ -45,18 +45,6 @@ type DBInterface interface {
 var ErrRecordNotFound = errors.New("record not found")
 
 func (edb *ExportDB) Create(payload *ExportPayload) (*ExportPayload, error) {
-	if payload.Expires == nil {
-		expirationTime := time.Now().AddDate(0, 0, config.ExportCfg.ExportExpiryDays)
-		payload.Expires = &expirationTime
-	}
-	if payload.ID == uuid.Nil { // TODO: Why isn't this happening automatically?
-		payload.ID = uuid.New()
-	}
-	for i := range payload.Sources {
-		payload.Sources[i].ID = uuid.New() // TODO: Why isn't this happening automatically?
-		payload.Sources[i].ExportPayloadID = payload.ID
-	}
-
 	result := edb.DB.Create(&payload)
 	return payload, result.Error
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redhatinsights/export-service-go/config"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -91,6 +92,19 @@ type User struct {
 	AccountID      string
 	OrganizationID string
 	Username       string
+}
+
+func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) (err error) {
+	ep.ID = uuid.New()
+	if ep.Expires == nil {
+		expirationTime := time.Now().AddDate(0, 0, config.ExportCfg.ExportExpiryDays)
+		ep.Expires = &expirationTime
+	}
+	for i := range ep.Sources {
+		ep.Sources[i].ID = uuid.New()
+		ep.Sources[i].ExportPayloadID = ep.ID
+	}
+	return nil
 }
 
 func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {

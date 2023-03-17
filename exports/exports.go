@@ -93,8 +93,6 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
-	fmt.Printf("payload: %v", payload)
-	fmt.Printf("dbExport: %v", dbExport)
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response

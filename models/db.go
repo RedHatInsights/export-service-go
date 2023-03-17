@@ -32,7 +32,7 @@ type ExportDB struct {
 type DBInterface interface {
 	APIList(user User, params *QueryParams, offset, limit int, sort, dir string) (result []*APIExport, count int64, err error)
 
-	Create(payload *ExportPayload) error
+	Create(payload *ExportPayload) (result *ExportPayload, err error)
 	Delete(exportUUID uuid.UUID, user User) error
 	Get(exportUUID uuid.UUID) (result *ExportPayload, err error)
 	GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error)
@@ -44,12 +44,21 @@ type DBInterface interface {
 
 var ErrRecordNotFound = errors.New("record not found")
 
-func (edb *ExportDB) Create(payload *ExportPayload) error {
+func (edb *ExportDB) Create(payload *ExportPayload) (*ExportPayload, error) {
 	if payload.Expires == nil {
 		expirationTime := time.Now().AddDate(0, 0, config.ExportCfg.ExportExpiryDays)
 		payload.Expires = &expirationTime
 	}
-	return edb.DB.Create(&payload).Error
+	if payload.ID == uuid.Nil { // TODO: Why isn't this happening automatically?
+		payload.ID = uuid.New()
+	}
+	for i := range payload.Sources {
+		payload.Sources[i].ID = uuid.New() // TODO: Why isn't this happening automatically?
+		payload.Sources[i].ExportPayloadID = payload.ID
+	}
+
+	result := edb.DB.Create(&payload)
+	return payload, result.Error
 }
 
 func (edb *ExportDB) Delete(exportUUID uuid.UUID, user User) error {

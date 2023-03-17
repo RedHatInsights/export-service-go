@@ -71,27 +71,30 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		errors.BadRequestError(w, err.Error())
 		return
 	}
-	payload = DBExportToAPI(*dbExport)
 
-	if len(dbExport.Sources) == 0 {
+	if len(payload.Sources) == 0 {
 		errors.BadRequestError(w, "no sources provided")
 		return
 	}
 
 	dbExport.RequestID = reqID
 	dbExport.User = modelUser
-	if err := e.DB.Create(dbExport); err != nil {
 
+	dbExport, err = e.DB.Create(dbExport)
+	if err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
 		errors.InternalServerError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
 
+	payload = DBExportToAPI(*dbExport)
 	if err := json.NewEncoder(w).Encode(&payload); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		errors.InternalServerError(w, err.Error())
 	}
+	fmt.Printf("payload: %v", payload)
+	fmt.Printf("dbExport: %v", dbExport)
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
@@ -268,31 +271,16 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 
 func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error) {
 	payload := models.ExportPayload{
-		CreatedAt: apiPayload.CreatedAt,
-		Expires:   apiPayload.Expires,
-		Name:      apiPayload.Name,
-	}
-
-	// use the ID from the request if it's present
-	if apiPayload.ID != "" {
-		id, err := uuid.Parse(apiPayload.ID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid export ID: %s", apiPayload.ID)
-		}
-		payload.ID = id
-	} else {
-		payload.ID = uuid.New()
+		Name: apiPayload.Name,
 	}
 
 	var sources []models.Source
 	for _, source := range apiPayload.Sources {
 		sources = append(sources, models.Source{
-			ID:              uuid.New(),
-			ExportPayloadID: payload.ID,
-			Application:     source.Application,
-			Status:          models.RPending,
-			Resource:        source.Resource,
-			Filters:         source.Filters,
+			Application: source.Application,
+			Status:      models.RPending,
+			Resource:    source.Resource,
+			Filters:     source.Filters,
 		})
 	}
 

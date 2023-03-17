@@ -287,6 +287,10 @@ func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error
 
 	payload.Sources = sources
 
+	if apiPayload.Expires != nil {
+		payload.Expires = apiPayload.Expires
+	}
+
 	switch apiPayload.Format {
 	case "csv":
 		payload.Format = models.CSV

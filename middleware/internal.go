@@ -66,6 +66,6 @@ func URLParamsCtx(next http.Handler) http.Handler {
 }
 
 // GetURLParams fetches the urlParams from the context.
-func GetURLParams(ctx context.Context) *URLParams {
-	return ctx.Value(urlParamsKey).(*URLParams)
+func GetURLParams(ctx context.Context) URLParams {
+	return ctx.Value(urlParamsKey).(URLParams)
 }

@@ -54,7 +54,7 @@ func URLParamsCtx(next http.Handler) http.Handler {
 
 		application := chi.URLParam(r, "application")
 
-		params := URLParams{
+		params := &URLParams{
 			ExportUUID:   exportUUID,
 			Application:  application,
 			ResourceUUID: resourceUUID,

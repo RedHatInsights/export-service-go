@@ -17,7 +17,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
@@ -40,7 +39,7 @@ type StorageHandler interface {
 	Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error)
 	Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error)
 	Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
-	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *middleware.URLParams, payload *models.ExportPayload) error
+	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, resourceUUID uuid.UUID, payload *models.ExportPayload) error
 	GetObject(ctx context.Context, key string) (io.ReadCloser, error)
 	ProcessSources(db models.DBInterface, uid uuid.UUID)
 }
@@ -231,8 +230,8 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 	return uploader.Upload(ctx, input)
 }
 
-func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *middleware.URLParams, payload *models.ExportPayload) error {
-	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
+func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
+	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, resourceUUID, payload.Format)
 
 	if err := payload.SetStatusRunning(db); err != nil {
 		c.Log.Errorw("failed to set running status", "error", err)
@@ -244,7 +243,7 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 		failUploads.Inc()
 		c.Log.Errorf("error during upload: %v", uploadErr)
 		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
-		if err := payload.SetSourceStatus(db, urlparams.ResourceUUID, models.RFailed, &statusError); err != nil {
+		if err := payload.SetSourceStatus(db, resourceUUID, models.RFailed, &statusError); err != nil {
 			c.Log.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
@@ -339,7 +338,7 @@ func (mc *MockStorageHandler) Upload(ctx context.Context, body io.Reader, bucket
 	return nil, nil
 }
 
-func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *middleware.URLParams, payload *models.ExportPayload) error {
+func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
 	fmt.Println("Ran mockStorageHandler.CreateObject")
 	return nil
 }

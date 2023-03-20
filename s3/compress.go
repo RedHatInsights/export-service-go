@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 )
 
@@ -39,7 +40,7 @@ type StorageHandler interface {
 	Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error)
 	Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error)
 	Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
-	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error
+	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *middleware.URLParams, payload *models.ExportPayload) error
 	GetObject(ctx context.Context, key string) (io.ReadCloser, error)
 	ProcessSources(db models.DBInterface, uid uuid.UUID)
 }
@@ -230,7 +231,7 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 	return uploader.Upload(ctx, input)
 }
 
-func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
+func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *middleware.URLParams, payload *models.ExportPayload) error {
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, urlparams.ResourceUUID, payload.Format)
 
 	if err := payload.SetStatusRunning(db); err != nil {
@@ -338,7 +339,7 @@ func (mc *MockStorageHandler) Upload(ctx context.Context, body io.Reader, bucket
 	return nil, nil
 }
 
-func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *models.URLParams, payload *models.ExportPayload) error {
+func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, urlparams *middleware.URLParams, payload *models.ExportPayload) error {
 	fmt.Println("Ran mockStorageHandler.CreateObject")
 	return nil
 }

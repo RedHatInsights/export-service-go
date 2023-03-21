@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/redhatinsights/export-service-go/errors"
 )
 
 type paginationKey int
@@ -168,12 +166,12 @@ func PaginationCtx(next http.Handler) http.Handler {
 		if limit != "" {
 			lim, err := strconv.Atoi(limit)
 			if err != nil {
-				errors.BadRequestError(w, fmt.Errorf("invalid limit: %w", err))
+				badRequestError(w, fmt.Errorf("invalid limit: %w", err))
 				return
 			}
 
 			if lim < 0 {
-				errors.BadRequestError(w, fmt.Errorf("invalid limt: %d", lim))
+				badRequestError(w, fmt.Errorf("invalid limt: %d", lim))
 				return
 			}
 
@@ -184,12 +182,12 @@ func PaginationCtx(next http.Handler) http.Handler {
 		if offset != "" {
 			off, err := strconv.Atoi(offset)
 			if err != nil {
-				errors.BadRequestError(w, fmt.Errorf("invalid offset: %w", err))
+				badRequestError(w, fmt.Errorf("invalid offset: %w", err))
 				return
 			}
 
 			if off < 0 {
-				errors.BadRequestError(w, fmt.Errorf("invalid offset: %d", off))
+				badRequestError(w, fmt.Errorf("invalid offset: %d", off))
 				return
 			}
 
@@ -204,7 +202,7 @@ func PaginationCtx(next http.Handler) http.Handler {
 			case "created":
 				pagination.SortBy = "created_at"
 			default:
-				errors.BadRequestError(w, fmt.Errorf("sort does not match 'name', 'created', or 'expires': %s", sort))
+				badRequestError(w, fmt.Errorf("sort does not match 'name', 'created', or 'expires': %s", sort))
 				return
 			}
 		}
@@ -214,7 +212,7 @@ func PaginationCtx(next http.Handler) http.Handler {
 			switch dir {
 			case "asc", "desc":
 			default:
-				errors.BadRequestError(w, fmt.Errorf("dir does not match 'asc' or 'desc': %s", dir))
+				badRequestError(w, fmt.Errorf("dir does not match 'asc' or 'desc': %s", dir))
 				return
 			}
 

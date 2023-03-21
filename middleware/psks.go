@@ -6,8 +6,6 @@ package middleware
 
 import (
 	"net/http"
-
-	"github.com/redhatinsights/export-service-go/errors"
 )
 
 // SliceContainsString returns true if the specified target is present in the given slice.
@@ -27,12 +25,12 @@ func EnforcePSK(next http.Handler) http.Handler {
 		psk := r.Header["X-Rh-Exports-Psk"]
 
 		if len(psk) != 1 {
-			errors.BadRequestError(w, "missing x-rh-exports-psk header")
+			badRequestError(w, "missing x-rh-exports-psk header")
 			return
 		}
 
 		if !SliceContainsString(Cfg.Psks, psk[0]) {
-			errors.JSONError(w, "invalid x-rh-exports-psk header", http.StatusUnauthorized)
+			jsonError(w, "invalid x-rh-exports-psk header", http.StatusUnauthorized)
 			return
 		}
 

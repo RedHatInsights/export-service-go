@@ -40,14 +40,6 @@ const (
 	RFailed  ResourceStatus = "failed"
 )
 
-// URLParams represent the `exportUUID`, `resourceUUID`, and `application` found in
-// the url. These are added to the request context using the URLParams middleware.
-type URLParams struct {
-	ExportUUID   uuid.UUID
-	Application  string
-	ResourceUUID uuid.UUID
-}
-
 // QueryParams for the /export/v1/exports endpoint
 type QueryParams struct {
 	Name        string

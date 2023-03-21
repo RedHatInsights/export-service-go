@@ -18,4 +18,6 @@ jobs:
         run: go get -d github.com/onsi/ginkgo/ginkgo
       # run ginkgo
       - name: run ginkgo
-        run: ginkgo -r -v
+        run: echo "GOBIN: $(GOBIN)"
+        run: echo "GOPATH: $(GOPATH)"
+        run: $(GOBIN)/ginkgo -r -v

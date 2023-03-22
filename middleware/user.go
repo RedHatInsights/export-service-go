@@ -12,7 +12,6 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
 	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/errors"
 	"github.com/redhatinsights/export-service-go/logger"
 )
 
@@ -60,7 +59,7 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 		id := identity.Get(r.Context())
 
 		if id.Identity.Type != "User" {
-			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid user type", id.Identity.Type))
+			BadRequestError(w, fmt.Sprintf("'%s' is not a valid user type", id.Identity.Type))
 			return
 		}
 

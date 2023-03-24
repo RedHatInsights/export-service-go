@@ -70,7 +70,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		BadRequestError(w, err.Error())
 		return
 	}
-	if len(sources) == 0 {
+	if len(apiExport.Sources) == 0 {
 		BadRequestError(w, "no sources provided")
 		return
 	}

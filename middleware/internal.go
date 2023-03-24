@@ -11,8 +11,6 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-
-	"github.com/redhatinsights/export-service-go/errors"
 )
 
 type internalKey int
@@ -41,14 +39,14 @@ func URLParamsCtx(next http.Handler) http.Handler {
 		uid = chi.URLParam(r, "exportUUID")
 		exportUUID, err := uuid.Parse(uid)
 		if err != nil {
-			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
+			BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
 			return
 		}
 
 		uid = chi.URLParam(r, "resourceUUID")
 		resourceUUID, err := uuid.Parse(uid)
 		if err != nil {
-			errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid resource UUID", uid))
+			BadRequestError(w, fmt.Sprintf("'%s' is not a valid resource UUID", uid))
 			return
 		}
 

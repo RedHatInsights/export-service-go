@@ -16,7 +16,6 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/export-service-go/errors"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
@@ -62,18 +61,17 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&apiExport)
 	if err != nil {
-		errors.BadRequestError(w, err.Error())
+		BadRequestError(w, err.Error())
 		return
 	}
 
 	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
-		errors.BadRequestError(w, err.Error())
+		BadRequestError(w, err.Error())
 		return
 	}
-
-	if len(apiExport.Sources) == 0 {
-		errors.BadRequestError(w, "no sources provided")
+	if len(sources) == 0 {
+		BadRequestError(w, "no sources provided")
 		return
 	}
 
@@ -83,7 +81,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	dbExport, err = e.DB.Create(dbExport)
 	if err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
@@ -91,7 +89,7 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	apiExport = DBExportToAPI(*dbExport)
 	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
-		errors.InternalServerError(w, err.Error())
+		InternalServerError(w, err.Error())
 	}
 
 	// send the payload to the producer with a goroutine so
@@ -111,26 +109,26 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	params, err := initQuery(q)
 	if err != nil {
 		e.Log.Errorw("error while parsing params", "error", err)
-		errors.BadRequestError(w, err.Error())
+		BadRequestError(w, err.Error())
 		return
 	}
 
 	exports, count, err := e.DB.APIList(modelUser, &params, page.Offset, page.Limit, page.SortBy, page.Dir)
 
 	if err != nil {
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 		return
 	}
 	resp, err := middleware.GetPaginatedResponse(r.URL, page, count, exports)
 	if err != nil {
 		e.Log.Errorw("error while paginating data", "error", err)
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
-		errors.InternalServerError(w, err.Error())
+		InternalServerError(w, err.Error())
 		return
 	}
 }
@@ -143,14 +141,14 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if export.Status != models.Complete && export.Status != models.Partial {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", export.ID))
+		BadRequestError(w, fmt.Sprintf("'%s' is not ready for download", export.ID))
 		return
 	}
 
 	out, err := e.StorageHandler.GetObject(r.Context(), export.S3Key)
 	if err != nil {
 		e.Log.Errorw("failed to get object", "error", err)
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 		return
 	}
 
@@ -165,7 +163,7 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e.Log.Errorf("failed to close body: %w", err)
 	}
-	errors.Logerr(w.Write(buf.Bytes()))
+	Logerr(w.Write(buf.Bytes()))
 }
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
@@ -173,7 +171,7 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
+		BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
 		return
 	}
 
@@ -184,11 +182,11 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 	if err := e.DB.Delete(exportUUID, modelUser); err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
-			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
+			NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 			return
 		default:
 			e.Log.Errorw("error deleting payload entry", "error", err)
-			errors.InternalServerError(w, err)
+			InternalServerError(w, err)
 			return
 		}
 	}
@@ -205,7 +203,7 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
-		errors.InternalServerError(w, err.Error())
+		InternalServerError(w, err.Error())
 	}
 }
 
@@ -213,7 +211,7 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	uid := chi.URLParam(r, "exportUUID")
 	exportUUID, err := uuid.Parse(uid)
 	if err != nil {
-		errors.BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
+		BadRequestError(w, fmt.Sprintf("'%s' is not a valid export UUID", uid))
 		return nil
 	}
 
@@ -225,11 +223,11 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 		switch err {
 		case models.ErrRecordNotFound:
 			e.Log.Infof("record '%s' not found", exportUUID)
-			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
+			NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 			return nil
 		default:
 			e.Log.Errorw("error querying for payload entry", "error", err)
-			errors.InternalServerError(w, err)
+			InternalServerError(w, err)
 			return nil
 		}
 	}

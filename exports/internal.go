@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/errors"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	"github.com/redhatinsights/export-service-go/s3"
@@ -42,14 +41,14 @@ func (i *Internal) InternalRouter(r chi.Router) {
 func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 	params := middleware.GetURLParams(r.Context())
 	if params == nil {
-		errors.InternalServerError(w, "unable to parse url params")
+		InternalServerError(w, "unable to parse url params")
 		return
 	}
 
 	var sourceError models.SourceError
 	err := json.NewDecoder(r.Body).Decode(&sourceError)
 	if err != nil {
-		errors.BadRequestError(w, err.Error())
+		BadRequestError(w, err.Error())
 		return
 	}
 
@@ -57,11 +56,11 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
-			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
+			NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
 			return
 		default:
 			i.Log.Errorw("error querying for payload entry", "error", err)
-			errors.InternalServerError(w, err)
+			InternalServerError(w, err)
 			return
 		}
 	}
@@ -69,14 +68,14 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 	_, source, err := payload.GetSource(params.ResourceUUID)
 	if err != nil {
 		i.Log.Errorw("failed to get source: %w", err)
-		errors.InternalServerError(w, err.Error())
+		InternalServerError(w, err.Error())
 		return
 	}
 
 	if source.Status == models.RSuccess || source.Status == models.RFailed {
 		// TODO: revisit this logic and response. Do we want to allow a re-write of an already completed source?
 		w.WriteHeader(http.StatusGone)
-		errors.Logerr(w.Write([]byte("this resource has already been processed")))
+		Logerr(w.Write([]byte("this resource has already been processed")))
 		return
 	}
 
@@ -84,13 +83,13 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 
 	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RFailed, &sourceError); err != nil {
 		i.Log.Errorw("failed to set source status for failed export", "error", err)
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 		return
 	}
 
 	if err := payload.SetStatusRunning(i.DB); err != nil {
 		i.Log.Errorw("failed to save status update for failed export", "error", err)
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 	}
 
 	i.Compressor.ProcessSources(i.DB, params.ExportUUID)
@@ -102,7 +101,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	i.Log.Info("received payload")
 	params := middleware.GetURLParams(r.Context())
 	if params == nil {
-		errors.InternalServerError(w, "unable to parse url params")
+		InternalServerError(w, "unable to parse url params")
 		return
 	}
 
@@ -110,11 +109,11 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
-			errors.NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
+			NotFoundError(w, fmt.Sprintf("record '%s' not found", params.ExportUUID))
 			return
 		default:
 			i.Log.Errorw("error querying for payload entry", "error", err)
-			errors.InternalServerError(w, err)
+			InternalServerError(w, err)
 			return
 		}
 	}
@@ -122,28 +121,28 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	_, source, err := payload.GetSource(params.ResourceUUID)
 	if err != nil {
 		i.Log.Errorf("failed to get source: %w", err)
-		errors.InternalServerError(w, err.Error())
+		InternalServerError(w, err.Error())
 		return
 	}
 
 	if source.Status == models.RSuccess || source.Status == models.RFailed {
 		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
-		errors.Logerr(w.Write([]byte("this resource has already been processed")))
+		Logerr(w.Write([]byte("this resource has already been processed")))
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := i.Compressor.CreateObject(r.Context(), i.DB, r.Body, params.ExportUUID, payload); err != nil {
-		errors.Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
+	if err := i.Compressor.CreateObject(r.Context(), i.DB, r.Body, params.ResourceUUID, payload); err != nil {
+		Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
 	} else {
-		errors.Logerr(w.Write([]byte("payload delivered")))
+		Logerr(w.Write([]byte("payload delivered")))
 	}
 
 	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RSuccess, nil); err != nil {
 		i.Log.Errorw("failed to set source status for successful export", "error", err)
-		errors.InternalServerError(w, err)
+		InternalServerError(w, err)
 	}
 
 	i.Compressor.ProcessSources(i.DB, params.ExportUUID)

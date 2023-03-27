@@ -24,12 +24,15 @@ import (
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-func generateExportRequestBody(name, format, sources string) (exportRequest []byte) {
+func generateExportRequestBody(name, format, expires, sources string) (exportRequest []byte) {
+	if expires != "" {
+		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires": "%s", "sources": [%s]}`, name, format, expires, sources))
+	}
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
 
-func createExportRequest(name, format, sources string) *http.Request {
-	exportRequest := generateExportRequestBody(name, format, sources)
+func createExportRequest(name, format, expires, sources string) *http.Request {
+	exportRequest := generateExportRequestBody(name, format, expires, sources)
 	request, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequest))
 	Expect(err).To(BeNil())
 	request.Header.Set("Content-Type", "application/json")
@@ -40,10 +43,10 @@ var _ = Describe("The public API", func() {
 	cfg := config.ExportCfg
 	cfg.Debug = true
 
-	DescribeTable("can create a new export request", func(name, format, sources, expectedBody string, expectedStatus int) {
+	DescribeTable("can create a new export request", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
 		router := setupTest(mockReqeustApplicationResouces)
 
-		req := createExportRequest(name, format, sources)
+		req := createExportRequest(name, format, expires, sources)
 
 		rr := httptest.NewRecorder()
 
@@ -51,10 +54,10 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
 	},
-		Entry("with valid request", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "", http.StatusAccepted),
-		Entry("with no expiration", "Test Export Request", "json", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
-		Entry("with an invalid format", "Test Export Request", "abcde", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`, "unknown payload format", http.StatusBadRequest),
-		Entry("With no sources", "Test Export Request", "json", "", "no sources provided", http.StatusBadRequest),
+		Entry("with valid request", "Test Export Request", "json", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
+		Entry("with no expiration", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
+		Entry("with an invalid format", "Test Export Request", "abcde", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "unknown payload format", http.StatusBadRequest),
+		Entry("With no sources", "Test Export Request", "json", "2023-01-01T00:00:00Z", "", "no sources provided", http.StatusBadRequest),
 	)
 
 	It("can list all export requests", func() {
@@ -67,6 +70,7 @@ var _ = Describe("The public API", func() {
 			req := createExportRequest(
 				fmt.Sprintf("Test Export Request %d", i),
 				"json",
+				"",
 				`{"application":"exampleApp", "resource":"exampleResource"}`,
 			)
 
@@ -210,6 +214,7 @@ var _ = Describe("The public API", func() {
 			req := createExportRequest(
 				fmt.Sprintf("Test Export Request %d", i),
 				"json",
+				"",
 				`{"application":"exampleApp", "resource":"exampleResource"}`,
 			)
 
@@ -271,6 +276,7 @@ var _ = Describe("The public API", func() {
 			req := createExportRequest(
 				fmt.Sprintf("Test Export Request %d", i),
 				"json",
+				"",
 				`{"application":"exampleApp", "resource":"exampleResource"}`,
 			)
 
@@ -376,6 +382,7 @@ var _ = Describe("The public API", func() {
 		req := createExportRequest(
 			"Test Export Request",
 			"json",
+			"",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
 		router.ServeHTTP(rr, req)
@@ -414,6 +421,7 @@ var _ = Describe("The public API", func() {
 		req := createExportRequest(
 			"Test Export Request",
 			"json",
+			"",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
 
@@ -433,6 +441,7 @@ var _ = Describe("The public API", func() {
 		req := createExportRequest(
 			"Test Export Request",
 			"json",
+			"",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
 		router.ServeHTTP(rr, req)
@@ -465,7 +474,7 @@ var _ = Describe("The public API", func() {
 })
 
 func mockReqeustApplicationResouces(ctx context.Context, identity string, payload models.ExportPayload) {
-	fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
+	// fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }
 
 func setupTest(requestAppResources exports.RequestApplicationResources) chi.Router {
@@ -511,6 +520,7 @@ func populateTestData() chi.Router {
 		req := createExportRequest(
 			fmt.Sprintf("Test Export Request %d", i),
 			"json",
+			"",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
 

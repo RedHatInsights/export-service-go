@@ -57,39 +57,44 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	modelUser := mapUsertoModelUser(user)
 
-	var payload models.ExportPayload
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	var apiExport ExportPayload
+
+	err := json.NewDecoder(r.Body).Decode(&apiExport)
 	if err != nil {
 		BadRequestError(w, err.Error())
 		return
 	}
 
-	sources, err := payload.GetSources()
+	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
 		BadRequestError(w, err.Error())
 		return
 	}
-	if len(sources) == 0 {
+	if len(apiExport.Sources) == 0 {
 		BadRequestError(w, "no sources provided")
 		return
 	}
 
-	payload.RequestID = reqID
-	payload.User = modelUser
-	if err := e.DB.Create(&payload); err != nil {
+	dbExport.RequestID = reqID
+	dbExport.User = modelUser
+
+	dbExport, err = e.DB.Create(dbExport)
+	if err != nil {
 		e.Log.Errorw("error creating payload entry", "error", err)
 		InternalServerError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
-	if err := json.NewEncoder(w).Encode(&payload); err != nil {
+
+	apiExport = DBExportToAPI(*dbExport)
+	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while trying to encode", "error", err)
 		InternalServerError(w, err.Error())
 	}
 
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
-	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], payload)
+	e.RequestAppResources(r.Context(), r.Header["X-Rh-Identity"][0], *dbExport)
 }
 
 // ListExports handle GET requests to the /exports endpoint.
@@ -109,6 +114,7 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	}
 
 	exports, count, err := e.DB.APIList(modelUser, &params, page.Offset, page.Limit, page.SortBy, page.Dir)
+
 	if err != nil {
 		InternalServerError(w, err)
 		return
@@ -192,7 +198,10 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	if export == nil {
 		return
 	}
-	if err := json.NewEncoder(w).Encode(&export); err != nil {
+
+	apiExport := DBExportToAPI(*export)
+
+	if err := json.NewEncoder(w).Encode(&apiExport); err != nil {
 		e.Log.Errorw("error while encoding", "error", err)
 		InternalServerError(w, err.Error())
 	}
@@ -224,4 +233,78 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request) *mode
 	}
 
 	return export
+}
+
+func DBExportToAPI(payload models.ExportPayload) ExportPayload {
+	apiPayload := ExportPayload{
+		ID:          payload.ID.String(),
+		CreatedAt:   payload.CreatedAt,
+		CompletedAt: payload.CompletedAt,
+		Expires:     payload.Expires,
+		Name:        payload.Name,
+		Format:      string(payload.Format),
+		Status:      string(payload.Status),
+	}
+	for _, source := range payload.Sources {
+		newSource := Source{
+			ID:          source.ID,
+			Application: source.Application,
+			Status:      string(source.Status),
+			Resource:    source.Resource,
+			Filters:     source.Filters,
+		}
+
+		if source.SourceError != nil {
+			newSource.Message = &source.SourceError.Message
+			newSource.Code = &source.SourceError.Code
+		}
+
+		apiPayload.Sources = append(apiPayload.Sources, newSource)
+	}
+
+	return apiPayload
+}
+
+func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error) {
+	payload := models.ExportPayload{
+		Name: apiPayload.Name,
+	}
+
+	var sources []models.Source
+	for _, source := range apiPayload.Sources {
+		sources = append(sources, models.Source{
+			Application: source.Application,
+			Status:      models.RPending,
+			Resource:    source.Resource,
+			Filters:     source.Filters,
+		})
+	}
+
+	payload.Sources = sources
+
+	if apiPayload.Expires != nil {
+		payload.Expires = apiPayload.Expires
+	}
+
+	switch apiPayload.Format {
+	case "csv":
+		payload.Format = models.CSV
+	case "json":
+		payload.Format = models.JSON
+	default:
+		return nil, fmt.Errorf("unknown payload format: %s", apiPayload.Format)
+	}
+
+	switch apiPayload.Status {
+	case "complete":
+		payload.Status = models.Complete
+	case "partial":
+		payload.Status = models.Partial
+	case "failed":
+		payload.Status = models.Failed
+	default:
+		payload.Status = models.Pending // new payloads are pending by default
+	}
+
+	return &payload, nil
 }

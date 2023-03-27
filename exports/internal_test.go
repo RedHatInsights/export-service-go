@@ -77,7 +77,7 @@ var _ = Context("Set up internal handler", func() {
 		It("allows the user to upload a payload", func() {
 			rr := httptest.NewRecorder()
 
-			req := createExportRequest("testRequest", "json", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`)
+			req := createExportRequest("testRequest", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -115,7 +115,7 @@ var _ = Context("Set up internal handler", func() {
 		It("allows the user to return an error when the export request is invalid", func() {
 			rr := httptest.NewRecorder()
 
-			req := createExportRequest("testRequest", "json", `{"application":"exampleApp", "resource":"exampleResource", "expires":"2023-01-01T00:00:00Z"}`)
+			req := createExportRequest("testRequest", "json", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 

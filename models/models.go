@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redhatinsights/export-service-go/config"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -20,22 +21,6 @@ const (
 	CSV  PayloadFormat = "csv"
 	JSON PayloadFormat = "json"
 )
-
-func (pf *PayloadFormat) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-	switch s {
-	case "csv":
-		*pf = CSV
-	case "json":
-		*pf = JSON
-	default:
-		return fmt.Errorf("unknown payload format: %s", s)
-	}
-	return nil
-}
 
 type PayloadStatus string
 
@@ -65,56 +50,53 @@ type QueryParams struct {
 	Resource    string
 }
 
-// TODO: Seperate database struct and request struct
 type ExportPayload struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primarykey" json:"id"`
-	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created"`
-	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"-"`
-	CompletedAt *time.Time     `json:"completed,omitempty"`
-	Expires     *time.Time     `json:"expires,omitempty"`
-	RequestID   string         `json:"-"`
-	Name        string         `json:"name"`
-	Format      PayloadFormat  `gorm:"type:string" json:"format"`
-	Status      PayloadStatus  `gorm:"type:string" json:"status"`
-	Sources     datatypes.JSON `gorm:"type:json" json:"sources"`
-	S3Key       string         `json:"-"`
+	ID          uuid.UUID `gorm:"type:uuid;primarykey"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
+	CompletedAt *time.Time
+	Expires     *time.Time
+	RequestID   string
+	Name        string
+	Format      PayloadFormat `gorm:"type:string"`
+	Status      PayloadStatus `gorm:"type:string"`
+	Sources     []Source      `gorm:"foreignKey:ExportPayloadID"`
+	S3Key       string
 	User
 }
 
 type Source struct {
-	ID          uuid.UUID      `json:"id"`
-	Application string         `json:"application"`
-	Status      ResourceStatus `json:"status"`
-	Resource    string         `json:"resource"`
-	Filters     datatypes.JSON `json:"filters"`
+	ID              uuid.UUID `gorm:"type:uuid;primarykey"`
+	ExportPayloadID uuid.UUID `gorm:"type:uuid"`
+	Application     string
+	Status          ResourceStatus
+	Resource        string
+	Filters         datatypes.JSON `gorm:"type:json"`
 	*SourceError
 }
 
 type SourceError struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Message string
+	Code    int
 }
 
 type User struct {
-	AccountID      string `json:"-"`
-	OrganizationID string `json:"-"`
-	Username       string `json:"-"`
+	AccountID      string
+	OrganizationID string
+	Username       string
 }
 
-func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) error {
+func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) (err error) {
 	ep.ID = uuid.New()
-	ep.Status = Pending
-	sources, err := ep.GetSources()
-	if err != nil {
-		return err
+	if ep.Expires == nil {
+		expirationTime := time.Now().AddDate(0, 0, config.ExportCfg.ExportExpiryDays)
+		ep.Expires = &expirationTime
 	}
-	for _, source := range sources {
-		source.ID = uuid.New()
-		source.Status = RPending
+	for i := range ep.Sources {
+		ep.Sources[i].ID = uuid.New()
+		ep.Sources[i].ExportPayloadID = ep.ID
 	}
-	out, err := json.Marshal(sources)
-	ep.Sources = out
-	return err
+	return nil
 }
 
 func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
@@ -124,16 +106,14 @@ func (ep *ExportPayload) GetSource(uid uuid.UUID) (int, *Source, error) {
 	}
 	for idx, source := range sources {
 		if source.ID == uid {
-			return idx, source, nil
+			return idx, &source, nil
 		}
 	}
 	return -1, nil, fmt.Errorf("source `%s` not found", uid)
 }
 
-func (ep *ExportPayload) GetSources() ([]*Source, error) {
-	var sources []*Source
-	err := json.Unmarshal(ep.Sources, &sources)
-	return sources, err
+func (ep *ExportPayload) GetSources() ([]Source, error) {
+	return ep.Sources, nil
 }
 
 func (es *Source) GetFilters() (map[string]string, error) {
@@ -175,21 +155,17 @@ func (ep *ExportPayload) SetStatusRunning(db DBInterface) error {
 }
 
 func (ep *ExportPayload) SetSourceStatus(db DBInterface, uid uuid.UUID, status ResourceStatus, sourceError *SourceError) error {
-	idx, _, err := ep.GetSource(uid)
+	_, _, err := ep.GetSource(uid)
 	if err != nil {
 		return fmt.Errorf("failed to get sources: %w", err)
 	}
 
 	var sql *gorm.DB
 	if sourceError == nil {
-		// set the status and remove 'code' and 'message' fields if they exist
-		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d,status}', '\"%s\"', false) #- '{%d,code}' #- '{%d,message}' WHERE id='%s'", idx, status, idx, idx, ep.ID)
-		sql = db.Raw(sqlStr)
+		sql = db.Raw("UPDATE sources SET status = ? WHERE id = ?", status, uid)
 	} else {
-		// set status and add 'code' and 'message' fields
 		// the `code` and `message` are user inputs, so they are parameterized to prevent sql injection
-		sqlStr := fmt.Sprintf("UPDATE export_payloads SET sources = jsonb_set(sources, '{%d}', sources->%d || jsonb_build_object('status', '%s', 'code', ?::int, 'message', ?::text), true) WHERE id='%s'", idx, idx, status, ep.ID)
-		sql = db.Raw(sqlStr, sourceError.Code, sourceError.Message)
+		sql = db.Raw("UPDATE sources SET status = ?, code = ?, message = ? WHERE id = ?", status, sourceError.Code, sourceError.Message, uid)
 	}
 	return sql.Scan(&ep).Error
 }

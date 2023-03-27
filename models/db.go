@@ -32,7 +32,7 @@ type ExportDB struct {
 type DBInterface interface {
 	APIList(user User, params *QueryParams, offset, limit int, sort, dir string) (result []*APIExport, count int64, err error)
 
-	Create(payload *ExportPayload) error
+	Create(payload *ExportPayload) (result *ExportPayload, err error)
 	Delete(exportUUID uuid.UUID, user User) error
 	Get(exportUUID uuid.UUID) (result *ExportPayload, err error)
 	GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error)
@@ -44,12 +44,9 @@ type DBInterface interface {
 
 var ErrRecordNotFound = errors.New("record not found")
 
-func (edb *ExportDB) Create(payload *ExportPayload) error {
-	if payload.Expires == nil {
-		expirationTime := time.Now().AddDate(0, 0, config.ExportCfg.ExportExpiryDays)
-		payload.Expires = &expirationTime
-	}
-	return edb.DB.Create(&payload).Error
+func (edb *ExportDB) Create(payload *ExportPayload) (*ExportPayload, error) {
+	result := edb.DB.Create(&payload)
+	return payload, result.Error
 }
 
 func (edb *ExportDB) Delete(exportUUID uuid.UUID, user User) error {
@@ -63,6 +60,7 @@ func (edb *ExportDB) Delete(exportUUID uuid.UUID, user User) error {
 func (edb *ExportDB) Get(exportUUID uuid.UUID) (result *ExportPayload, err error) {
 	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID}).
+		Preload("Sources").
 		Take(&result)).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -74,6 +72,7 @@ func (edb *ExportDB) Get(exportUUID uuid.UUID) (result *ExportPayload, err error
 func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error) {
 	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{ID: exportUUID, User: user}).
+		Preload("Sources").
 		Take(&result)).
 		Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

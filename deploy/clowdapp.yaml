@@ -134,7 +134,7 @@ objects:
 parameters:
   - name: APP_NAME
     description: Application common name
-    requred: true
+    required: true
     value: export-service
   - description: Cpu limit of service
     name: CPU_LIMIT

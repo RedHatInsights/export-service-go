@@ -174,8 +174,15 @@ func init() {
 			Name:     cfg.Database.Name,
 			SSLCfg: dbSSLConfig{
 				SSLMode: cfg.Database.SslMode,
-				RdsCa:   cfg.Database.RdsCa,
 			},
+		}
+
+		if cfg.Database.RdsCa != nil {
+			pathToDBCertFile, err := cfg.RdsCa()
+			if err != nil {
+				panic(err)
+			}
+			config.DBConfig.SSLCfg.RdsCa = &pathToDBCertFile
 		}
 
 		config.KafkaConfig.Brokers = clowder.KafkaServers

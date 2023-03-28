@@ -179,10 +179,12 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 
 	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan)
 
+	s3Client := es3.NewS3Client(*cfg, log)
+
 	storageHandler := es3.Compressor{
 		Bucket: cfg.StorageConfig.Bucket,
 		Log:    log,
-		Client: *es3.Client,
+		Client: *s3Client,
 	}
 
 	external := exports.Export{

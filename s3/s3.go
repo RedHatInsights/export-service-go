@@ -5,20 +5,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"go.uber.org/zap"
 
 	econfig "github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/logger"
-)
-
-var (
-	Client *s3.Client
-	cfg    = econfig.ExportCfg
-	log    = logger.Log
 )
 
 const defaultRegion = "us-east-1"
 
-func init() {
+func NewS3Client(cfg econfig.ExportConfig, log *zap.SugaredLogger) *s3.Client {
 	scfg := cfg.StorageConfig
 
 	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
@@ -42,6 +36,6 @@ func init() {
 		EndpointResolverWithOptions: resolver,
 	}
 
-	Client = s3.NewFromConfig(s3cfg)
 	log.Infof("s3 client configured")
+	return s3.NewFromConfig(s3cfg)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	econfig "github.com/redhatinsights/export-service-go/config"
 	"go.uber.org/zap"
 
 	export_logger "github.com/redhatinsights/export-service-go/logger"
@@ -61,7 +62,9 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	gzipWriter := gzip.NewWriter(&buf)
 	tarWriter := tar.NewWriter(gzipWriter)
 
-	resp, err := GetObjects(ctx, Client, input)
+	s3client := NewS3Client(*econfig.ExportCfg, c.Log)
+
+	resp, err := GetObjects(ctx, s3client, input)
 	if err != nil {
 		return fmt.Errorf("failed to list bucket objects: %w", err)
 	}
@@ -177,6 +180,7 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 		return fmt.Errorf("failed to seek to beginning of file: %w", err)
 	}
 
+	cfg := econfig.ExportCfg
 	if _, err := c.Upload(ctx, f, &cfg.StorageConfig.Bucket, &s3key); err != nil {
 		return fmt.Errorf("failed to upload tarfile `%s` to s3: %w", s3key, err)
 	}
@@ -209,7 +213,9 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 }
 
 func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error) {
-	downloader := manager.NewDownloader(Client, func(d *manager.Downloader) {
+	s3client := NewS3Client(*econfig.ExportCfg, c.Log)
+
+	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
 		d.PartSize = 100 * 1024 * 1024 // 100 MiB
 	})
 
@@ -219,7 +225,9 @@ func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *s
 }
 
 func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
-	uploader := manager.NewUploader(Client, func(u *manager.Uploader) {
+	s3client := NewS3Client(*econfig.ExportCfg, c.Log)
+
+	uploader := manager.NewUploader(s3client, func(u *manager.Uploader) {
 		u.PartSize = 100 * 1024 * 1024 // 100 MiB
 	})
 

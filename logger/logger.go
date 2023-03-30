@@ -95,7 +95,7 @@ func SetResponseLogger(l *zap.SugaredLogger) func(next http.Handler) http.Handle
 					"latency", time.Since(t1),
 					"status", ww.Status(),
 					"size", ww.BytesWritten(),
-					"reqId", request_id.GetReqID(r.Context()),
+					"request_id", request_id.GetReqID(r.Context()),
 				)
 			}()
 			next.ServeHTTP(ww, r)
@@ -103,4 +103,16 @@ func SetResponseLogger(l *zap.SugaredLogger) func(next http.Handler) http.Handle
 		return http.HandlerFunc(fn2)
 	}
 	return fn1
+}
+
+func RequestIDField(requestID string) zap.Field {
+	return zap.String("request_id", requestID)
+}
+
+func OrgIDField(orgID string) zap.Field {
+	return zap.String("org_id", orgID)
+}
+
+func ExportIDField(exportID string) zap.Field {
+	return zap.String("export_id", exportID)
 }

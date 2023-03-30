@@ -87,6 +87,7 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 
 	// setup middleware
 	router.Use(
+		request_id.RequestID,
 		emiddleware.JSONContentType, // Set content-Type headers as application/json
 		logger.ResponseLogger,
 		metrics.PrometheusMiddleware,
@@ -176,7 +177,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		log.Panic("failed to open database", "error", err)
 	}
 
-	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan, log)
+	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan)
 
 	storageHandler := es3.Compressor{
 		Bucket: cfg.StorageConfig.Bucket,

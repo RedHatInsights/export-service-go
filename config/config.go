@@ -15,9 +15,6 @@ import (
 
 const ExportTopic string = "platform.export.requests"
 
-// ExportCfg is the global variable containing the runtime configuration
-var ExportCfg *ExportConfig
-
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
 	Hostname         string
@@ -79,10 +76,24 @@ type storageConfig struct {
 	UseSSL    bool
 }
 
-var config *ExportConfig
+var rdsCaPath *string
+
+func init() {
+	if !clowder.IsClowderEnabled() || clowder.LoadedConfig.Database.RdsCa == nil {
+		return
+	}
+
+	if rdsCaPathValue, err := clowder.LoadedConfig.RdsCa(); err != nil {
+		panic(err)
+	} else {
+		rdsCaPath = &rdsCaPathValue
+	}
+}
 
 // initialize the configuration for service
-func init() {
+func Get() *ExportConfig {
+	var config *ExportConfig
+
 	options := viper.New()
 	options.SetDefault("PublicPort", 8000)
 	options.SetDefault("MetricsPort", 9000)
@@ -174,15 +185,8 @@ func init() {
 			Name:     cfg.Database.Name,
 			SSLCfg: dbSSLConfig{
 				SSLMode: cfg.Database.SslMode,
+				RdsCa:   rdsCaPath,
 			},
-		}
-
-		if cfg.Database.RdsCa != nil {
-			pathToDBCertFile, err := cfg.RdsCa()
-			if err != nil {
-				panic(err)
-			}
-			config.DBConfig.SSLCfg.RdsCa = &pathToDBCertFile
 		}
 
 		config.KafkaConfig.Brokers = clowder.KafkaServers
@@ -222,7 +226,7 @@ func init() {
 		}
 	}
 
-	ExportCfg = config
+	return config
 }
 
 func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {

@@ -41,7 +41,7 @@ func createExportRequest(name, format, expires, sources string) *http.Request {
 }
 
 var _ = Describe("The public API", func() {
-	cfg := config.ExportCfg
+	cfg := config.Get()
 	cfg.Debug = true
 
 	DescribeTable("can create a new export request", func(name, format, expires, sources, expectedBody string, expectedStatus int) {

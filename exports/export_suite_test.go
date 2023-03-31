@@ -61,7 +61,7 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 }
 
 var _ = BeforeSuite(func() {
-	cfg := config.ExportCfg
+	cfg := config.Get()
 
 	var err error
 	testDB, testGormDB, err = CreateTestDB(*cfg)

@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	cfg = config.ExportCfg
+	cfg = config.Get()
 	log = logger.Log
 
 	messagesPublished = prometheus.NewCounterVec(prometheus.CounterOpts{

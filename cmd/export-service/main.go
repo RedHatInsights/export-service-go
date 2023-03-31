@@ -72,7 +72,7 @@ func createRootCommand(cfg *config.ExportConfig, log *zap.SugaredLogger) *cobra.
 }
 
 func main() {
-	cfg := config.ExportCfg
+	cfg := config.Get()
 	log := logger.Log
 
 	cmd := createRootCommand(cfg, log)

@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/export-service-go/config"
 )
 
-var kcfg = config.ExportCfg.KafkaConfig
+var kcfg = config.Get().KafkaConfig
 
 type KafkaHeader struct {
 	Application string `json:"application"`

@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	Cfg = config.ExportCfg
+	Cfg = config.Get()
 	log = logger.Log
 )
 

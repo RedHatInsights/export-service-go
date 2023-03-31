@@ -23,7 +23,7 @@ import (
 // Log is a global variable that carries the Sugared logger
 var Log *zap.SugaredLogger
 
-var cfg = config.ExportCfg
+var cfg = config.Get()
 
 func init() {
 	tmpLogger := zap.NewExample()

@@ -26,7 +26,7 @@ var _ = Describe("Purge expired exports", func() {
 
 	BeforeEach(func() {
 		var err error
-		dbConnection, err = db.OpenDB(*config.ExportCfg)
+		dbConnection, err = db.OpenDB(*config.Get())
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -46,7 +46,7 @@ var _ = Describe("Purge expired exports", func() {
 
 			exportDB := models.ExportDB{
 				DB:  dbConnection,
-				Cfg: config.ExportCfg,
+				Cfg: config.Get(),
 			}
 
 			err = exportDB.DeleteExpiredExports()

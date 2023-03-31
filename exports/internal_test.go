@@ -23,7 +23,7 @@ import (
 )
 
 var _ = Context("Set up internal handler", func() {
-	cfg := config.ExportCfg
+	cfg := config.Get()
 	cfg.Debug = true
 
 	var internalHandler *exports.Internal

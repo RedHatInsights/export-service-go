@@ -87,9 +87,11 @@ type User struct {
 }
 
 func (ep *ExportPayload) BeforeCreate(tx *gorm.DB) (err error) {
+	exportConfig := config.Get()
+
 	ep.ID = uuid.New()
 	if ep.Expires == nil {
-		expirationTime := time.Now().AddDate(0, 0, config.ExportCfg.ExportExpiryDays)
+		expirationTime := time.Now().AddDate(0, 0, exportConfig.ExportExpiryDays)
 		ep.Expires = &expirationTime
 	}
 	for i := range ep.Sources {

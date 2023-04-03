@@ -90,7 +90,7 @@ sample-request-internal-error:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/error -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_error.json
 
 make test:
-	ginkgo -r --race --randomize-all --randomize-suites
+	DEBUG=true ginkgo -r --race --randomize-all --randomize-suites
 
 test-sql:
 	go test ./... -tags=sql -count=1

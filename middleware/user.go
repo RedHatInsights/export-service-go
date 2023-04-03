@@ -10,46 +10,18 @@ import (
 	"net/http"
 
 	"github.com/redhatinsights/platform-go-middlewares/identity"
-
-	"github.com/redhatinsights/export-service-go/config"
-	"github.com/redhatinsights/export-service-go/logger"
 )
 
 type userIdentityKey int
 
 const (
 	UserIdentityKey userIdentityKey = iota
-	debugHeader     string          = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
-)
-
-var (
-	Cfg = config.Get()
-	log = logger.Log
 )
 
 type User struct {
 	AccountID      string
 	OrganizationID string
 	Username       string
-}
-
-// InjectDebugUserIdentity is a middleware that set a valid x-rh-identity header
-// when operating in DEBUG mode. ** Only used during testing.
-func InjectDebugUserIdentity(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if Cfg.Debug {
-			rawHeaders := r.Header["X-Rh-Identity"]
-
-			// request does not have the x-rh-id header
-			if len(rawHeaders) != 1 {
-
-				r.Header["X-Rh-Identity"] = []string{debugHeader}
-				log.Info("injecting debug header")
-			}
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }
 
 // EnforeUserIdentity is a middleware that checks for a valid x-rh-identity

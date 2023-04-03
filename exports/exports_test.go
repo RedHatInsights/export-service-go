@@ -17,13 +17,18 @@ import (
 
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
-	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
+
+const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+
+func AddDebugUserIdentity(req *http.Request) {
+	req.Header.Add("x-rh-identity", debugHeader)
+}
 
 func generateExportRequestBody(name, format, expires, sources string) (exportRequest []byte) {
 	if expires != "" {
@@ -41,9 +46,6 @@ func createExportRequest(name, format, expires, sources string) *http.Request {
 }
 
 var _ = Describe("The public API", func() {
-	cfg := config.Get()
-	cfg.Debug = true
-
 	DescribeTable("can create a new export request", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
 		router := setupTest(mockReqeustApplicationResouces)
 
@@ -51,6 +53,7 @@ var _ = Describe("The public API", func() {
 
 		rr := httptest.NewRecorder()
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
@@ -75,6 +78,7 @@ var _ = Describe("The public API", func() {
 				`{"application":"exampleApp", "resource":"exampleResource"}`,
 			)
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 		}
@@ -85,6 +89,7 @@ var _ = Describe("The public API", func() {
 
 		rr = httptest.NewRecorder()
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusOK))
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 1"))
@@ -101,6 +106,7 @@ var _ = Describe("The public API", func() {
 
 		rr := httptest.NewRecorder()
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
@@ -128,6 +134,7 @@ var _ = Describe("The public API", func() {
 
 			Expect(err).ShouldNot(HaveOccurred())
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
@@ -151,6 +158,7 @@ var _ = Describe("The public API", func() {
 
 			Expect(err).ShouldNot(HaveOccurred())
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
@@ -173,6 +181,7 @@ var _ = Describe("The public API", func() {
 
 			Expect(err).ShouldNot(HaveOccurred())
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
@@ -195,6 +204,7 @@ var _ = Describe("The public API", func() {
 
 			Expect(err).ShouldNot(HaveOccurred())
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
@@ -221,6 +231,7 @@ var _ = Describe("The public API", func() {
 
 			rr := httptest.NewRecorder()
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
@@ -232,6 +243,7 @@ var _ = Describe("The public API", func() {
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 
 		Expect(rr.Code).To(Equal(http.StatusOK))
@@ -261,6 +273,7 @@ var _ = Describe("The public API", func() {
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 
 		Expect(rr.Code).To(Equal(http.StatusOK))
@@ -283,6 +296,7 @@ var _ = Describe("The public API", func() {
 
 			rr := httptest.NewRecorder()
 
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
@@ -305,6 +319,7 @@ var _ = Describe("The public API", func() {
 
 		Expect(err).ShouldNot(HaveOccurred())
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 
 		Expect(rr.Code).To(Equal(http.StatusOK))
@@ -386,6 +401,7 @@ var _ = Describe("The public API", func() {
 			"",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -403,6 +419,7 @@ var _ = Describe("The public API", func() {
 
 		rr = httptest.NewRecorder()
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusOK))
 		Expect(rr.Body.String()).To(ContainSubstring(`"status":"pending"`))
@@ -426,6 +443,7 @@ var _ = Describe("The public API", func() {
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
@@ -445,6 +463,7 @@ var _ = Describe("The public API", func() {
 			"",
 			`{"application":"exampleApp", "resource":"exampleResource"}`,
 		)
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -459,6 +478,7 @@ var _ = Describe("The public API", func() {
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -468,6 +488,7 @@ var _ = Describe("The public API", func() {
 		req.Header.Set("Content-Type", "application/json")
 		Expect(err).ShouldNot(HaveOccurred())
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusNotFound))
 		Expect(rr.Body.String()).To(ContainSubstring("not found"))
@@ -494,7 +515,6 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 
 	router = chi.NewRouter()
 	router.Use(
-		emiddleware.InjectDebugUserIdentity,
 		identity.EnforceIdentity,
 		emiddleware.EnforceUserIdentity,
 	)
@@ -527,6 +547,7 @@ func populateTestData() chi.Router {
 
 		rr := httptest.NewRecorder()
 
+		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 	}
 

@@ -24,7 +24,6 @@ import (
 
 var _ = Context("Set up internal handler", func() {
 	cfg := config.Get()
-	cfg.Debug = true
 
 	var internalHandler *exports.Internal
 	var router *chi.Mux
@@ -50,7 +49,6 @@ var _ = Context("Set up internal handler", func() {
 
 		router = chi.NewRouter()
 		router.Use(
-			emiddleware.InjectDebugUserIdentity,
 			identity.EnforceIdentity,
 			emiddleware.EnforceUserIdentity,
 		)
@@ -79,6 +77,7 @@ var _ = Context("Set up internal handler", func() {
 			rr := httptest.NewRecorder()
 
 			req := createExportRequest("testRequest", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -96,12 +95,14 @@ var _ = Context("Set up internal handler", func() {
 			rr = httptest.NewRecorder()
 			dummyBody := `{"data": "dummy data"}`
 			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
 			// check that the status of the export is now 'complete'
 			rr = httptest.NewRecorder()
 			req = httptest.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s/status", exportUUID), nil)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusOK))
 
@@ -117,6 +118,7 @@ var _ = Context("Set up internal handler", func() {
 			rr := httptest.NewRecorder()
 
 			req := createExportRequest("testRequest", "json", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -135,12 +137,14 @@ var _ = Context("Set up internal handler", func() {
 			rr = httptest.NewRecorder()
 			dummyBody := `{"data": "dummy data"}`
 			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/error/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
 			// check that the status of the export is now 'complete'
 			rr = httptest.NewRecorder()
 			req = httptest.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s/status", exportUUID), nil)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusOK))
 			var exportResponse2 map[string]interface{}

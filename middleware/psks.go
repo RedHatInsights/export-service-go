@@ -6,7 +6,11 @@ package middleware
 
 import (
 	"net/http"
+
+	"github.com/redhatinsights/export-service-go/config"
 )
+
+var Cfg = config.Get()
 
 // SliceContainsString returns true if the specified target is present in the given slice.
 // TODO: if this function is needed elsewhere, it should be moved to a separate package.

@@ -54,9 +54,8 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
 		r.Use(
-			emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Debug is true.
-			identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+			identity.EnforceIdentity,        // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+			emiddleware.EnforceUserIdentity, // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
 		)
 
 		// add external routes

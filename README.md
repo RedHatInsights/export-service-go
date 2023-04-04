@@ -5,7 +5,7 @@ The Export Service allows users to request and download data archives for auditi
 For more information on integrating with the export service, see the [integration documentation](docs/integration.md).
 
 ## Dependencies
-- Golang >= 1.16
+- Golang >= 1.18
 - podman-compose
 - make (optional for running the Makefile)
 - ginkgo

@@ -502,6 +502,7 @@ func mockReqeustApplicationResouces(ctx context.Context, log *zap.SugaredLogger,
 func setupTest(requestAppResources exports.RequestApplicationResources) chi.Router {
 	var exportHandler *exports.Export
 	var router *chi.Mux
+	log := logger.Get()
 
 	fmt.Println("STARTING TEST")
 
@@ -510,7 +511,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 		StorageHandler:      &es3.MockStorageHandler{},
 		DB:                  &models.ExportDB{DB: testGormDB},
 		RequestAppResources: requestAppResources,
-		Log:                 logger.Log,
+		Log:                 log,
 	}
 
 	router = chi.NewRouter()

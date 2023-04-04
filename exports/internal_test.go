@@ -24,16 +24,18 @@ import (
 
 var _ = Context("Set up internal handler", func() {
 	cfg := config.Get()
+	log := logger.Get()
 
 	var internalHandler *exports.Internal
 	var router *chi.Mux
 
 	BeforeEach(func() {
+
 		internalHandler = &exports.Internal{
 			Cfg:        cfg,
 			Compressor: &es3.MockStorageHandler{},
 			DB:         &models.ExportDB{DB: testGormDB},
-			Log:        logger.Log,
+			Log:        log,
 		}
 
 		mockKafkaCall := func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
@@ -44,7 +46,7 @@ var _ = Context("Set up internal handler", func() {
 			StorageHandler:      &es3.MockStorageHandler{},
 			DB:                  &models.ExportDB{DB: testGormDB},
 			RequestAppResources: mockKafkaCall,
-			Log:                 logger.Log,
+			Log:                 log,
 		}
 
 		router = chi.NewRouter()

@@ -195,8 +195,8 @@ func init() {
 			config.KafkaConfig.SSLConfig = kafkaSSLConfig{
 				Username:      *broker.Sasl.Username,
 				Password:      *broker.Sasl.Password,
-				SASLMechanism: "SCRAM-SHA-512",
-				Protocol:      "sasl_ssl",
+				SASLMechanism: *broker.Sasl.SaslMechanism,
+				Protocol:      *broker.SecurityProtocol,
 				CA:            caPath,
 			}
 		}

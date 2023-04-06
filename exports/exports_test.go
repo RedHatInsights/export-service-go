@@ -27,7 +27,7 @@ import (
 
 func generateExportRequestBody(name, format, expires, sources string) (exportRequest []byte) {
 	if expires != "" {
-		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires": "%s", "sources": [%s]}`, name, format, expires, sources))
+		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires_at": "%s", "sources": [%s]}`, name, format, expires, sources))
 	}
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
@@ -107,11 +107,11 @@ var _ = Describe("The public API", func() {
 	},
 		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusOK),
 		Entry("by status", "status=pending", "Test Export Request 1", http.StatusOK),
-		Entry("by created at (given date)", "created=2021-01-01", "", http.StatusOK),
-		Entry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "", http.StatusOK),
-		Entry("by improper created at", "created=spring", "", http.StatusBadRequest),
-		Entry("by expires", "expires=2023-01-01T00:00:00Z", "", http.StatusOK),
-		Entry("by improper expires", "expires=nextyear", "", http.StatusBadRequest),
+		Entry("by created at (given date)", "created_at=2021-01-01", "", http.StatusOK),
+		Entry("by created at (given date-time)", "created_at=2021-01-01T00:00:00Z", "", http.StatusOK),
+		Entry("by improper created at", "created_at=spring", "", http.StatusBadRequest),
+		Entry("by expires", "expires_at=2023-01-01T00:00:00Z", "", http.StatusOK),
+		Entry("by improper expires", "expires_at=nextyear", "", http.StatusBadRequest),
 	)
 
 	Describe("can filter exports by date", func() {

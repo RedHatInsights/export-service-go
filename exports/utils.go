@@ -21,8 +21,8 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 	result.Resource = q.Get("resource")
 	result.Status = q.Get("status")
 
-	created := q.Get("created")
-	expires := q.Get("expires")
+	created := q.Get("created_at")
+	expires := q.Get("expires_at")
 
 	// created and expires can be in either format above
 	if created != "" {

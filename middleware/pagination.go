@@ -197,7 +197,7 @@ func PaginationCtx(next http.Handler) http.Handler {
 		sort := r.URL.Query().Get("sort")
 		if sort != "" {
 			switch sort {
-			case "name", "expires":
+			case "name", "expires_at":
 				pagination.SortBy = sort
 			case "created":
 				pagination.SortBy = "created_at"

@@ -56,7 +56,7 @@
             }
           },
           {
-            "name": "created",
+            "name": "created_at",
             "description": "Date follows the RFC3339 standard or YYYY-MM-DD",
             "in": "query",
             "schema": {
@@ -65,7 +65,7 @@
             }
           },
           {
-            "name": "expires",
+            "name": "expires_at",
             "description": "Date follows the RFC3339 standard or YYYY-MM-DD",
             "in": "query",
             "schema": {
@@ -110,8 +110,8 @@
               "type": "string",
               "enum": [
                 "name",
-                "created",
-                "expires",
+                "created_at",
+                "expires_at",
                 "application",
                 "resource"
               ]
@@ -371,7 +371,7 @@
           "partial",
           "pending",
           "running",
-          "complete",
+          "completed_at",
           "failed"
         ]
       },
@@ -391,7 +391,7 @@
           "resource": {
             "type": "string"
           },
-          "expires": {
+          "expires_at": {
             "type": "string",
             "format": "date-time"
           },
@@ -414,6 +414,10 @@
           "name": {
             "type": "string"
           },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "format": {
             "$ref": "#/components/schemas/Format"
           },
@@ -430,7 +434,7 @@
         "required": [
           "id",
           "name",
-          "created",
+          "created_at",
           "format",
           "status"
         ],
@@ -441,15 +445,15 @@
           "name": {
             "type": "string"
           },
-          "created": {
+          "created_at": {
             "type": "string",
             "format": "date-time"
           },
-          "completed": {
+          "completed_at": {
             "type": "string",
             "format": "date-time"
           },
-          "expires": {
+          "expires_at": {
             "type": "string",
             "format": "date-time"
           },

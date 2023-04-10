@@ -20,8 +20,7 @@ jobs:
           --compilers=0 --randomize-all --randomize-suites \
           --fail-on-pending --keep-going --cover \
           --coverprofile=cover.profile --race --trace \
-          --json-report=report.json --timeout=1m \
-          --poll-progress-after=5s --poll-progress-interval=5s
+          --json-report=report.json --timeout=5m
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
 

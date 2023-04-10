@@ -115,7 +115,7 @@ var _ = Describe("The public API", func() {
 	)
 
 	Describe("can filter exports by date", func() {
-		It("with created_at at in date format", func() {
+		It("with created at in date format", func() {
 			router := populateTestData() // check this function for logic on export creation
 
 			rr := httptest.NewRecorder()
@@ -138,7 +138,7 @@ var _ = Describe("The public API", func() {
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 		})
 
-		It("with created_at at in date-time format", func() {
+		It("with created at in date-time format", func() {
 			router := populateTestData()
 
 			rr := httptest.NewRecorder()
@@ -189,7 +189,7 @@ var _ = Describe("The public API", func() {
 
 			today := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 

@@ -223,7 +223,7 @@ components:
         - partial
         - pending
         - running
-        - completed_at
+        - complete
         - failed
     ExportResource:
       type: object

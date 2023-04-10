@@ -28,7 +28,7 @@ const (
 	Partial  PayloadStatus = "partial"
 	Pending  PayloadStatus = "pending"
 	Running  PayloadStatus = "running"
-	Complete PayloadStatus = "completed_at"
+	Complete PayloadStatus = "complete"
 	Failed   PayloadStatus = "failed"
 )
 

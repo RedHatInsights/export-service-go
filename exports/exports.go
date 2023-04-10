@@ -326,7 +326,7 @@ func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error
 	}
 
 	switch apiPayload.Status {
-	case "completed_at":
+	case "complete":
 		payload.Status = models.Complete
 	case "partial":
 		payload.Status = models.Partial

@@ -371,7 +371,7 @@
           "partial",
           "pending",
           "running",
-          "completed_at",
+          "complete",
           "failed"
         ]
       },

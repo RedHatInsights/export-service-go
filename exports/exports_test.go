@@ -338,7 +338,7 @@ var _ = Describe("The public API", func() {
 			"Test Export Request 5",
 			"Test Export Request 1",
 		),
-		Entry("sort by created_at desc", "sort=created_at&dir=desc",
+		Entry("sort by created desc", "sort=created&dir=desc",
 			"Test Export Request 1",
 			"Test Export Request 5",
 			"Test Export Request 4",

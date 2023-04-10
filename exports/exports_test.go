@@ -115,14 +115,14 @@ var _ = Describe("The public API", func() {
 	)
 
 	Describe("can filter exports by date", func() {
-		It("with created at in date format", func() {
+		It("with created_at at in date format", func() {
 			router := populateTestData() // check this function for logic on export creation
 
 			rr := httptest.NewRecorder()
 
 			today := time.Now().Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -138,14 +138,14 @@ var _ = Describe("The public API", func() {
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 		})
 
-		It("with created at in date-time format", func() {
+		It("with created_at at in date-time format", func() {
 			router := populateTestData()
 
 			rr := httptest.NewRecorder()
 
 			today := time.Now().Format(time.RFC3339)
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -167,7 +167,7 @@ var _ = Describe("The public API", func() {
 
 			yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", yesterday), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", yesterday), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -324,21 +324,21 @@ var _ = Describe("The public API", func() {
 		}
 
 	},
-		Entry("default of created asc", "",
+		Entry("default of created_at asc", "",
 			"Test Export Request 2",
 			"Test Export Request 3",
 			"Test Export Request 4",
 			"Test Export Request 5",
 			"Test Export Request 1",
 		),
-		Entry("sort by created asc", "sort=created&dir=asc",
+		Entry("sort by created_at asc", "sort=created_at&dir=asc",
 			"Test Export Request 2",
 			"Test Export Request 3",
 			"Test Export Request 4",
 			"Test Export Request 5",
 			"Test Export Request 1",
 		),
-		Entry("sort by created desc", "sort=created&dir=desc",
+		Entry("sort by created_at desc", "sort=created_at&dir=desc",
 			"Test Export Request 1",
 			"Test Export Request 5",
 			"Test Export Request 4",

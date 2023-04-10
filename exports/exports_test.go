@@ -182,7 +182,7 @@ var _ = Describe("The public API", func() {
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 3"))
 		})
 
-		It("with expires_at in date format", func() {
+		It("with expires in date format", func() {
 			router := populateTestData()
 
 			rr := httptest.NewRecorder()
@@ -324,14 +324,14 @@ var _ = Describe("The public API", func() {
 		}
 
 	},
-		Entry("default of created_at asc", "",
+		Entry("default of created asc", "",
 			"Test Export Request 2",
 			"Test Export Request 3",
 			"Test Export Request 4",
 			"Test Export Request 5",
 			"Test Export Request 1",
 		),
-		Entry("sort by created_at asc", "sort=created_at&dir=asc",
+		Entry("sort by created asc", "sort=created&dir=asc",
 			"Test Export Request 2",
 			"Test Export Request 3",
 			"Test Export Request 4",

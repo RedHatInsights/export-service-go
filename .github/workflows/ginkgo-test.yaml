@@ -13,9 +13,16 @@ jobs:
         with:
           go-version: 1.16
       - uses: actions/checkout@v3
-      # install ginkgo
-      - name: install ginkgo
-        run: go get github.com/onsi/ginkgo/ginkgo
-      # run ginkgo
+        name: checkout project
       - name: run ginkgo
-        run: ginkgo -r -v
+        run: |
+          go run github.com/onsi/ginkgo/v2/ginkgo -r --procs=4 \
+          --compilers=0 --randomize-all --randomize-suites \
+          --fail-on-pending --keep-going --cover \
+          --coverprofile=cover.profile --race --trace \
+          --json-report=report.json --timeout=1m \
+          --poll-progress-after=5s --poll-progress-interval=5s
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+

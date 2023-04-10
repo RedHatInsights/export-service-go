@@ -182,14 +182,14 @@ var _ = Describe("The public API", func() {
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 3"))
 		})
 
-		It("with expires in date format", func() {
+		It("with expires_at in date format", func() {
 			router := populateTestData()
 
 			rr := httptest.NewRecorder()
 
 			today := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -345,14 +345,14 @@ var _ = Describe("The public API", func() {
 			"Test Export Request 3",
 			"Test Export Request 2",
 		),
-		Entry("sort by expires asc", "sort=expires&dir=asc",
+		Entry("sort by expires_at asc", "sort=expires_at&dir=asc",
 			"Test Export Request 5",
 			"Test Export Request 1",
 			"Test Export Request 2",
 			"Test Export Request 3",
 			"Test Export Request 4",
 		),
-		Entry("sort by expires desc", "sort=expires&dir=desc",
+		Entry("sort by expires_at desc", "sort=expires_at&dir=desc",
 			"Test Export Request 4",
 			"Test Export Request 3",
 			"Test Export Request 2",
@@ -545,7 +545,7 @@ func modifyExportCreated(exportName string, newDate time.Time) {
 }
 
 func modifyExportExpires(exportName string, newDate time.Time) {
-	testGormDB.Exec("UPDATE export_payloads SET expires = ? WHERE name = ?", newDate, exportName)
+	testGormDB.Exec("UPDATE export_payloads SET expires_at = ? WHERE name = ?", newDate, exportName)
 }
 
 func getExportNames(rr *httptest.ResponseRecorder) []string {

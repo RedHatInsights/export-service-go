@@ -110,7 +110,7 @@ var _ = Context("Set up internal handler", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			exportStatus := exportResponse2["status"].(string)
-			Expect(exportStatus).To(Equal("completed_at"))
+			Expect(exportStatus).To(Equal("complete"))
 		})
 
 		It("allows the user to return an error when the export request is invalid", func() {

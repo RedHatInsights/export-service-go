@@ -76,20 +76,6 @@ type storageConfig struct {
 	UseSSL    bool
 }
 
-var rdsCaPath *string
-
-func init() {
-	if !clowder.IsClowderEnabled() || clowder.LoadedConfig.Database.RdsCa == nil {
-		return
-	}
-
-	if rdsCaPathValue, err := clowder.LoadedConfig.RdsCa(); err != nil {
-		panic(err)
-	} else {
-		rdsCaPath = &rdsCaPathValue
-	}
-}
-
 // initialize the configuration for service
 func Get() *ExportConfig {
 	var config *ExportConfig
@@ -177,6 +163,11 @@ func Get() *ExportConfig {
 		exportBucket := options.GetString("EXPORT_SERVICE_BUCKET")
 		exportBucketInfo := clowder.ObjectBuckets[exportBucket]
 
+		rdsCaPath, err := getRdsCaPath(cfg)
+		if err != nil {
+			panic("RDS CA failed to write: " + err.Error())
+		}
+
 		config.DBConfig = dbConfig{
 			User:     cfg.Database.Username,
 			Password: cfg.Database.Password,
@@ -227,6 +218,20 @@ func Get() *ExportConfig {
 	}
 
 	return config
+}
+
+func getRdsCaPath(cfg *clowder.AppConfig) (*string, error) {
+	var rdsCaPath *string
+
+	if cfg.Database.RdsCa != nil {
+		rdsCaPathValue, err := cfg.RdsCa()
+		if err != nil {
+			return nil, err
+		}
+		rdsCaPath = &rdsCaPathValue
+	}
+
+	return rdsCaPath, nil
 }
 
 func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {

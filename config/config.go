@@ -192,11 +192,15 @@ func init() {
 			if err != nil {
 				panic("Kafka CA failed to write")
 			}
+			securityProtocol := "sasl_ssl"
+			if broker.SecurityProtocol != nil {
+				securityProtocol = *broker.SecurityProtocol
+			}
 			config.KafkaConfig.SSLConfig = kafkaSSLConfig{
 				Username:      *broker.Sasl.Username,
 				Password:      *broker.Sasl.Password,
-				SASLMechanism: "SCRAM-SHA-512",
-				Protocol:      "sasl_ssl",
+				SASLMechanism: *broker.Sasl.SaslMechanism,
+				Protocol:      securityProtocol,
 				CA:            caPath,
 			}
 		}

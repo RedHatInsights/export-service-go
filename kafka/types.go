@@ -5,11 +5,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
-
-	"github.com/redhatinsights/export-service-go/config"
 )
-
-var kcfg = config.Get().KafkaConfig
 
 type KafkaHeader struct {
 	Application string `json:"application"`
@@ -43,7 +39,7 @@ type KafkaMessage struct {
 
 // ToMessage converts the KafkaMessage struct to a confluent kafka.Message
 // ready to be sent through the kafka producer
-func (km KafkaMessage) ToMessage(header KafkaHeader) (*kafka.Message, error) {
+func (km KafkaMessage) ToMessage(header KafkaHeader, topic string) (*kafka.Message, error) {
 	val, err := json.Marshal(km)
 	if err != nil {
 		return nil, err
@@ -51,7 +47,7 @@ func (km KafkaMessage) ToMessage(header KafkaHeader) (*kafka.Message, error) {
 	return &kafka.Message{
 		Headers: header.ToHeader(),
 		TopicPartition: kafka.TopicPartition{
-			Topic:     &kcfg.ExportsTopic,
+			Topic:     &topic,
 			Partition: kafka.PartitionAny,
 		},
 		Value: []byte(val),

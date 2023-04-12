@@ -131,11 +131,10 @@ func (edb *ExportDB) Raw(sql string, values ...interface{}) *gorm.DB {
 }
 
 func (edb *ExportDB) DeleteExpiredExports() error {
-	exportConfig := config.Get()
 	log := logger.Get()
 
 	columnsToReturn := []clause.Column{{Name: "id"}, {Name: "account_id"}, {Name: "organization_id"}, {Name: "username"}}
-	expiredExportsClause := fmt.Sprintf("now() > expires + interval '%d days'", exportConfig.ExportExpiryDays)
+	expiredExportsClause := fmt.Sprintf("now() > expires + interval '%d days'", edb.Cfg.ExportExpiryDays)
 
 	var deletedExports []ExportPayload
 	err := edb.DB.Clauses(clause.Returning{Columns: columnsToReturn}).Where(expiredExportsClause).Delete(&deletedExports).Error

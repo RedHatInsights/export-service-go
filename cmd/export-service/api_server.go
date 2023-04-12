@@ -184,12 +184,13 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Bucket: cfg.StorageConfig.Bucket,
 		Log:    log,
 		Client: *s3Client,
+		Cfg:    *cfg,
 	}
 
 	external := exports.Export{
 		Bucket:              cfg.StorageConfig.Bucket,
 		StorageHandler:      &storageHandler,
-		DB:                  &models.ExportDB{DB: DB},
+		DB:                  &models.ExportDB{DB: DB, Cfg: cfg},
 		RequestAppResources: kafkaRequestAppResources,
 		Log:                 log,
 	}
@@ -198,7 +199,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	internal := exports.Internal{
 		Cfg:        cfg,
 		Compressor: &storageHandler,
-		DB:         &models.ExportDB{DB: DB},
+		DB:         &models.ExportDB{DB: DB, Cfg: cfg},
 		Log:        log,
 	}
 	psrv := createPrivateServer(cfg, internal)

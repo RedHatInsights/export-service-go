@@ -17,6 +17,7 @@ import (
 
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
+	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
@@ -502,6 +503,7 @@ func mockReqeustApplicationResouces(ctx context.Context, log *zap.SugaredLogger,
 func setupTest(requestAppResources exports.RequestApplicationResources) chi.Router {
 	var exportHandler *exports.Export
 	var router *chi.Mux
+	config := config.Get()
 	log := logger.Get()
 
 	fmt.Println("STARTING TEST")
@@ -509,7 +511,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 	exportHandler = &exports.Export{
 		Bucket:              "cfg.StorageConfig.Bucket",
 		StorageHandler:      &es3.MockStorageHandler{},
-		DB:                  &models.ExportDB{DB: testGormDB},
+		DB:                  &models.ExportDB{DB: testGormDB, Cfg: config},
 		RequestAppResources: requestAppResources,
 		Log:                 log,
 	}

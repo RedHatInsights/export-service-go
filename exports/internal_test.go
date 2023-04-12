@@ -34,7 +34,7 @@ var _ = Context("Set up internal handler", func() {
 		internalHandler = &exports.Internal{
 			Cfg:        cfg,
 			Compressor: &es3.MockStorageHandler{},
-			DB:         &models.ExportDB{DB: testGormDB},
+			DB:         &models.ExportDB{DB: testGormDB, Cfg: cfg},
 			Log:        log,
 		}
 
@@ -44,7 +44,7 @@ var _ = Context("Set up internal handler", func() {
 		exportHandler := &exports.Export{
 			Bucket:              "cfg.StorageConfig.Bucket",
 			StorageHandler:      &es3.MockStorageHandler{},
-			DB:                  &models.ExportDB{DB: testGormDB},
+			DB:                  &models.ExportDB{DB: testGormDB, Cfg: cfg},
 			RequestAppResources: mockKafkaCall,
 			Log:                 log,
 		}

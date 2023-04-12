@@ -26,6 +26,7 @@ type Compressor struct {
 	Bucket string
 	Log    *zap.SugaredLogger
 	Client s3.Client
+	Cfg    econfig.ExportConfig
 }
 
 // S3ListObjectsAPI defines the interface for the ListObjectsV2 function.
@@ -51,8 +52,6 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 }
 
 func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key string, meta ExportMeta, sources []models.Source) error {
-	exportConfig := econfig.Get()
-
 	input := &s3.ListObjectsV2Input{
 		Bucket: &c.Bucket,
 		Prefix: &prefix,
@@ -64,7 +63,7 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	gzipWriter := gzip.NewWriter(&buf)
 	tarWriter := tar.NewWriter(gzipWriter)
 
-	s3client := NewS3Client(*exportConfig, c.Log)
+	s3client := NewS3Client(c.Cfg, c.Log)
 
 	resp, err := GetObjects(ctx, s3client, input)
 	if err != nil {
@@ -182,8 +181,7 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 		return fmt.Errorf("failed to seek to beginning of file: %w", err)
 	}
 
-	cfg := exportConfig
-	if _, err := c.Upload(ctx, f, &cfg.StorageConfig.Bucket, &s3key); err != nil {
+	if _, err := c.Upload(ctx, f, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
 		return fmt.Errorf("failed to upload tarfile `%s` to s3: %w", s3key, err)
 	}
 
@@ -215,9 +213,7 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 }
 
 func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error) {
-	exportConfig := econfig.Get()
-
-	s3client := NewS3Client(*exportConfig, c.Log)
+	s3client := NewS3Client(c.Cfg, c.Log)
 
 	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
 		d.PartSize = 100 * 1024 * 1024 // 100 MiB
@@ -229,9 +225,7 @@ func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *s
 }
 
 func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
-	exportConfig := econfig.Get()
-
-	s3client := NewS3Client(*exportConfig, c.Log)
+	s3client := NewS3Client(c.Cfg, c.Log)
 
 	uploader := manager.NewUploader(s3client, func(u *manager.Uploader) {
 		u.PartSize = 100 * 1024 * 1024 // 100 MiB

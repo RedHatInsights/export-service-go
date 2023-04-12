@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: 1.18
       - uses: actions/checkout@v3
         name: checkout project
       - name: run ginkgo
@@ -25,5 +25,3 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           files: cover.profile
-
-

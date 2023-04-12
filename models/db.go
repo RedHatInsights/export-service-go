@@ -17,9 +17,9 @@ import (
 type APIExport struct {
 	ID          uuid.UUID  `json:"id"`
 	Name        string     `json:"name"`
-	CreatedAt   time.Time  `json:"created"`
-	CompletedAt *time.Time `json:"completed,omitempty"`
-	Expires     *time.Time `json:"expires,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Expires     *time.Time `json:"expires_at,omitempty"`
 	Format      string     `json:"format"`
 	Status      string     `json:"status"`
 }

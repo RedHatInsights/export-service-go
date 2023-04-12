@@ -29,7 +29,7 @@ You can create a new export request using `make sample-request-create-export` wh
 ```
 {
     "id":"0b069353-6ace-4403-8162-3476df3ae4ab",
-    "created":"2022-10-12T15:07:12.319191523Z",
+    "created_at":"2022-10-12T15:07:12.319191523Z",
     "name":"Example Export Request",
     "format":"json",
     "status":"pending",

@@ -9,9 +9,9 @@ import (
 
 type ExportPayload struct {
 	ID          string     `json:"id"`
-	CreatedAt   time.Time  `json:"created"`
-	CompletedAt *time.Time `json:"completed,omitempty"`
-	Expires     *time.Time `json:"expires,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Expires     *time.Time `json:"expires_at,omitempty"`
 	Name        string     `json:"name"`
 	Format      string     `json:"format"`
 	Status      string     `json:"status"`

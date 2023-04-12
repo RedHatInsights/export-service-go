@@ -49,6 +49,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	)
 
 	router.Get("/", statusOK)
+	router.Get("/api/export/v1/openapi.json", serveOpenAPISpec(cfg)) // OpenAPI Spec
 
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
@@ -59,8 +60,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 		)
 
 		// add external routes
-		r.Get("/openapi.json", serveOpenAPISpec(cfg)) // OpenAPI Spec
-		r.Get("/ping", helloWorld)                    // Hello World endpoint
+		r.Get("/ping", helloWorld) // Hello World endpoint
 		r.Route("/exports", external.ExportRouter)
 	})
 

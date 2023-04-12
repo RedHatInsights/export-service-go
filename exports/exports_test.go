@@ -27,7 +27,7 @@ import (
 
 func generateExportRequestBody(name, format, expires, sources string) (exportRequest []byte) {
 	if expires != "" {
-		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires": "%s", "sources": [%s]}`, name, format, expires, sources))
+		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires_at": "%s", "sources": [%s]}`, name, format, expires, sources))
 	}
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
@@ -107,11 +107,11 @@ var _ = Describe("The public API", func() {
 	},
 		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusOK),
 		Entry("by status", "status=pending", "Test Export Request 1", http.StatusOK),
-		Entry("by created at (given date)", "created=2021-01-01", "", http.StatusOK),
-		Entry("by created at (given date-time)", "created=2021-01-01T00:00:00Z", "", http.StatusOK),
-		Entry("by improper created at", "created=spring", "", http.StatusBadRequest),
-		Entry("by expires", "expires=2023-01-01T00:00:00Z", "", http.StatusOK),
-		Entry("by improper expires", "expires=nextyear", "", http.StatusBadRequest),
+		Entry("by created at (given date)", "created_at=2021-01-01", "", http.StatusOK),
+		Entry("by created at (given date-time)", "created_at=2021-01-01T00:00:00Z", "", http.StatusOK),
+		Entry("by improper created at", "created_at=spring", "", http.StatusBadRequest),
+		Entry("by expires", "expires_at=2023-01-01T00:00:00Z", "", http.StatusOK),
+		Entry("by improper expires", "expires_at=nextyear", "", http.StatusBadRequest),
 	)
 
 	Describe("can filter exports by date", func() {
@@ -122,7 +122,7 @@ var _ = Describe("The public API", func() {
 
 			today := time.Now().Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -145,7 +145,7 @@ var _ = Describe("The public API", func() {
 
 			today := time.Now().Format(time.RFC3339)
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -167,7 +167,7 @@ var _ = Describe("The public API", func() {
 
 			yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created=%s", yesterday), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", yesterday), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -189,7 +189,7 @@ var _ = Describe("The public API", func() {
 
 			today := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires=%s", today), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?expires_at=%s", today), nil)
 
 			req.Header.Set("Content-Type", "application/json")
 
@@ -545,7 +545,7 @@ func modifyExportCreated(exportName string, newDate time.Time) {
 }
 
 func modifyExportExpires(exportName string, newDate time.Time) {
-	testGormDB.Exec("UPDATE export_payloads SET expires = ? WHERE name = ?", newDate, exportName)
+	testGormDB.Exec("UPDATE export_payloads SET expires= ? WHERE name = ?", newDate, exportName)
 }
 
 func getExportNames(rr *httptest.ResponseRecorder) []string {

@@ -32,13 +32,13 @@ paths:
           in: query
           schema:
             type: string
-        - name: created
+        - name: created_at
           description: Date follows the RFC3339 standard or YYYY-MM-DD
           in: query
           schema:
             type: string
             format: date
-        - name: expires
+        - name: expires_at
           description: Date follows the RFC3339 standard or YYYY-MM-DD
           in: query
           schema:
@@ -68,8 +68,8 @@ paths:
             type: string
             enum:
               - name
-              - created
-              - expires
+              - created_at
+              - expires_at
               - application
               - resource
         - name: dir
@@ -237,7 +237,7 @@ components:
           type: string
         resource:
           type: string
-        expires:
+        expires_at:
           type: string
           format: date-time
         filters:
@@ -253,6 +253,9 @@ components:
       properties:
         name:
           type: string
+        expires_at:
+          type: string
+          format: date-time
         format:
           $ref: '#/components/schemas/Format'
         sources:
@@ -264,7 +267,7 @@ components:
       required:
         - id
         - name
-        - created
+        - created_at
         - format
         - status
       properties:
@@ -272,13 +275,13 @@ components:
           $ref: '#/components/schemas/UUID'
         name:
           type: string
-        created:
+        created_at:
           type: string
           format: date-time
-        completed:
+        completed_at:
           type: string
           format: date-time
-        expires:
+        expires_at:
           type: string
           format: date-time
         format:

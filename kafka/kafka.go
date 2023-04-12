@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	cfg = config.ExportCfg
-	log = logger.Log
+	cfg = config.Get()
+	log = logger.Get()
 
 	messagesPublished = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "ingress_kafka_produced",

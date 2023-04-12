@@ -54,9 +54,8 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
 		r.Use(
-			emiddleware.InjectDebugUserIdentity, // InjectDebugUserIdentity injects a valid X-Rh-Identity header when the config.Debug is true.
-			identity.EnforceIdentity,            // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity,     // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+			identity.EnforceIdentity,        // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+			emiddleware.EnforceUserIdentity, // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
 		)
 
 		// add external routes
@@ -179,16 +178,19 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 
 	kafkaRequestAppResources := exports.KafkaRequestApplicationResources(kafkaProducerMessagesChan)
 
+	s3Client := es3.NewS3Client(*cfg, log)
+
 	storageHandler := es3.Compressor{
 		Bucket: cfg.StorageConfig.Bucket,
 		Log:    log,
-		Client: *es3.Client,
+		Client: *s3Client,
+		Cfg:    *cfg,
 	}
 
 	external := exports.Export{
 		Bucket:              cfg.StorageConfig.Bucket,
 		StorageHandler:      &storageHandler,
-		DB:                  &models.ExportDB{DB: DB},
+		DB:                  &models.ExportDB{DB: DB, Cfg: cfg},
 		RequestAppResources: kafkaRequestAppResources,
 		Log:                 log,
 	}
@@ -197,7 +199,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	internal := exports.Internal{
 		Cfg:        cfg,
 		Compressor: &storageHandler,
-		DB:         &models.ExportDB{DB: DB},
+		DB:         &models.ExportDB{DB: DB, Cfg: cfg},
 		Log:        log,
 	}
 	psrv := createPrivateServer(cfg, internal)

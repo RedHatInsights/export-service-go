@@ -10,6 +10,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"go.uber.org/zap"
 
+	"github.com/redhatinsights/export-service-go/config"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/models"
 )
@@ -17,6 +18,7 @@ import (
 type RequestApplicationResources func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload)
 
 func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestApplicationResources {
+	var exportsTopic = config.Get().KafkaConfig.ExportsTopic
 	// sendPayload converts the individual sources of a payload into
 	// kafka messages which are then sent to the producer through the
 	// `messagesChan`
@@ -45,7 +47,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					IDHeader:     identity,
 				}
 
-				msg, err := kpayload.ToMessage(headers)
+				msg, err := kpayload.ToMessage(headers, exportsTopic)
 				if err != nil {
 					log.Errorw("failed to create kafka message", "error", err)
 					// FIXME:

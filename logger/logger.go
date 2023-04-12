@@ -23,56 +23,59 @@ import (
 // Log is a global variable that carries the Sugared logger
 var Log *zap.SugaredLogger
 
-var cfg = config.ExportCfg
+var cfg = config.Get()
 
-func init() {
-	tmpLogger := zap.NewExample()
-	loggerConfig := zap.NewProductionConfig()
-	loggerConfig.EncoderConfig.TimeKey = "@timestamp"
-	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.9999Z")
+func Get() *zap.SugaredLogger {
+	if Log == nil {
+		tmpLogger := zap.NewExample()
+		loggerConfig := zap.NewProductionConfig()
+		loggerConfig.EncoderConfig.TimeKey = "@timestamp"
+		loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.9999Z")
 
-	consoleOutput := zapcore.Lock(os.Stdout)
-	consoleEncoder := zapcore.NewJSONEncoder(loggerConfig.EncoderConfig)
-	if cfg.Debug {
-		// use color and non-JSON logging in DEBUG mode
-		loggerConfig.Development = true
-		loggerConfig.EncoderConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
-		consoleEncoder = zapcore.NewConsoleEncoder(loggerConfig.EncoderConfig)
-	}
+		consoleOutput := zapcore.Lock(os.Stdout)
+		consoleEncoder := zapcore.NewJSONEncoder(loggerConfig.EncoderConfig)
+		if cfg.Debug {
+			// use color and non-JSON logging in DEBUG mode
+			loggerConfig.Development = true
+			loggerConfig.EncoderConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
+			consoleEncoder = zapcore.NewConsoleEncoder(loggerConfig.EncoderConfig)
+		}
 
-	switch cfg.LogLevel {
-	case "DEBUG":
-		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
-	case "ERROR":
-		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.ErrorLevel)
-	default:
-		loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
-	}
+		switch cfg.LogLevel {
+		case "DEBUG":
+			loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+		case "ERROR":
+			loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.ErrorLevel)
+		default:
+			loggerConfig.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+		}
 
-	fn := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool { return true })
-	core := zapcore.NewTee(zapcore.NewCore(consoleEncoder, consoleOutput, fn))
+		fn := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool { return true })
+		core := zapcore.NewTee(zapcore.NewCore(consoleEncoder, consoleOutput, fn))
 
-	// configure cloudwatch
-	if cfg.Logging != nil && cfg.Logging.Region != "" {
-		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
-		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
-		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
+		// configure cloudwatch
+		if cfg.Logging != nil && cfg.Logging.Region != "" {
+			cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
+			awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
+			hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
+			if err != nil {
+				tmpLogger.Info(err.Error())
+			}
+			core = zapcore.NewTee(
+				zapcore.NewCore(consoleEncoder, consoleOutput, fn),
+				zapcore.NewCore(consoleEncoder, hook, fn),
+			)
+		}
+
+		logger, err := loggerConfig.Build(zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }))
 		if err != nil {
 			tmpLogger.Info(err.Error())
 		}
-		core = zapcore.NewTee(
-			zapcore.NewCore(consoleEncoder, consoleOutput, fn),
-			zapcore.NewCore(consoleEncoder, hook, fn),
-		)
-	}
 
-	logger, err := loggerConfig.Build(zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }))
-	if err != nil {
-		tmpLogger.Info(err.Error())
+		Log = logger.Sugar()
+		Log.Infof("log level set to %s", cfg.LogLevel)
 	}
-
-	Log = logger.Sugar()
-	Log.Infof("log level set to %s", cfg.LogLevel)
+	return Log
 }
 
 // ResponseLogger is a middleware that sets the ResponseLogger to the global default.

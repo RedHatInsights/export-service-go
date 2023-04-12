@@ -23,18 +23,19 @@ import (
 )
 
 var _ = Context("Set up internal handler", func() {
-	cfg := config.ExportCfg
-	cfg.Debug = true
+	cfg := config.Get()
+	log := logger.Get()
 
 	var internalHandler *exports.Internal
 	var router *chi.Mux
 
 	BeforeEach(func() {
+
 		internalHandler = &exports.Internal{
 			Cfg:        cfg,
 			Compressor: &es3.MockStorageHandler{},
-			DB:         &models.ExportDB{DB: testGormDB},
-			Log:        logger.Log,
+			DB:         &models.ExportDB{DB: testGormDB, Cfg: cfg},
+			Log:        log,
 		}
 
 		mockKafkaCall := func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
@@ -43,14 +44,13 @@ var _ = Context("Set up internal handler", func() {
 		exportHandler := &exports.Export{
 			Bucket:              "cfg.StorageConfig.Bucket",
 			StorageHandler:      &es3.MockStorageHandler{},
-			DB:                  &models.ExportDB{DB: testGormDB},
+			DB:                  &models.ExportDB{DB: testGormDB, Cfg: cfg},
 			RequestAppResources: mockKafkaCall,
-			Log:                 logger.Log,
+			Log:                 log,
 		}
 
 		router = chi.NewRouter()
 		router.Use(
-			emiddleware.InjectDebugUserIdentity,
 			identity.EnforceIdentity,
 			emiddleware.EnforceUserIdentity,
 		)
@@ -79,6 +79,7 @@ var _ = Context("Set up internal handler", func() {
 			rr := httptest.NewRecorder()
 
 			req := createExportRequest("testRequest", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -96,12 +97,14 @@ var _ = Context("Set up internal handler", func() {
 			rr = httptest.NewRecorder()
 			dummyBody := `{"data": "dummy data"}`
 			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
 			// check that the status of the export is now 'complete'
 			rr = httptest.NewRecorder()
 			req = httptest.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s/status", exportUUID), nil)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusOK))
 
@@ -117,6 +120,7 @@ var _ = Context("Set up internal handler", func() {
 			rr := httptest.NewRecorder()
 
 			req := createExportRequest("testRequest", "json", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
@@ -135,12 +139,14 @@ var _ = Context("Set up internal handler", func() {
 			rr = httptest.NewRecorder()
 			dummyBody := `{"data": "dummy data"}`
 			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/error/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
 
 			// check that the status of the export is now 'complete'
 			rr = httptest.NewRecorder()
 			req = httptest.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s/status", exportUUID), nil)
+			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusOK))
 			var exportResponse2 map[string]interface{}

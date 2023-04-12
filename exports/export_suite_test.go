@@ -50,7 +50,7 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 		return nil, nil, err
 	}
 
-	err = db_utils.PerformDbMigration(dbConn, logger.Log, "file://../db/migrations", "up")
+	err = db_utils.PerformDbMigration(dbConn, logger.Get(), "file://../db/migrations", "up")
 	if err != nil {
 		fmt.Println("Database migration failed: ", err)
 		return nil, nil, err
@@ -61,7 +61,7 @@ func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, 
 }
 
 var _ = BeforeSuite(func() {
-	cfg := config.ExportCfg
+	cfg := config.Get()
 
 	var err error
 	testDB, testGormDB, err = CreateTestDB(*cfg)

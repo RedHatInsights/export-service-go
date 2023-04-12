@@ -11,7 +11,7 @@ import (
 	"github.com/redhatinsights/export-service-go/logger"
 )
 
-var log = logger.Log
+var log = logger.Get()
 
 type Error struct {
 	Msg  interface{} `json:"message"`

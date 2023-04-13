@@ -112,8 +112,9 @@ func Get() *ExportConfig {
 
 		options.AutomaticEnv()
 
-		if options.GetBool("Debug") {
-			options.Set("LogLevel", "DEBUG")
+		logLevel, present := os.LookupEnv("LOG_LEVEL")
+		if present {
+			options.Set("LogLevel", logLevel)
 		}
 
 		kubenv := viper.New()

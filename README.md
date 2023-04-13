@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/RedHatInsights/export-service-go/branch/main/graph/badge.svg?token=6N8SE602A4)](https://codecov.io/gh/RedHatInsights/export-service-go)
+
 # Export Service
 
 The Export Service allows users to request and download data archives for auditing or use with their own tooling. Because many ConsoleDot applications need to export data, this service provides some common functionality.

@@ -167,3 +167,5 @@ parameters:
     value: "* 1 * * *"
   - name: EXPORTS_PSKS
     value: testing-a-psk
+  - name: LOG_LEVEL
+    value: INFO

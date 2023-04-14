@@ -61,6 +61,8 @@ objects:
           value: ${OPEN_API_FILE_PATH}
         - name: EXPORT_SERVICE_BUCKET
           value: ${EXPORT_SERVICE_BUCKET}
+        - name: LOG_LEVEL
+          value: ${LOG_LEVEL}
         - name: EXPORTS_PSKS
           valueFrom:
             secretKeyRef:

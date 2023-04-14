@@ -57,8 +57,8 @@ objects:
           value: ${CLOWDER_ENABLED}
         - name: ENABLE_CLOUDWATCH_LOGGING
           value: ${ENABLE_CLOUDWATCH_LOGGING}
-        - name: OPENAPIFILEPATH
-          value: ${OPEN_API_FILEPATH}
+        - name: OPEN_API_FILE_PATH
+          value: ${OPEN_API_FILE_PATH}
         - name: EXPORT_SERVICE_BUCKET
           value: ${EXPORT_SERVICE_BUCKET}
         - name: EXPORTS_PSKS
@@ -159,7 +159,7 @@ parameters:
   - description: Determines if Cloud Watch logging is enabled
     name: ENABLE_CLOUDWATCH_LOGGING
     value: "false"
-  - name: OPEN_API_FILEPATH
+  - name: OPEN_API_FILE_PATH
     value: /var/tmp/openapi.json
   - name: EXPORT_SERVICE_BUCKET
     value: exports-bucket
@@ -167,3 +167,5 @@ parameters:
     value: "* 1 * * *"
   - name: EXPORTS_PSKS
     value: testing-a-psk
+  - name: LOG_LEVEL
+    value: INFO

@@ -84,14 +84,14 @@ var doOnce sync.Once
 func Get() *ExportConfig {
 	doOnce.Do(func() {
 		options := viper.New()
-		options.SetDefault("PublicPort", 8000)
-		options.SetDefault("MetricsPort", 9000)
-		options.SetDefault("PrivatePort", 10000)
-		options.SetDefault("LogLevel", "INFO")
-		options.SetDefault("Debug", false)
-		options.SetDefault("OpenAPIFilePath", "./static/spec/openapi.json")
-		options.SetDefault("psks", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
-		options.SetDefault("Export_Expiriy_Days", 7)
+		options.SetDefault("PUBLIC_PORT", 8000)
+		options.SetDefault("METRICS_PORT", 9000)
+		options.SetDefault("PRIVATE_PORT", 10000)
+		options.SetDefault("LOG_LEVEL", "INFO")
+		options.SetDefault("DEBUG", false)
+		options.SetDefault("OPEN_API_FILE_PATH", "./static/spec/openapi.json")
+		options.SetDefault("PSKS", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
+		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
 
 		// DB defaults
 		options.SetDefault("PGSQL_USER", "postgres")
@@ -106,30 +106,25 @@ func Get() *ExportConfig {
 		options.SetDefault("MINIO_SSL", false)
 
 		// Kafka defaults
-		options.SetDefault("KafakAnnounceTopic", ExportTopic)
-		options.SetDefault("KafkaBrokers", strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
-		options.SetDefault("KafkaGroupID", "export")
+		options.SetDefault("KAFKA_ANNOUNCE_TOPIC", ExportTopic)
+		options.SetDefault("KAFKA_BROKERS", strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
+		options.SetDefault("KAFKA_GROUP_ID", "export")
 
 		options.AutomaticEnv()
-
-		logLevel, present := os.LookupEnv("LOG_LEVEL")
-		if present {
-			options.Set("LogLevel", logLevel)
-		}
 
 		kubenv := viper.New()
 		kubenv.AutomaticEnv()
 
 		config = &ExportConfig{
 			Hostname:         kubenv.GetString("Hostname"),
-			PublicPort:       options.GetInt("PublicPort"),
-			MetricsPort:      options.GetInt("MetricsPort"),
-			PrivatePort:      options.GetInt("PrivatePort"),
-			Debug:            options.GetBool("Debug"),
-			LogLevel:         options.GetString("LogLevel"),
-			OpenAPIFilePath:  options.GetString("OpenAPIFilePath"),
-			Psks:             options.GetStringSlice("psks"),
-			ExportExpiryDays: options.GetInt("Export_Expiriy_Days"),
+			PublicPort:       options.GetInt("PUBLIC_PORT"),
+			MetricsPort:      options.GetInt("METRICS_PORT"),
+			PrivatePort:      options.GetInt("PRIVATE_PORT"),
+			Debug:            options.GetBool("DEBUG"),
+			LogLevel:         options.GetString("LOG_LEVEL"),
+			OpenAPIFilePath:  options.GetString("OPEN_API_FILE_PATH"),
+			Psks:             options.GetStringSlice("PSKS"),
+			ExportExpiryDays: options.GetInt("EXPORT_EXPIRY_DAYS"),
 		}
 
 		config.DBConfig = dbConfig{
@@ -152,9 +147,9 @@ func Get() *ExportConfig {
 		}
 
 		config.KafkaConfig = kafkaConfig{
-			Brokers:      options.GetStringSlice("KafkaBrokers"),
-			GroupID:      options.GetString("KafkaGroupID"),
-			ExportsTopic: options.GetString("KafakAnnounceTopic"),
+			Brokers:      options.GetStringSlice("KAFKA_BROKERS"),
+			GroupID:      options.GetString("KAFKA_GROUP_ID"),
+			ExportsTopic: options.GetString("KAFKA_ANNOUNCE_TOPIC"),
 		}
 
 		if clowder.IsClowderEnabled() {

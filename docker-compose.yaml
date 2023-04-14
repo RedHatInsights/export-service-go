@@ -10,15 +10,15 @@ services:
       - PGSQL_PORT=5432
       - PGSQL_HOSTNAME=export-db
       - DEBUG=true
-      - OPENAPIFILEPATH=/var/tmp/openapi.json
+      - OPEN_API_FILE_PATH=/var/tmp/openapi.json
       - PSKS=testing-a-psk
       - KAFKA_BROKERS=kafka:29092
       - AWS_ACCESS_KEY=minio
       - AWS_SECRET_ACCESS_KEY=minioadmin
-      - PUBLICPORT=8000
-      - METRICSPORT=9090
+      - PUBLIC_PORT=8000
+      - METRICS_PORT=9090
       - MINIO_PORT=9099
-      - PRIVATEPORT=10010
+      - PRIVATE_PORT=10010
     ports:
       - 8000:8000
       - 9090:9090

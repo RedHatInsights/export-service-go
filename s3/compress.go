@@ -248,6 +248,7 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 	}
 
 	_, uploadErr := c.Upload(ctx, body, &c.Bucket, &filename)
+	totalUploads.Inc()
 	if uploadErr != nil {
 		failUploads.Inc()
 		c.Log.Errorf("error during upload: %v", uploadErr)

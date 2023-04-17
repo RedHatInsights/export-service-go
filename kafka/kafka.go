@@ -16,19 +16,19 @@ var (
 	log = logger.Get()
 
 	messagesPublished = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "ingress_kafka_produced",
+		Name: "export_service_kafka_produced",
 		Help: "Number of messages produced to kafka",
 	}, []string{"topic"})
 	messagePublishElapsed = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "ingress_publish_seconds",
+		Name: "export_service_publish_seconds",
 		Help: "Number of seconds spent writing kafka messages",
 	}, []string{"topic"})
 	publishFailures = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "ingress_kafka_produce_failures",
+		Name: "export_service_kafka_produce_failures",
 		Help: "Number of times a message was failed to be produced",
 	}, []string{"topic"})
 	producerCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "ingress_kafka_producer_go_routine_count",
+		Name: "export_service_kafka_producer_go_routine_count",
 		Help: "Number of go routines currently publishing to kafka",
 	})
 )

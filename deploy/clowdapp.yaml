@@ -123,6 +123,24 @@ objects:
 
 
 - apiVersion: v1
+  kind: Service
+  metadata:
+    name: insights-export-service
+    labels:
+      app: export-service
+  spec:
+    ports:
+    - name: public
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+    selector:
+      pod: export-service-service
+    sessionAffinity: None
+    type: ClusterIP
+
+
+- apiVersion: v1
   kind: Secret
   metadata:
     name: export-service-psks

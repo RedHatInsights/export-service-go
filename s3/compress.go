@@ -276,8 +276,9 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 	uploadSize, err := getUploadSize(ctx, &c.Client, &c.Bucket, &filename)
 	if err != nil {
 		c.Log.Errorw("failed to get metric for upload size", "error", err)
+	} else {
+		uploadSizes.With(prometheus.Labels{"account": payload.AccountID, "org_id": payload.OrganizationID, "app": application}).Observe(float64(uploadSize))
 	}
-	uploadSizes.With(prometheus.Labels{"account": payload.AccountID, "org_id": payload.OrganizationID, "app": application}).Observe(float64(uploadSize))
 
 	return nil
 }

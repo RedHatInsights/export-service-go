@@ -14,7 +14,7 @@ objects:
     testing:
       iqePlugin: ${APP_NAME}
     deployments:
-    - name: api
+    - name: service
       minReplicas: ${{MIN_REPLICAS}}
       webServices:
         public:
@@ -134,7 +134,7 @@ objects:
       protocol: TCP
       targetPort: 8000
     selector:
-      pod: export-service-api
+      pod: export-service-service
     sessionAffinity: None
     type: ClusterIP
 

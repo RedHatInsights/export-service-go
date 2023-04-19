@@ -79,7 +79,6 @@ objects:
           - name: DB_SSLMODE
             value: ${DB_SSLMODE}
           image: ${IMAGE}:${IMAGE_TAG}
-          name: export-service-init
           resources:
             limits:
               cpu: 200m
@@ -125,7 +124,7 @@ objects:
 - apiVersion: v1
   kind: Service
   metadata:
-    name: insights-export-service
+    name: export
     labels:
       app: export-service
   spec:

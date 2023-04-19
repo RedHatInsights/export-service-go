@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "{server}/api/export/v1",
+      "url": "{server}/api/insights-export-service/v1",
       "variables": {
         "server": {
           "default": "http://localhost:8080"

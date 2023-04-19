@@ -125,7 +125,7 @@ objects:
 - apiVersion: v1
   kind: Service
   metadata:
-    name: insights-export-service
+    name: export
     labels:
       app: export-service
   spec:

@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	econfig "github.com/redhatinsights/export-service-go/config"
 	"go.uber.org/zap"
 
@@ -42,7 +43,7 @@ type StorageHandler interface {
 	Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error)
 	Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error)
 	Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
-	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, resourceUUID uuid.UUID, payload *models.ExportPayload) error
+	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error
 	GetObject(ctx context.Context, key string) (io.ReadCloser, error)
 	ProcessSources(db models.DBInterface, uid uuid.UUID)
 }
@@ -239,7 +240,19 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 	return uploader.Upload(ctx, input)
 }
 
-func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
+func getUploadSize(ctx context.Context, s3client *s3.Client, bucket, key *string) (int64, error) {
+	headObj := &s3.HeadObjectInput{
+		Bucket: bucket,
+		Key:    key,
+	}
+	headObjOutput, err := s3client.HeadObject(ctx, headObj)
+	if err != nil {
+		return 0, err
+	}
+	return headObjOutput.ContentLength, nil
+}
+
+func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, resourceUUID, payload.Format)
 
 	if err := payload.SetStatusRunning(db); err != nil {
@@ -259,6 +272,12 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 		}
 		return uploadErr
 	}
+
+	uploadSize, err := getUploadSize(ctx, &c.Client, &c.Bucket, &filename)
+	if err != nil {
+		c.Log.Errorw("failed to get metric for upload size", "error", err)
+	}
+	uploadSizes.With(prometheus.Labels{"account": payload.AccountID, "org_id": payload.OrganizationID, "app": application}).Observe(float64(uploadSize))
 
 	return nil
 }
@@ -351,7 +370,7 @@ func (mc *MockStorageHandler) Upload(ctx context.Context, body io.Reader, bucket
 	return nil, nil
 }
 
-func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
+func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
 	fmt.Println("Ran mockStorageHandler.CreateObject")
 	return nil
 }

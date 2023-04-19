@@ -14,7 +14,13 @@ var failUploads = prometheus.NewCounter(prometheus.CounterOpts{
 	Help: "The total number of failed S3 uploads.",
 })
 
+var uploadSizes = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	Name: "export_service_upload_sizes",
+	Help: "Size of payloads posted",
+}, []string{"account", "org_id", "app"})
+
 func init() {
 	prometheus.MustRegister(totalUploads)
 	prometheus.MustRegister(failUploads)
+	prometheus.MustRegister(uploadSizes)
 }

@@ -152,7 +152,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := i.Compressor.CreateObject(r.Context(), i.DB, r.Body, params.ResourceUUID, payload); err != nil {
+	if err := i.Compressor.CreateObject(r.Context(), i.DB, r.Body, params.Application, params.ResourceUUID, payload); err != nil {
 		Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
 	} else {
 		Logerr(w.Write([]byte("payload delivered")))

@@ -10,6 +10,7 @@ For more information on integrating with the export service, see the [integratio
 - Golang >= 1.18
 - podman-compose
 - make (optional for running the Makefile)
+- jq (optional for running the Makefile)
 - ginkgo
 
 ## Starting the service locally

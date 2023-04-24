@@ -119,6 +119,12 @@ var _ = Describe("The public API", func() {
 		Entry("by improper created at", "created_at=spring", "", http.StatusBadRequest),
 		Entry("by expires", "expires_at=2023-01-01T00:00:00Z", "", http.StatusOK),
 		Entry("by improper expires", "expires_at=nextyear", "", http.StatusBadRequest),
+		Entry("by application", "application=exampleApp", "Test Export Request 1", http.StatusOK),
+		Entry("by resource", "resource=exampleResource", "Test Export Request 1", http.StatusOK),
+		Entry("by application that doesn't exist", "application=notAnApp", "", http.StatusOK), // containing an empty string is not the best way
+		Entry("by resource that doesn't exist", "resource=notAResource", "", http.StatusOK),
+		Entry("by application and resource", "application=exampleApp&resource=exampleResource", "Test Export Request 1", http.StatusOK),
+		Entry("by application and resource that don't exist", "application=notAnApp&resource=notAResource", "", http.StatusOK),
 	)
 
 	Describe("can filter exports by date", func() {

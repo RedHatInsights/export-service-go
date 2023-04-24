@@ -101,8 +101,18 @@ func (edb *ExportDB) APIList(user User, params *QueryParams, offset, limit int, 
 		db = db.Where("export_payloads.expires BETWEEN ? AND ?", params.Expires, params.Expires.AddDate(0, 0, 1))
 	}
 
-	// TODO: filtering by application and resource needs to be implemented with a sources table
-	// Currently, the sources is stored as json in the table, which is not efficient to parse
+	// filtering by application and resource, joining the export_payloads table to the sources table
+	if params.Application != "" || params.Resource != "" {
+		db = db.Joins("JOIN sources ON sources.export_payload_id = export_payloads.id")
+
+		if params.Application != "" {
+			db = db.Where("sources.application = ?", params.Application)
+		}
+
+		if params.Resource != "" {
+			db = db.Where("sources.resource = ?", params.Resource)
+		}
+	}
 
 	// count total records
 	db.Count(&count)

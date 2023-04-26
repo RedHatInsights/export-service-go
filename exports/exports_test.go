@@ -49,7 +49,7 @@ func createExportRequest(name, format, expires, sources string) *http.Request {
 
 var _ = Describe("The public API", func() {
 	DescribeTable("can create a new export request", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
-		router := setupTest(mockReqeustApplicationResources)
+		router := setupTest(mockRequestApplicationResources)
 
 		req := createExportRequest(name, format, expires, sources)
 
@@ -67,7 +67,7 @@ var _ = Describe("The public API", func() {
 	)
 
 	It("can list all export requests", func() {
-		router := setupTest(mockReqeustApplicationResources)
+		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
@@ -240,7 +240,7 @@ var _ = Describe("The public API", func() {
 
 	DescribeTable("can offset and limit exports", func(param string, expectedFirst, expectedLast string) {
 		// make a large amount of data
-		router := setupTest(mockReqeustApplicationResources)
+		router := setupTest(mockRequestApplicationResources)
 
 		count := 200
 
@@ -305,7 +305,7 @@ var _ = Describe("The public API", func() {
 	})
 
 	DescribeTable("can sort exports", func(params string, expectedFirst, expectedSecond, expectedThird, expectedFourth, expectedLast string) {
-		router := setupTest(mockReqeustApplicationResources)
+		router := setupTest(mockRequestApplicationResources)
 
 		count := 5
 
@@ -414,7 +414,7 @@ var _ = Describe("The public API", func() {
 	)
 
 	It("can check the status of an export request", func() {
-		router := setupTest(mockReqeustApplicationResources)
+		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
@@ -476,7 +476,7 @@ var _ = Describe("The public API", func() {
 	// It("can get a completed export request by ID and download it")
 
 	It("can delete a specific export request by ID", func() {
-		router := setupTest(mockReqeustApplicationResources)
+		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
@@ -518,7 +518,7 @@ var _ = Describe("The public API", func() {
 	})
 })
 
-func mockReqeustApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
+func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 	// fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }
 
@@ -560,7 +560,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 
 func populateTestData() chi.Router {
 	// define router
-	router := setupTest(mockReqeustApplicationResources)
+	router := setupTest(mockRequestApplicationResources)
 
 	for i := 1; i <= 6; i++ {
 		req := createExportRequest(

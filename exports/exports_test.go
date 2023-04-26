@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -48,7 +49,7 @@ func createExportRequest(name, format, expires, sources string) *http.Request {
 
 var _ = Describe("The public API", func() {
 	DescribeTable("can create a new export request", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
-		router := setupTest(mockReqeustApplicationResouces)
+		router := setupTest(mockRequestApplicationResources)
 
 		req := createExportRequest(name, format, expires, sources)
 
@@ -66,7 +67,7 @@ var _ = Describe("The public API", func() {
 	)
 
 	It("can list all export requests", func() {
-		router := setupTest(mockReqeustApplicationResouces)
+		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
@@ -98,7 +99,7 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
 	})
 
-	DescribeTable("can filter and list export requests", func(filter, expectedBody string, expectedStatus int) {
+	DescribeTable("can filter and list export requests", func(filter string, expectedExports []string, expectedCount, expectedStatus int) {
 		router := populateTestData()
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?%s", filter), nil)
@@ -110,15 +111,30 @@ var _ = Describe("The public API", func() {
 		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))
-		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
+		for _, expectedExport := range expectedExports {
+			Expect(rr.Body.String()).To(ContainSubstring(expectedExport))
+		}
+		Expect(strings.Count(rr.Body.String(), "id")).To(Equal(expectedCount))
+
+		if expectedCount == 0 {
+			// ensure that the data field is empty
+			Expect(rr.Body.String()).To(ContainSubstring(`"data":[]`))
+		}
 	},
-		Entry("by name", "name=Test Export Request 1", "Test Export Request 1", http.StatusOK),
-		Entry("by status", "status=pending", "Test Export Request 1", http.StatusOK),
-		Entry("by created at (given date)", "created_at=2021-01-01", "", http.StatusOK),
-		Entry("by created at (given date-time)", "created_at=2021-01-01T00:00:00Z", "", http.StatusOK),
-		Entry("by improper created at", "created_at=spring", "", http.StatusBadRequest),
-		Entry("by expires", "expires_at=2023-01-01T00:00:00Z", "", http.StatusOK),
-		Entry("by improper expires", "expires_at=nextyear", "", http.StatusBadRequest),
+		Entry("by name", "name=Test Export Request 1", []string{"Test Export Request 1"}, 1, http.StatusOK),
+		Entry("by status", "status=pending", []string{"Test Export Request 1", "Test Export Request 2", "Test Export Request 3", "Test Export Request 4", "Test Export Request 5", "Test Export Request 6"}, 6, http.StatusOK),
+		Entry("by created at (given date)", "created_at=2021-01-01", []string{}, 0, http.StatusOK),
+		Entry("by created at (given date-time)", "created_at=2021-01-01T00:00:00Z", []string{}, 0, http.StatusOK),
+		Entry("by improper created at", "created_at=spring", []string{"'spring' is not a valid date in ISO 8601"}, 1, http.StatusBadRequest), // no exports returned, but the message is 1 count
+		Entry("by expires", "expires_at=2023-01-01T00:00:00Z", []string{}, 0, http.StatusOK),
+		Entry("by improper expires", "expires_at=nextyear", []string{"'nextyear' is not a valid date in ISO 8601"}, 1, http.StatusBadRequest),
+		Entry("by application", "application=exampleApp", []string{"Test Export Request 1", "Test Export Request 2", "Test Export Request 3"}, 3, http.StatusOK),
+		Entry("by resource", "resource=exampleResource2", []string{"Test Export Request 4", "Test Export Request 5", "Test Export Request 6"}, 3, http.StatusOK),
+		Entry("by application and resource", "application=exampleApp3&resource=exampleResource2", []string{"Test Export Request 6"}, 1, http.StatusOK),
+		Entry("by application that doesn't exist", "application=notAnApp", []string{}, 0, http.StatusOK),
+		Entry("by resource that doesn't exist", "resource=notAResource", []string{}, 0, http.StatusOK),
+		Entry("by application and resource that don't exist", "application=notAnApp&resource=notAResource", []string{}, 0, http.StatusOK),
+		Entry("by application and resource combination that doesn't exist", "application=exampleApp&resource=exampleResource2", []string{}, 0, http.StatusOK),
 	)
 
 	Describe("can filter exports by date", func() {
@@ -140,10 +156,13 @@ var _ = Describe("The public API", func() {
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
 			// check the count of exports returned
-			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":4"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 4"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 5"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 6"))
 		})
 
 		It("with created at in date-time format", func() {
@@ -163,10 +182,13 @@ var _ = Describe("The public API", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
-			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":4"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 4"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 5"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 6"))
 		})
 
 		It("with created at referring to yesterday", func() {
@@ -218,7 +240,7 @@ var _ = Describe("The public API", func() {
 
 	DescribeTable("can offset and limit exports", func(param string, expectedFirst, expectedLast string) {
 		// make a large amount of data
-		router := setupTest(mockReqeustApplicationResouces)
+		router := setupTest(mockRequestApplicationResources)
 
 		count := 200
 
@@ -265,7 +287,7 @@ var _ = Describe("The public API", func() {
 	It("with offset > count, returns empty data", func() {
 		router := populateTestData()
 
-		count := 3
+		count := 6
 
 		rr := httptest.NewRecorder()
 
@@ -283,7 +305,7 @@ var _ = Describe("The public API", func() {
 	})
 
 	DescribeTable("can sort exports", func(params string, expectedFirst, expectedSecond, expectedThird, expectedFourth, expectedLast string) {
-		router := setupTest(mockReqeustApplicationResouces)
+		router := setupTest(mockRequestApplicationResources)
 
 		count := 5
 
@@ -392,7 +414,7 @@ var _ = Describe("The public API", func() {
 	)
 
 	It("can check the status of an export request", func() {
-		router := setupTest(mockReqeustApplicationResouces)
+		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
@@ -454,7 +476,7 @@ var _ = Describe("The public API", func() {
 	// It("can get a completed export request by ID and download it")
 
 	It("can delete a specific export request by ID", func() {
-		router := setupTest(mockReqeustApplicationResouces)
+		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
@@ -496,7 +518,7 @@ var _ = Describe("The public API", func() {
 	})
 })
 
-func mockReqeustApplicationResouces(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
+func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 	// fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }
 
@@ -538,9 +560,9 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 
 func populateTestData() chi.Router {
 	// define router
-	router := setupTest(mockReqeustApplicationResouces)
+	router := setupTest(mockRequestApplicationResources)
 
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= 6; i++ {
 		req := createExportRequest(
 			fmt.Sprintf("Test Export Request %d", i),
 			"json",
@@ -561,6 +583,11 @@ func populateTestData() chi.Router {
 	modifyExportCreated("Test Export Request 2", oneDayFromNow)
 	modifyExportExpires("Test Export Request 3", oneDayFromNow)
 
+	// Used for testing filtering by application and resource
+	modifyExportSources("Test Export Request 4", "exampleApp2", "exampleResource2")
+	modifyExportSources("Test Export Request 5", "exampleApp2", "exampleResource2")
+	modifyExportSources("Test Export Request 6", "exampleApp3", "exampleResource2")
+
 	return router
 }
 
@@ -570,6 +597,23 @@ func modifyExportCreated(exportName string, newDate time.Time) {
 
 func modifyExportExpires(exportName string, newDate time.Time) {
 	testGormDB.Exec("UPDATE export_payloads SET expires= ? WHERE name = ?", newDate, exportName)
+}
+
+// modify the application and resource of all sources in a given export
+func modifyExportSources(exportName string, application string, resource string) {
+	var exportPayload models.ExportPayload
+	testGormDB.Where("name = ?", exportName).First(&exportPayload)
+
+	var sources []models.Source
+	testGormDB.Find(&sources)
+
+	for _, source := range sources {
+		if source.ExportPayloadID == exportPayload.ID {
+			source.Application = application
+			source.Resource = resource
+			testGormDB.Save(&source)
+		}
+	}
 }
 
 func getExportNames(rr *httptest.ResponseRecorder) []string {

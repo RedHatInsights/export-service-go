@@ -156,10 +156,13 @@ var _ = Describe("The public API", func() {
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
 			// check the count of exports returned
-			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":4"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 4"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 5"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 6"))
 		})
 
 		It("with created at in date-time format", func() {
@@ -179,10 +182,13 @@ var _ = Describe("The public API", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusOK))
-			Expect(rr.Body.String()).To(ContainSubstring("count\":1"))
+			Expect(rr.Body.String()).To(ContainSubstring("count\":4"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 1"))
 			Expect(rr.Body.String()).ToNot(ContainSubstring("Test Export Request 2"))
 			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 3"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 4"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 5"))
+			Expect(rr.Body.String()).To(ContainSubstring("Test Export Request 6"))
 		})
 
 		It("with created at referring to yesterday", func() {
@@ -281,7 +287,7 @@ var _ = Describe("The public API", func() {
 	It("with offset > count, returns empty data", func() {
 		router := populateTestData()
 
-		count := 3
+		count := 6
 
 		rr := httptest.NewRecorder()
 

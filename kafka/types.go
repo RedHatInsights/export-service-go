@@ -28,13 +28,24 @@ func (kh KafkaHeader) ToHeader() []kafka.Header {
 }
 
 type KafkaMessage struct {
-	ExportUUID   uuid.UUID `json:"export_uuid"`
+	ID          uuid.UUID        `json:"id"`
+	Source      string           `json:"source"`
+	Subject     string           `json:"subject"`
+	SpecVersion string           `json:"specversion"`
+	Type        string           `json:"type"`
+	Time        string           `json:"time"`
+	OrgID       string           `json:"orgid"`
+	DataSchema  string           `json:"dataschema"`
+	Data        KafkaMessageData `json:"data"`
+}
+
+type KafkaMessageData struct {
+	ExportUUID   uuid.UUID `json:"uuid"`
 	Application  string    `json:"application"`
 	Format       string    `json:"format"`
 	ResourceName string    `json:"resource"`
 	ResourceUUID uuid.UUID `json:"resource_uuid"`
 	Filters      []byte    `json:"filters"`
-	IDHeader     string    `json:"x-rh-identity"`
 }
 
 // ToMessage converts the KafkaMessage struct to a confluent kafka.Message

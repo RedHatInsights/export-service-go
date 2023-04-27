@@ -6,8 +6,10 @@ package exports
 
 import (
 	"context"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -38,13 +40,22 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					IDheader:    identity,
 				}
 				kpayload := ekafka.KafkaMessage{
-					ExportUUID:   payload.ID,
-					Format:       string(payload.Format),
-					Application:  source.Application,
-					ResourceName: source.Resource,
-					ResourceUUID: source.ID,
-					Filters:      source.Filters,
-					IDHeader:     identity,
+					ID:          uuid.New(),
+					Source:      "urn:redhat:source:export-service",
+					Subject:     "urn:redhat:subject:export-service:b24c269d-33d6-410e-8808-c71c9635e84f",
+					SpecVersion: "1.0",
+					Type:        "com.redhat.console.export-service.request",
+					Time:        time.Now().String(),
+					OrgID:       "",
+					DataSchema:  "https://console.redhat.com/api/schemas/apps/export-service/v1/export-request.json",
+					Data: ekafka.KafkaMessageData{
+						ExportUUID:   payload.ID,
+						Application:  source.Application,
+						Format:       string(payload.Format),
+						ResourceName: source.Resource,
+						ResourceUUID: source.ID,
+						Filters:      source.Filters,
+					},
 				}
 
 				msg, err := kpayload.ToMessage(headers, exportsTopic)

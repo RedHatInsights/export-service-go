@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"
@@ -35,12 +34,28 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 			}
 
 			for _, source := range sources {
+				filters, err := ekafka.JsonToInterface(source.Filters)
+				if err != nil {
+					log.Errorw("failed unmarshalling filters", "error", err)
+					// FIXME:
+					// return err
+					return
+				}
+
+				format, ok := ekafka.ParseFormat(string(payload.Format))
+				if !ok {
+					log.Errorw("failed parsing format", "error", err)
+					// FIXME:
+					// return err
+					return
+				}
+
 				headers := ekafka.KafkaHeader{
 					Application: source.Application,
 					IDheader:    identity,
 				}
 				kpayload := ekafka.KafkaMessage{
-					ID:          uuid.New(),
+					ID:          payload.ID,
 					Source:      kafkaConfig.EventSource,
 					Subject:     kafkaConfig.EventSubject,
 					SpecVersion: kafkaConfig.EventSpecVersion,
@@ -49,12 +64,12 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					OrgID:       payload.OrganizationID,
 					DataSchema:  kafkaConfig.EventDataSchema,
 					Data: ekafka.KafkaMessageData{
-						ExportUUID:   payload.ID,
-						Application:  source.Application,
-						Format:       string(payload.Format),
-						ResourceName: source.Resource,
-						ResourceUUID: source.ID,
-						Filters:      source.Filters,
+						Application: source.Application,
+						Filters:     filters,
+						Format:      format,
+						Resource:    source.Resource,
+						UUID:        source.ID.String(),
+						XRhIdentity: identity,
 					},
 				}
 

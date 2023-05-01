@@ -199,7 +199,14 @@ paths:
           application/json:
             schema:
               type: object
-              example: { "message": "not found", "error": 404 }
+              required: [message, error]
+              properties:
+                message:
+                  type: string
+                  example: "not found"
+                error:
+                  type: integer
+                  example: 404
       responses:
         '202':
           description: OK

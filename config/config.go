@@ -118,7 +118,7 @@ func Get() *ExportConfig {
 		options.SetDefault("KAFKA_EVENT_SUBJECT", "urn:redhat:subject:export-service:b24c269d-33d6-410e-8808-c71c9635e84f")
 		options.SetDefault("KAFKA_EVENT_SPECVERSION", "1.0")
 		options.SetDefault("KAFKA_EVENT_TYPE", "com.redhat.console.export-service.request")
-		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://console.redhat.com/api/schemas/apps/export-service/v1/export-request.json")
+		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://github.com/RedHatInsights/event-schemas/blob/main/schemas/apps/export-service/v1/export-request.json")
 
 		options.AutomaticEnv()
 

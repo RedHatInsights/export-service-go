@@ -338,10 +338,14 @@
                 "properties": {
                   "message": {
                     "type": "string",
-                    "example": "not found"
+                    "description": "A human-readable error message describing the problem",
+                    "example": "The requested resource does not exist"
                   },
                   "error": {
                     "type": "integer",
+                    "description": "The HTTP status code of the error",
+                    "minimum": 400,
+                    "maximum": 599,
                     "example": 404
                   }
                 }

@@ -158,8 +158,12 @@ paths:
             type: string
           required: true
       requestBody:
+        required: true
         content:
-          application/zip:
+          application/json:
+            schema:
+              type: object
+          application/csv:
             schema:
               type: string
               format: binary
@@ -189,14 +193,24 @@ paths:
           schema:
             type: string
           required: true
-        - name: code
-          in: query
-          schema:
-            type: string
-        - name: message
-          in: query
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, error]
+              properties:
+                message:
+                  type: string
+                  description: A human-readable error message describing the problem
+                  example: "The requested resource does not exist"
+                error:
+                  type: integer
+                  description: The HTTP status code of the error
+                  minimum: 400
+                  maximum: 599
+                  example: 404
       responses:
         '202':
           description: OK

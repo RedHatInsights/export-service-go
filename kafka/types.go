@@ -3,6 +3,7 @@ package kafka
 import (
 	"encoding/json"
 
+	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -29,31 +30,15 @@ func (kh KafkaHeader) ToHeader() []kafka.Header {
 }
 
 type KafkaMessage struct {
-	ID          uuid.UUID        `json:"id"`
-	Source      string           `json:"source"`
-	Subject     string           `json:"subject"`
-	SpecVersion string           `json:"specversion"`
-	Type        string           `json:"type"`
-	Time        string           `json:"time"`
-	OrgID       string           `json:"orgid"`
-	DataSchema  string           `json:"dataschema"`
-	Data        KafkaMessageData `json:"data"`
-}
-
-// TODO: This should be pulled from event-schemas-go
-type KafkaMessageData struct {
-	// The application being requested
-	Application string `json:"application"`
-	// The filters to be applied to the data
-	Filters map[string]interface{} `json:"filters,omitempty"`
-	// The format of the data to be exported
-	Format Format `json:"format"`
-	// The resource to be exported
-	Resource string `json:"resource"`
-	// A unique identifier for the request
-	UUID string `json:"uuid"`
-	// The Base64-encoded JSON identity header of the user making the request
-	XRhIdentity string `json:"x-rh-identity"`
+	ID          uuid.UUID                           `json:"id"`
+	Source      string                              `json:"source"`
+	Subject     string                              `json:"subject"`
+	SpecVersion string                              `json:"specversion"`
+	Type        string                              `json:"type"`
+	Time        string                              `json:"time"`
+	OrgID       string                              `json:"orgid"`
+	DataSchema  string                              `json:"dataschema"`
+	Data        cloudEventSchema.ExportRequestClass `json:"data"`
 }
 
 // The format of the data to be exported
@@ -65,13 +50,13 @@ const (
 )
 
 var (
-	formatsMap = map[string]Format{
-		"csv":  CSV,
-		"json": JSON,
+	formatsMap = map[string]cloudEventSchema.Format{
+		"csv":  cloudEventSchema.CSV,
+		"json": cloudEventSchema.JSON,
 	}
 )
 
-func ParseFormat(s string) (Format, bool) {
+func ParseFormat(s string) (cloudEventSchema.Format, bool) {
 	result, ok := formatsMap[s]
 	return result, ok
 }

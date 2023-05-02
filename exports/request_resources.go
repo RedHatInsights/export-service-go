@@ -11,6 +11,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"go.uber.org/zap"
 
+	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
 	"github.com/redhatinsights/export-service-go/config"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/models"
@@ -63,7 +64,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					Time:        time.Now().Format(time.RFC3339),
 					OrgID:       payload.OrganizationID,
 					DataSchema:  kafkaConfig.EventDataSchema,
-					Data: ekafka.KafkaMessageData{
+					Data: cloudEventSchema.ExportRequestClass{
 						Application: source.Application,
 						Filters:     filters,
 						Format:      format,

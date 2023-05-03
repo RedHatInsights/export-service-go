@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
@@ -56,9 +57,9 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					IDheader:    identity,
 				}
 				kpayload := ekafka.KafkaMessage{
-					ID:          payload.ID,
+					ID:          uuid.New(),
 					Source:      kafkaConfig.EventSource,
-					Subject:     kafkaConfig.EventSubject,
+					Subject:     payload.ID.String(),
 					SpecVersion: kafkaConfig.EventSpecVersion,
 					Type:        kafkaConfig.EventType,
 					Time:        time.Now().Format(time.RFC3339),

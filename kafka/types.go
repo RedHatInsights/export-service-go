@@ -36,7 +36,7 @@ type KafkaMessage struct {
 	SpecVersion string                              `json:"specversion"`
 	Type        string                              `json:"type"`
 	Time        string                              `json:"time"`
-	OrgID       string                              `json:"orgid"`
+	OrgID       string                              `json:"redhatorgid"`
 	DataSchema  string                              `json:"dataschema"`
 	Data        cloudEventSchema.ExportRequestClass `json:"data"`
 }

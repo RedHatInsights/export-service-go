@@ -23,4 +23,6 @@ func init() {
 	prometheus.MustRegister(totalUploads)
 	prometheus.MustRegister(failUploads)
 	prometheus.MustRegister(uploadSizes)
+	// Set an initial value of 0 for the histogram so that it shows up in the metrics
+	uploadSizes.With(prometheus.Labels{"account": "testAccount", "org_id": "testOrg", "app": "testApp"})
 }

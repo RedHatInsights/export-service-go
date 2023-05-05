@@ -138,7 +138,7 @@ paths:
                 $ref: '#/components/schemas/ExportStatus'
       security:
         - 3ScaleIdentity: []
-  /upload/{id}/{application}/{resource}:
+  /{id}/{application}/{resource}/upload:
     post:
       operationId: downloadExportUpload
       parameters:
@@ -155,7 +155,7 @@ paths:
         - name: resource
           in: path
           schema:
-            type: string
+            $ref: '#/components/schemas/UUID'
           required: true
       requestBody:
         required: true
@@ -174,7 +174,7 @@ paths:
         - psk: []
       tags:
         - internal
-  /error/{id}/{application}/{resource}:
+  /{id}/{application}/{resource}/error:
     post:
       operationId: downloadExportError
       parameters:
@@ -191,7 +191,7 @@ paths:
         - name: resource
           in: path
           schema:
-            type: string
+            $ref: '#/components/schemas/UUID'
           required: true
       requestBody:
         required: true

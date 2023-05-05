@@ -236,7 +236,7 @@
         ]
       }
     },
-    "/upload/{id}/{application}/{resource}": {
+    "/{id}/{application}/{resource}/upload": {
       "post": {
         "operationId": "downloadExportUpload",
         "parameters": [
@@ -260,7 +260,7 @@
             "name": "resource",
             "in": "path",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/UUID"
             },
             "required": true
           }
@@ -296,7 +296,7 @@
         ]
       }
     },
-    "/error/{id}/{application}/{resource}": {
+    "/{id}/{application}/{resource}/error": {
       "post": {
         "operationId": "downloadExportError",
         "parameters": [
@@ -320,7 +320,7 @@
             "name": "resource",
             "in": "path",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/UUID"
             },
             "required": true
           }

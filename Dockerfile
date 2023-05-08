@@ -26,7 +26,8 @@ FROM registry.redhat.io/ubi8-minimal:latest
 
 COPY --from=builder /workspace/export-service /usr/bin
 COPY --from=builder /workspace/db/migrations /db/migrations/
-COPY --from=builder /workspace/static/spec/openapi.json /var/tmp/openapi.json
+COPY --from=builder /workspace/static/spec/public.json /var/tmp/public.json
+COPY --from=builder /workspace/static/spec/private.json /var/tmp/private.json
 
 USER 1001
 

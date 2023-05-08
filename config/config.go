@@ -18,19 +18,20 @@ const ExportTopic string = "platform.export.requests"
 
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
-	Hostname         string
-	PublicPort       int
-	MetricsPort      int
-	PrivatePort      int
-	Logging          *loggingConfig
-	LogLevel         string
-	Debug            bool
-	DBConfig         dbConfig
-	StorageConfig    storageConfig
-	KafkaConfig      kafkaConfig
-	OpenAPIFilePath  string
-	Psks             []string
-	ExportExpiryDays int
+	Hostname           string
+	PublicPort         int
+	MetricsPort        int
+	PrivatePort        int
+	Logging            *loggingConfig
+	LogLevel           string
+	Debug              bool
+	DBConfig           dbConfig
+	StorageConfig      storageConfig
+	KafkaConfig        kafkaConfig
+	OpenAPIPrivatePath string
+	OpenAPIPublicPath  string
+	Psks               []string
+	ExportExpiryDays   int
 }
 
 type dbConfig struct {
@@ -93,7 +94,8 @@ func Get() *ExportConfig {
 		options.SetDefault("PRIVATE_PORT", 10000)
 		options.SetDefault("LOG_LEVEL", "INFO")
 		options.SetDefault("DEBUG", false)
-		options.SetDefault("OPEN_API_FILE_PATH", "./static/spec/openapi.json")
+		options.SetDefault("OPEN_API_PUBLIC_PATH", "./static/spec/public.json")
+		options.SetDefault("OPEN_API_PRIVATE_PATH", "./static/spec/private.json")
 		options.SetDefault("PSKS", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
 
@@ -124,15 +126,16 @@ func Get() *ExportConfig {
 		kubenv.AutomaticEnv()
 
 		config = &ExportConfig{
-			Hostname:         kubenv.GetString("Hostname"),
-			PublicPort:       options.GetInt("PUBLIC_PORT"),
-			MetricsPort:      options.GetInt("METRICS_PORT"),
-			PrivatePort:      options.GetInt("PRIVATE_PORT"),
-			Debug:            options.GetBool("DEBUG"),
-			LogLevel:         options.GetString("LOG_LEVEL"),
-			OpenAPIFilePath:  options.GetString("OPEN_API_FILE_PATH"),
-			Psks:             options.GetStringSlice("PSKS"),
-			ExportExpiryDays: options.GetInt("EXPORT_EXPIRY_DAYS"),
+			Hostname:           kubenv.GetString("Hostname"),
+			PublicPort:         options.GetInt("PUBLIC_PORT"),
+			MetricsPort:        options.GetInt("METRICS_PORT"),
+			PrivatePort:        options.GetInt("PRIVATE_PORT"),
+			Debug:              options.GetBool("DEBUG"),
+			LogLevel:           options.GetString("LOG_LEVEL"),
+			OpenAPIPublicPath:  options.GetString("OPEN_API_PUBLIC_PATH"),
+			OpenAPIPrivatePath: options.GetString("OPEN_API_PRIVATE_PATH"),
+			Psks:               options.GetStringSlice("PSKS"),
+			ExportExpiryDays:   options.GetInt("EXPORT_EXPIRY_DAYS"),
 		}
 
 		config.DBConfig = dbConfig{

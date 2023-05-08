@@ -1,0 +1,176 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "consoledot Export Service - Private API",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "{internal_server}/app/export/v1",
+      "description": "Internal API used to upload export data",
+      "variables": {
+        "internal_server": {
+          "default": "http://localhost:10010"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/{id}/{application}/{resource}/upload": {
+      "post": {
+        "operationId": "downloadExportUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The ID of the export",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          },
+          {
+            "name": "application",
+            "description": "The name of the application that is exporting data",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "resource",
+            "description": "The ID of the resource that is being exported",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            },
+            "application/csv": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "psk": []
+          }
+        ],
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/{id}/{application}/{resource}/error": {
+      "post": {
+        "operationId": "downloadExportError",
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The ID of the export",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          },
+          {
+            "name": "application",
+            "description": "The name of the application that is exporting data",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "resource",
+            "description": "The ID of the resource that is being exported",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/UUID"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message",
+                  "error"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "A human-readable error message describing the problem",
+                    "example": "The requested resource does not exist"
+                  },
+                  "error": {
+                    "type": "integer",
+                    "description": "The HTTP status code of the error",
+                    "minimum": 400,
+                    "maximum": 599,
+                    "example": 404
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "psk": []
+          }
+        ],
+        "tags": [
+          "internal"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UUID": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "minLength": 36,
+        "maxLength": 36
+      }
+    },
+    "securitySchemes": {
+      "psk": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-rh-export-psk"
+      }
+    }
+  }
+}

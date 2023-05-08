@@ -36,7 +36,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 			}
 
 			for _, source := range sources {
-				filters, err := ekafka.JsonToInterface(source.Filters)
+				filters, err := ekafka.JsonToMap(source.Filters)
 				if err != nil {
 					log.Errorw("failed unmarshalling filters", "error", err)
 					// FIXME:

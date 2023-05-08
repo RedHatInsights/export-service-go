@@ -6,7 +6,6 @@ import (
 	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
-	"gorm.io/datatypes"
 )
 
 type KafkaHeader struct {
@@ -52,19 +51,13 @@ func ParseFormat(s string) (result cloudEventSchema.Format, ok bool) {
 	}
 }
 
-func JsonToInterface(jsonData datatypes.JSON) (map[string]interface{}, error) {
-	jsonBytes, err := jsonData.MarshalJSON()
+func JsonToMap(jsonData []byte) (map[string]interface{}, error) {
+	var resultMap map[string]interface{}
+	err := json.Unmarshal(jsonData, &resultMap)
 	if err != nil {
 		return nil, err
 	}
-
-	var result map[string]interface{}
-	err = json.Unmarshal(jsonBytes, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return resultMap, nil
 }
 
 // ToMessage converts the KafkaMessage struct to a confluent kafka.Message

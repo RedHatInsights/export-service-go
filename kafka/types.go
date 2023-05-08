@@ -41,24 +41,15 @@ type KafkaMessage struct {
 	Data        cloudEventSchema.ExportRequestClass `json:"data"`
 }
 
-// The format of the data to be exported
-type Format string
-
-const (
-	CSV  Format = "csv"
-	JSON Format = "json"
-)
-
-var (
-	formatsMap = map[string]cloudEventSchema.Format{
-		"csv":  cloudEventSchema.CSV,
-		"json": cloudEventSchema.JSON,
+func ParseFormat(s string) (result cloudEventSchema.Format, ok bool) {
+	switch s {
+	case "csv":
+		return cloudEventSchema.CSV, true
+	case "json":
+		return cloudEventSchema.JSON, true
+	default:
+		return "", false
 	}
-)
-
-func ParseFormat(s string) (cloudEventSchema.Format, bool) {
-	result, ok := formatsMap[s]
-	return result, ok
 }
 
 func JsonToInterface(jsonData datatypes.JSON) (map[string]interface{}, error) {

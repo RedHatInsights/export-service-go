@@ -129,7 +129,7 @@ func createMetricsServer(cfg *config.ExportConfig) *http.Server {
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
-		SpecURL: "/api/export/v1/openapi.json",
+		SpecURL: "/api/export/v1/public.json",
 	}
 	return redoc.Redoc(opt, handler)
 }

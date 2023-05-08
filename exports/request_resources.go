@@ -41,7 +41,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					log.Errorw("failed unmarshalling filters", "error", err)
 					// FIXME:
 					// return err
-					return
+					continue // Skip this source and continue with the next one
 				}
 
 				format, ok := ekafka.ParseFormat(string(payload.Format))
@@ -49,7 +49,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					log.Errorw("failed parsing format", "error", err)
 					// FIXME:
 					// return err
-					return
+					continue // Skip this source and continue with the next one
 				}
 
 				headers := ekafka.KafkaHeader{
@@ -80,7 +80,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					log.Errorw("failed to create kafka message", "error", err)
 					// FIXME:
 					// return err
-					return
+					continue // Skip this source and continue with the next one
 				}
 
 				log.Debug("sending kafka message to the producer")

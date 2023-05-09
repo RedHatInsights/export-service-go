@@ -54,11 +54,16 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 
 	logger = logger.With(export_logger.ExportIDField(params.ExportUUID.String()))
 
-	var sourceError models.SourceError
+	var sourceError SourceError
 	err := json.NewDecoder(r.Body).Decode(&sourceError)
 	if err != nil {
 		BadRequestError(w, err.Error())
 		return
+	}
+	// convert the json error to a db error (because 'error' is called 'code' in the db)
+	modelError := models.SourceError{
+		Message: *sourceError.Message,
+		Code:    *sourceError.Code,
 	}
 
 	payload, err := i.DB.Get(params.ExportUUID)
@@ -91,7 +96,7 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 
-	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RFailed, &sourceError); err != nil {
+	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RFailed, &modelError); err != nil {
 		logger.Errorw("failed to set source status for failed export", "error", err)
 		InternalServerError(w, err)
 		return

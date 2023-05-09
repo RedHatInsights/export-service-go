@@ -10,7 +10,7 @@ services:
       - PGSQL_PORT=5432
       - PGSQL_HOSTNAME=export-db
       - DEBUG=true
-      - OPEN_API_PUBLIC_PATH=/var/tmp/public.json
+      - OPEN_API_FILE_PATH=/var/tmp/openapi.json
       - OPEN_API_PRIVATE_PATH=/var/tmp/private.json
       - PSKS=testing-a-psk
       - KAFKA_BROKERS=kafka:29092

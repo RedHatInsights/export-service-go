@@ -94,7 +94,7 @@ func Get() *ExportConfig {
 		options.SetDefault("PRIVATE_PORT", 10000)
 		options.SetDefault("LOG_LEVEL", "INFO")
 		options.SetDefault("DEBUG", false)
-		options.SetDefault("OPEN_API_PUBLIC_PATH", "./static/spec/public.json")
+		options.SetDefault("OPEN_API_FILE_PATH", "./static/spec/openapi.json")
 		options.SetDefault("OPEN_API_PRIVATE_PATH", "./static/spec/private.json")
 		options.SetDefault("PSKS", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
@@ -132,7 +132,7 @@ func Get() *ExportConfig {
 			PrivatePort:        options.GetInt("PRIVATE_PORT"),
 			Debug:              options.GetBool("DEBUG"),
 			LogLevel:           options.GetString("LOG_LEVEL"),
-			OpenAPIPublicPath:  options.GetString("OPEN_API_PUBLIC_PATH"),
+			OpenAPIPublicPath:  options.GetString("OPEN_API_FILE_PATH"),
 			OpenAPIPrivatePath: options.GetString("OPEN_API_PRIVATE_PATH"),
 			Psks:               options.GetStringSlice("PSKS"),
 			ExportExpiryDays:   options.GetInt("EXPORT_EXPIRY_DAYS"),

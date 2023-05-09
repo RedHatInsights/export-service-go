@@ -57,8 +57,8 @@ objects:
           value: ${CLOWDER_ENABLED}
         - name: ENABLE_CLOUDWATCH_LOGGING
           value: ${ENABLE_CLOUDWATCH_LOGGING}
-        - name: OPEN_API_PUBLIC_PATH
-          value: ${OPEN_API_PUBLIC_PATH}
+        - name: OPEN_API_FILE_PATH
+          value: ${OPEN_API_FILE_PATH}
         - name: OPEN_API_PRIVATE_PATH
           value: ${OPEN_API_PRIVATE_PATH}
         - name: EXPORT_SERVICE_BUCKET
@@ -182,8 +182,8 @@ parameters:
     value: "false"
   - name: OPEN_API_PRIVATE_PATH
     value: /var/tmp/private.json
-  - name: OPEN_API_PUBLIC_PATH
-    value: /var/tmp/public.json
+  - name: OPEN_API_FILE_PATH
+    value: /var/tmp/openapi.json
   - name: EXPORT_SERVICE_BUCKET
     value: exports-bucket
   - name: CLEANER_SCHEDULE

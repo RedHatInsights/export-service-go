@@ -49,7 +49,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	)
 
 	router.Get("/", statusOK)
-	router.Get("/api/export/v1/public.json", servePublicOpenAPISpec(cfg)) // OpenAPI Specs
+	router.Get("/api/export/v1/openapi.json", servePublicOpenAPISpec(cfg)) // OpenAPI Specs
 	router.Get("/api/export/v1/private.json", servePrivateOpenAPISpec(cfg))
 
 	router.Route("/api/export/v1", func(r chi.Router) {
@@ -129,7 +129,7 @@ func createMetricsServer(cfg *config.ExportConfig) *http.Server {
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
-		SpecURL: "/api/export/v1/public.json",
+		SpecURL: "/api/export/v1/openapi.json",
 	}
 	return redoc.Redoc(opt, handler)
 }

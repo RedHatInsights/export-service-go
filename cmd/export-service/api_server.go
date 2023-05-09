@@ -50,7 +50,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 
 	router.Get("/", statusOK)
 	router.Get("/api/export/v1/openapi.json", servePublicOpenAPISpec(cfg)) // OpenAPI Specs
-	router.Get("/api/export/v1/private.json", servePrivateOpenAPISpec(cfg))
+	router.Get("/app/export/v1/openapi.json", servePrivateOpenAPISpec(cfg))
 
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware

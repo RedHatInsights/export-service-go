@@ -6,10 +6,13 @@ package exports
 
 import (
 	"context"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
 	"github.com/redhatinsights/export-service-go/config"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/models"
@@ -18,7 +21,7 @@ import (
 type RequestApplicationResources func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload)
 
 func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestApplicationResources {
-	var exportsTopic = config.Get().KafkaConfig.ExportsTopic
+	var kafkaConfig = config.Get().KafkaConfig
 	// sendPayload converts the individual sources of a payload into
 	// kafka messages which are then sent to the producer through the
 	// `messagesChan`
@@ -33,26 +36,51 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 			}
 
 			for _, source := range sources {
+				filters, err := ekafka.JsonToMap(source.Filters)
+				if err != nil {
+					log.Errorw("failed unmarshalling filters", "error", err)
+					// FIXME:
+					// return err
+					continue // Skip this source and continue with the next one
+				}
+
+				format, ok := ekafka.ParseFormat(string(payload.Format))
+				if !ok {
+					log.Errorw("failed parsing format", "error", err)
+					// FIXME:
+					// return err
+					continue // Skip this source and continue with the next one
+				}
+
 				headers := ekafka.KafkaHeader{
 					Application: source.Application,
 					IDheader:    identity,
 				}
 				kpayload := ekafka.KafkaMessage{
-					ExportUUID:   payload.ID,
-					Format:       string(payload.Format),
-					Application:  source.Application,
-					ResourceName: source.Resource,
-					ResourceUUID: source.ID,
-					Filters:      source.Filters,
-					IDHeader:     identity,
+					ID:          uuid.New(),
+					Source:      kafkaConfig.EventSource,
+					Subject:     payload.ID.String(),
+					SpecVersion: kafkaConfig.EventSpecVersion,
+					Type:        kafkaConfig.EventType,
+					Time:        time.Now().Format(time.RFC3339),
+					OrgID:       payload.OrganizationID,
+					DataSchema:  kafkaConfig.EventDataSchema,
+					Data: cloudEventSchema.ExportRequestClass{
+						Application: source.Application,
+						Filters:     filters,
+						Format:      format,
+						Resource:    source.Resource,
+						UUID:        source.ID.String(),
+						XRhIdentity: identity,
+					},
 				}
 
-				msg, err := kpayload.ToMessage(headers, exportsTopic)
+				msg, err := kpayload.ToMessage(headers, kafkaConfig.ExportsTopic)
 				if err != nil {
 					log.Errorw("failed to create kafka message", "error", err)
 					// FIXME:
 					// return err
-					return
+					continue // Skip this source and continue with the next one
 				}
 
 				log.Debug("sending kafka message to the producer")

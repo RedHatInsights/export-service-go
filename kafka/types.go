@@ -3,6 +3,7 @@ package kafka
 import (
 	"encoding/json"
 
+	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 )
@@ -28,13 +29,35 @@ func (kh KafkaHeader) ToHeader() []kafka.Header {
 }
 
 type KafkaMessage struct {
-	ExportUUID   uuid.UUID `json:"export_uuid"`
-	Application  string    `json:"application"`
-	Format       string    `json:"format"`
-	ResourceName string    `json:"resource"`
-	ResourceUUID uuid.UUID `json:"resource_uuid"`
-	Filters      []byte    `json:"filters"`
-	IDHeader     string    `json:"x-rh-identity"`
+	ID          uuid.UUID                           `json:"id"`
+	Source      string                              `json:"source"`
+	Subject     string                              `json:"subject"`
+	SpecVersion string                              `json:"specversion"`
+	Type        string                              `json:"type"`
+	Time        string                              `json:"time"`
+	OrgID       string                              `json:"redhatorgid"`
+	DataSchema  string                              `json:"dataschema"`
+	Data        cloudEventSchema.ExportRequestClass `json:"data"`
+}
+
+func ParseFormat(s string) (result cloudEventSchema.Format, ok bool) {
+	switch s {
+	case "csv":
+		return cloudEventSchema.CSV, true
+	case "json":
+		return cloudEventSchema.JSON, true
+	default:
+		return "", false
+	}
+}
+
+func JsonToMap(jsonData []byte) (map[string]interface{}, error) {
+	var resultMap map[string]interface{}
+	err := json.Unmarshal(jsonData, &resultMap)
+	if err != nil {
+		return nil, err
+	}
+	return resultMap, nil
 }
 
 // ToMessage converts the KafkaMessage struct to a confluent kafka.Message

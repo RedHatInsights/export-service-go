@@ -40,7 +40,8 @@ spec:
 ifeq (, $(shell which yq))
 	echo "yq is not installed"
 else
-	yq -o=json eval static/spec/openapi.yaml > static/spec/openapi.json
+	@yq -o=json eval static/spec/openapi.yaml > static/spec/openapi.json
+	@yq -o=json eval static/spec/private.yaml > static/spec/private.json
 endif
 
 docker-down:

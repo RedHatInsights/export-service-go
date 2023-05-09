@@ -49,7 +49,8 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	)
 
 	router.Get("/", statusOK)
-	router.Get("/api/export/v1/openapi.json", serveOpenAPISpec(cfg)) // OpenAPI Spec
+	router.Get("/api/export/v1/openapi.json", servePublicOpenAPISpec(cfg)) // OpenAPI Specs
+	router.Get("/app/export/v1/openapi.json", servePrivateOpenAPISpec(cfg))
 
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
@@ -145,9 +146,15 @@ func statusOK(w http.ResponseWriter, r *http.Request) {
 }
 
 // Serve OpenAPI spec json
-func serveOpenAPISpec(cfg *config.ExportConfig) http.HandlerFunc {
+func servePublicOpenAPISpec(cfg *config.ExportConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, cfg.OpenAPIFilePath)
+		http.ServeFile(w, r, cfg.OpenAPIPublicPath)
+	}
+}
+
+func servePrivateOpenAPISpec(cfg *config.ExportConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, cfg.OpenAPIPrivatePath)
 	}
 }
 
@@ -158,7 +165,8 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		"metricsport", cfg.MetricsPort,
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
-		"openapifilepath", cfg.OpenAPIFilePath,
+		"publicopenapifilepath", cfg.OpenAPIPublicPath,
+		"privateopenapifilepath", cfg.OpenAPIPrivatePath,
 	)
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)

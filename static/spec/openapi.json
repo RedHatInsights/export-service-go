@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "consoledot Export Service",
+    "title": "consoledot Export Service - Public API",
     "version": "0.1.0"
   },
   "servers": [
@@ -235,138 +235,6 @@
           }
         ]
       }
-    },
-    "/{id}/{application}/{resource}/upload": {
-      "post": {
-        "operationId": "downloadExportUpload",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/UUID"
-            },
-            "required": true
-          },
-          {
-            "name": "application",
-            "in": "path",
-            "schema": {
-              "type": "string"
-            },
-            "required": true
-          },
-          {
-            "name": "resource",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/UUID"
-            },
-            "required": true
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
-            },
-            "application/csv": {
-              "schema": {
-                "type": "string",
-                "format": "binary"
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "OK"
-          }
-        },
-        "security": [
-          {
-            "psk": []
-          }
-        ],
-        "tags": [
-          "internal"
-        ]
-      }
-    },
-    "/{id}/{application}/{resource}/error": {
-      "post": {
-        "operationId": "downloadExportError",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/UUID"
-            },
-            "required": true
-          },
-          {
-            "name": "application",
-            "in": "path",
-            "schema": {
-              "type": "string"
-            },
-            "required": true
-          },
-          {
-            "name": "resource",
-            "in": "path",
-            "schema": {
-              "$ref": "#/components/schemas/UUID"
-            },
-            "required": true
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "message",
-                  "error"
-                ],
-                "properties": {
-                  "message": {
-                    "type": "string",
-                    "description": "A human-readable error message describing the problem",
-                    "example": "The requested resource does not exist"
-                  },
-                  "error": {
-                    "type": "integer",
-                    "description": "The HTTP status code of the error",
-                    "minimum": 400,
-                    "maximum": 599,
-                    "example": 404
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "OK"
-          }
-        },
-        "security": [
-          {
-            "psk": []
-          }
-        ],
-        "tags": [
-          "internal"
-        ]
-      }
     }
   },
   "components": {
@@ -395,16 +263,14 @@
           "failed"
         ]
       },
-      "ExportResource": {
+      "ExportRequestResource": {
+        "description": "A resource to be exported (no status or id) used only to create a new export.",
         "type": "object",
         "required": [
           "application",
           "resource"
         ],
         "properties": {
-          "id": {
-            "$ref": "#/components/schemas/UUID"
-          },
           "application": {
             "type": "string"
           },
@@ -417,13 +283,11 @@
           },
           "filters": {
             "type": "object"
-          },
-          "status": {
-            "$ref": "#/components/schemas/Status"
           }
         }
       },
       "ExportRequest": {
+        "description": "A request to export data for specific resources (no status or id) used only to create a new export.",
         "type": "object",
         "required": [
           "name",
@@ -444,10 +308,70 @@
           "sources": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ExportResource"
+              "$ref": "#/components/schemas/ExportRequestResource"
             }
           }
         }
+      },
+      "ExportResource": {
+        "description": "A resource to be exported",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExportRequestResource"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "status",
+              "expires_at"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "status": {
+                "$ref": "#/components/schemas/Status"
+              }
+            }
+          }
+        ]
+      },
+      "Export": {
+        "description": "A request to export data for specific resources",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExportRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "created_at",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "$ref": "#/components/schemas/Status"
+              }
+            }
+          }
+        ]
       },
       "ExportStatus": {
         "type": "object",
@@ -544,11 +468,6 @@
       }
     },
     "securitySchemes": {
-      "psk": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-rh-export-psk"
-      },
       "3ScaleIdentity": {
         "type": "apiKey",
         "in": "header",

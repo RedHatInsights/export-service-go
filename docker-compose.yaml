@@ -11,6 +11,7 @@ services:
       - PGSQL_HOSTNAME=export-db
       - DEBUG=true
       - OPEN_API_FILE_PATH=/var/tmp/openapi.json
+      - OPEN_API_PRIVATE_PATH=/var/tmp/private.json
       - PSKS=testing-a-psk
       - KAFKA_BROKERS=kafka:29092
       - AWS_ACCESS_KEY=minio

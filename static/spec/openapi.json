@@ -277,10 +277,6 @@
           "resource": {
             "type": "string"
           },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time"
-          },
           "filters": {
             "type": "object"
           }

@@ -62,7 +62,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					Subject:     payload.ID.String(),
 					SpecVersion: kafkaConfig.EventSpecVersion,
 					Type:        kafkaConfig.EventType,
-					Time:        time.Now().Format(time.RFC3339),
+					Time:        time.Now().UTC().Format(formatDateTime),
 					OrgID:       payload.OrganizationID,
 					DataSchema:  kafkaConfig.EventDataSchema,
 					Data: cloudEventSchema.ExportRequestClass{

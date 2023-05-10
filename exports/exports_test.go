@@ -27,6 +27,7 @@ import (
 )
 
 const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+const formatDateTime string = "2006-01-02T15:04:05Z" // ISO 8601
 
 func AddDebugUserIdentity(req *http.Request) {
 	req.Header.Add("x-rh-identity", debugHeader)
@@ -170,7 +171,7 @@ var _ = Describe("The public API", func() {
 
 			rr := httptest.NewRecorder()
 
-			today := time.Now().Format(time.RFC3339)
+			today := time.Now().UTC().Format(formatDateTime)
 
 			req, err := http.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports?created_at=%s", today), nil)
 
@@ -576,8 +577,8 @@ func populateTestData() chi.Router {
 		router.ServeHTTP(rr, req)
 	}
 
-	oneDayAgo := time.Now().AddDate(0, 0, -1)
-	oneDayFromNow := time.Now().AddDate(0, 0, 1)
+	oneDayAgo := time.Now().AddDate(0, 0, -1).UTC()
+	oneDayFromNow := time.Now().AddDate(0, 0, 1).UTC()
 
 	modifyExportCreated("Test Export Request 1", oneDayAgo)
 	modifyExportCreated("Test Export Request 2", oneDayFromNow)

@@ -33,13 +33,13 @@ paths:
           schema:
             type: string
         - name: created_at
-          description: Date follows the RFC3339 standard or YYYY-MM-DD
+          description: Date follows the ISO8601 standard or YYYY-MM-DD
           in: query
           schema:
             type: string
             format: date
         - name: expires_at
-          description: Date follows the RFC3339 standard or YYYY-MM-DD
+          description: Date follows the ISO8601 standard or YYYY-MM-DD
           in: query
           schema:
             type: string

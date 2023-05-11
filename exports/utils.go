@@ -11,7 +11,7 @@ import (
 const (
 	formatDate     = "2006-01-02"
 	formatDateLen  = 10
-	formatDateTime = time.RFC3339
+	formatDateTime = "2006-01-02T15:04:05Z" // ISO 8601
 )
 
 func initQuery(q url.Values) (result models.QueryParams, err error) {

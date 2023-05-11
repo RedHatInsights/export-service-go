@@ -23,6 +23,8 @@ import (
 	"github.com/redhatinsights/export-service-go/models"
 )
 
+const formatDateTime = "2006-01-02T15:04:05Z" // ISO 8601
+
 type Compressor struct {
 	Bucket string
 	Log    *zap.SugaredLogger
@@ -194,7 +196,7 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 
 	c.Log.Infof("starting payload compression for %s", m.ID)
 	prefix := fmt.Sprintf("%s/%s/", m.OrganizationID, m.ID)
-	filename := fmt.Sprintf("%s-%s.tar.gz", t.Format(time.RFC3339), m.ID.String())
+	filename := fmt.Sprintf("%s-%s.tar.gz", t.UTC().Format(formatDateTime), m.ID.String())
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
 
 	sources, err := m.GetSources()
@@ -204,7 +206,7 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 
 	meta := ExportMeta{
 		ExportBy:    m.User.Username,
-		ExportDate:  m.CreatedAt.Format(time.RFC3339),
+		ExportDate:  m.CreatedAt.UTC().Format(formatDateTime),
 		ExportOrgID: m.User.OrganizationID,
 		HelpString:  helpString,
 	}

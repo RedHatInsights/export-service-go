@@ -266,6 +266,15 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request, logge
 }
 
 func DBExportToAPI(payload models.ExportPayload) ExportPayload {
+	// UTC required to format as ISO 8601
+	payload.CreatedAt = payload.CreatedAt.UTC()
+	if payload.CompletedAt != nil {
+		*payload.CompletedAt = payload.CompletedAt.UTC()
+	}
+	if payload.Expires != nil {
+		*payload.Expires = payload.Expires.UTC()
+	}
+
 	apiPayload := ExportPayload{
 		ID:          payload.ID.String(),
 		CreatedAt:   payload.CreatedAt,

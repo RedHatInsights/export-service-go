@@ -93,7 +93,7 @@ var _ = Context("Set up internal handler", func() {
 			source := sources[0].(map[string]interface{})
 			resourceUUID := source["id"].(string)
 
-			// upload a payload with some dummy data
+			// upload the resource with some dummy data
 			rr = httptest.NewRecorder()
 			dummyBody := `{"data": "dummy data"}`
 			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
@@ -135,10 +135,10 @@ var _ = Context("Set up internal handler", func() {
 			resourceUUID := source["id"].(string)
 			fmt.Println(resourceUUID)
 
-			// upload a payload with some dummy data
+			// return an error for the resource
 			rr = httptest.NewRecorder()
-			dummyBody := `{"data": "dummy data"}`
-			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/error/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			errorBody := `{"message": "test error", "error": 123}`
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/error/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(errorBody)))
 			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
@@ -154,6 +154,11 @@ var _ = Context("Set up internal handler", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			exportStatus := exportResponse2["status"].(string)
 			Expect(exportStatus).To(Equal("failed"))
+			// check that the message and code for the export source error are correct
+			sources = exportResponse2["sources"].([]interface{})
+			source = sources[0].(map[string]interface{})
+			Expect(source["message"].(string)).To(Equal("test error"))
+			Expect(source["error"].(float64)).To(Equal(123.0))
 		})
 	})
 })

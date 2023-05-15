@@ -64,6 +64,7 @@ type kafkaConfig struct {
 	EventSpecVersion string
 	EventType        string
 	EventDataSchema  string
+	EventSchema      string
 }
 
 type kafkaSSLConfig struct {
@@ -115,10 +116,11 @@ func Get() *ExportConfig {
 		options.SetDefault("KAFKA_ANNOUNCE_TOPIC", ExportTopic)
 		options.SetDefault("KAFKA_BROKERS", strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 		options.SetDefault("KAFKA_GROUP_ID", "export")
-		options.SetDefault("KAFKA_EVENT_SOURCE", "urn:redhat:source:export-service")
+		options.SetDefault("KAFKA_EVENT_SOURCE", "urn:redhat:source:console:app:export-service")
 		options.SetDefault("KAFKA_EVENT_SPECVERSION", "1.0")
 		options.SetDefault("KAFKA_EVENT_TYPE", "com.redhat.console.export-service.request")
-		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://github.com/RedHatInsights/event-schemas/blob/main/schemas/apps/export-service/v1/export-request.json")
+		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://console.redhat.com/api/schemas/apps/export-service/v1/export-request.json")
+		options.SetDefault("KAFKA_EVENT_SCHEMA", "https://console.redhat.com/api/schemas/events/v1/events.json")
 
 		options.AutomaticEnv()
 
@@ -165,6 +167,7 @@ func Get() *ExportConfig {
 			EventSpecVersion: options.GetString("KAFKA_EVENT_SPECVERSION"),
 			EventType:        options.GetString("KAFKA_EVENT_TYPE"),
 			EventDataSchema:  options.GetString("KAFKA_EVENT_DATASCHEMA"),
+			EventSchema:      options.GetString("KAFKA_EVENT_SCHEMA"),
 		}
 
 		if clowder.IsClowderEnabled() {

@@ -6,6 +6,7 @@ package exports
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -58,20 +59,23 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 				}
 				kpayload := ekafka.KafkaMessage{
 					ID:          uuid.New(),
+					Schema:      kafkaConfig.EventSchema,
 					Source:      kafkaConfig.EventSource,
-					Subject:     payload.ID.String(),
+					Subject:     fmt.Sprintf("urn:redhat:subject:export-service:request:%s", payload.ID.String()),
 					SpecVersion: kafkaConfig.EventSpecVersion,
 					Type:        kafkaConfig.EventType,
 					Time:        time.Now().UTC().Format(formatDateTime),
 					OrgID:       payload.OrganizationID,
 					DataSchema:  kafkaConfig.EventDataSchema,
-					Data: cloudEventSchema.ExportRequestClass{
-						Application: source.Application,
-						Filters:     filters,
-						Format:      format,
-						Resource:    source.Resource,
-						UUID:        source.ID.String(),
-						XRhIdentity: identity,
+					Data: cloudEventSchema.ExportRequest{
+						ExportRequest: cloudEventSchema.ExportRequestClass{
+							Application: source.Application,
+							Filters:     filters,
+							Format:      format,
+							Resource:    source.Resource,
+							UUID:        source.ID.String(),
+							XRhIdentity: identity,
+						},
 					},
 				}
 

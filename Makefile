@@ -61,7 +61,7 @@ monitor-topic:
 	$(OCI_TOOL) exec -ti kafka /usr/bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic platform.export.requests
 
 run-api: build-local migrate_db
-	DEBUG=true MINIO_PORT=9099 AWS_ACCESS_KEY=minio AWS_SECRET_ACCESS_KEY=minioadmin PSKS=testing-a-psk PUBLIC_PORT=8000 METRICS_PORT=9090 PRIVATE_PORT=10010 PGSQL_PORT=5432 ./export-service api_server
+	KAFKA_BROKERS=localhost:9092 DEBUG=true MINIO_PORT=9099 AWS_ACCESS_KEY=minio AWS_SECRET_ACCESS_KEY=minioadmin PSKS=testing-a-psk PUBLIC_PORT=8000 METRICS_PORT=9090 PRIVATE_PORT=10010 PGSQL_PORT=5432 ./export-service api_server
 
 migrate_db: build-local
 	PGSQL_PORT=5432 ./export-service migrate_db upgrade

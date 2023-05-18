@@ -19,6 +19,8 @@ objects:
       webServices:
         public:
           enabled: True
+        private:
+          enabled: True
       # Details about running pod
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}     

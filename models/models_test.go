@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gorm.io/gorm"
 
 	m "github.com/redhatinsights/export-service-go/models"
 )
@@ -163,6 +162,55 @@ var _ = Describe("GetSource", func() {
 			result, err := exportDB.Get(payloadId)
 			Expect(err).To(BeNil())
 			Expect(result.Status).To(Equal(m.Running))
+		})
+	})
+
+	Describe("SetSourceStatus", func() {
+		It("should set a status for source", func() {
+			setupTest(testGormDB)
+
+			source := m.Source{Application: "test-app", Status: m.RPending}
+			exportPayload.Sources = append(exportPayload.Sources, source)
+
+			createdExport, err := exportDB.Create(exportPayload)
+			Expect(err).To(BeNil())
+
+			createdSource := createdExport.Sources[0]
+			createdSourceID := createdSource.ID
+
+			sourceStatusUpdateErr := exportPayload.SetSourceStatus(exportDB, createdSourceID, m.RSuccess, nil)
+			Expect(sourceStatusUpdateErr).To(BeNil())
+
+			updatedSource := m.Source{}
+			result := testGormDB.First(&updatedSource, createdSourceID)
+			Expect(result.Error).To(BeNil())
+
+			Expect(updatedSource.Status).To(Equal(m.RSuccess))
+		})
+
+		It("should set a status for source and include source error", func() {
+			setupTest(testGormDB)
+
+			source := m.Source{Application: "test-app", Status: m.RPending}
+			exportPayload.Sources = append(exportPayload.Sources, source)
+
+			createdExport, err := exportDB.Create(exportPayload)
+			Expect(err).To(BeNil())
+
+			createdSource := createdExport.Sources[0]
+			createdSourceID := createdSource.ID
+			sourceError := &m.SourceError{Message: "sourceError", Code: 400}
+
+			sourceStatusUpdateErr := exportPayload.SetSourceStatus(exportDB, createdSourceID, m.RFailed, sourceError)
+			Expect(sourceStatusUpdateErr).To(BeNil())
+
+			updatedSource := m.Source{}
+			result := testGormDB.First(&updatedSource, createdSourceID)
+			Expect(result.Error).To(BeNil())
+
+			Expect(updatedSource.Status).To(Equal(m.RFailed))
+			Expect(updatedSource.SourceError.Message).To(Equal(sourceError.Message))
+			Expect(updatedSource.SourceError.Code).To(Equal(sourceError.Code))
 		})
 	})
 

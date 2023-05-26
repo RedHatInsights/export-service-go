@@ -12,16 +12,7 @@ import (
 )
 
 
-// var _ = Describe("Models", func() {
-
-// 	Describe("Fetching sources", func() {
-// 		It("testing", func() {
-// 			Expect(true).To(Equal(true))
-// 		})
-// 	})
-// })
-
-var _ = Describe("GetSource", func() {
+var _ = Describe("Models", func() {
 	var (
 		exportPayload *m.ExportPayload
 	)

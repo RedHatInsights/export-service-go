@@ -1,7 +1,6 @@
 package models_test
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -169,7 +168,7 @@ var _ = Describe("Db", func () {
 
 				_, getErr := exportDB.Get(exportPayload.ID)
 				Expect(getErr).To(HaveOccurred())
-				Expect(getErr.Error()).To(Equal(fmt.Sprintf("record not found")))
+				Expect(getErr.Error()).To(Equal("record not found"))
 			})
 		})
 	})

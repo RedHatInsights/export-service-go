@@ -67,9 +67,10 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					Time:        time.Now().UTC().Format(formatDateTime),
 					OrgID:       payload.OrganizationID,
 					DataSchema:  kafkaConfig.EventDataSchema,
-					Data: cloudEventSchema.ExportRequest{
-						ExportRequest: cloudEventSchema.ExportRequestClass{
+					Data: cloudEventSchema.ResourceRequest{
+						ResourceRequest: cloudEventSchema.ResourceRequestClass{
 							Application: source.Application,
+							ExportRequestUUID: payload.ID.String(),
 							Filters:     filters,
 							Format:      format,
 							Resource:    source.Resource,

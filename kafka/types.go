@@ -29,16 +29,16 @@ func (kh KafkaHeader) ToHeader() []kafka.Header {
 }
 
 type KafkaMessage struct {
-	ID          uuid.UUID                      `json:"id"`
-	Schema      string                         `json:"$schema"`
-	Source      string                         `json:"source"`
-	Subject     string                         `json:"subject"`
-	SpecVersion string                         `json:"specversion"`
-	Type        string                         `json:"type"`
-	Time        string                         `json:"time"`
-	OrgID       string                         `json:"redhatorgid"`
-	DataSchema  string                         `json:"dataschema"`
-	Data        cloudEventSchema.ExportRequest `json:"data"`
+	ID          uuid.UUID                        `json:"id"`
+	Schema      string                           `json:"$schema"`
+	Source      string                           `json:"source"`
+	Subject     string                           `json:"subject"`
+	SpecVersion string                           `json:"specversion"`
+	Type        string                           `json:"type"`
+	Time        string                           `json:"time"`
+	OrgID       string                           `json:"redhatorgid"`
+	DataSchema  string                           `json:"dataschema"`
+	Data        cloudEventSchema.ResourceRequest `json:"data"`
 }
 
 func ParseFormat(s string) (result cloudEventSchema.Format, ok bool) {

@@ -45,3 +45,6 @@ The body of the request to the `POST /exports` endpoint is outlined in [this exa
   - `resource`: string identifier for the resource a request is being made for
   - `expires`: the date the export should expire. This is optional, and defaults to 7 days after the request is made.
   - `filters`: application-specific, schemaless `json` object used for filtering the data to be exported. This is **not required**.
+
+## Additional requirements
+To request that we add the required network policies and PSK needed for your service to communicate with the internal API, please reach out to *@crc-pipeline-team*, message the *team-consoledot-pipeline* channel, or email *platform-pipeline#redhat.com*.

@@ -199,6 +199,9 @@ func Get() *ExportConfig {
 
 			config.KafkaConfig.Brokers = clowder.KafkaServers
 			config.KafkaConfig.ExportsTopic = clowder.KafkaTopics[ExportTopic].Name
+			if config.KafkaConfig.ExportsTopic == "" {
+				fmt.Println("WARNING: Export requests kafka topic is not set within Clowder!")
+			}
 
 			broker := cfg.Kafka.Brokers[0]
 			if broker.Authtype != nil {

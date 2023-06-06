@@ -198,6 +198,8 @@ func Get() *ExportConfig {
 			}
 
 			config.KafkaConfig.Brokers = clowder.KafkaServers
+			config.KafkaConfig.ExportsTopic = clowder.KafkaTopics[ExportTopic].Name
+
 			broker := cfg.Kafka.Brokers[0]
 			if broker.Authtype != nil {
 				caPath, err := cfg.KafkaCa(broker)

@@ -119,7 +119,7 @@ func Get() *ExportConfig {
 		options.SetDefault("KAFKA_EVENT_SOURCE", "urn:redhat:source:console:app:export-service")
 		options.SetDefault("KAFKA_EVENT_SPECVERSION", "1.0")
 		options.SetDefault("KAFKA_EVENT_TYPE", "com.redhat.console.export-service.request")
-		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://console.redhat.com/api/schemas/apps/export-service/v1/export-request.json")
+		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://console.redhat.com/api/schemas/apps/export-service/v1/resource-request.json")
 		options.SetDefault("KAFKA_EVENT_SCHEMA", "https://console.redhat.com/api/schemas/events/v1/events.json")
 
 		options.AutomaticEnv()
@@ -198,6 +198,11 @@ func Get() *ExportConfig {
 			}
 
 			config.KafkaConfig.Brokers = clowder.KafkaServers
+			config.KafkaConfig.ExportsTopic = clowder.KafkaTopics[ExportTopic].Name
+			if config.KafkaConfig.ExportsTopic == "" {
+				fmt.Println("WARNING: Export requests kafka topic is not set within Clowder!")
+			}
+
 			broker := cfg.Kafka.Brokers[0]
 			if broker.Authtype != nil {
 				caPath, err := cfg.KafkaCa(broker)

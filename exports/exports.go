@@ -331,7 +331,7 @@ func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error
 	case "json":
 		payload.Format = models.JSON
 	default:
-		return nil, fmt.Errorf("unknown payload format: %s", apiPayload.Format)
+		return nil, fmt.Errorf("invalid or missing payload format")
 	}
 
 	switch apiPayload.Status {

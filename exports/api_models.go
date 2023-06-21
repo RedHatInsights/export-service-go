@@ -28,6 +28,6 @@ type Source struct {
 }
 
 type SourceError struct {
-	Message *string `json:"message,omitempty"`
-	Code    *int    `json:"error,omitempty"`
+	Message string `json:"message,omitempty"`
+	Code    int    `json:"error,omitempty"`
 }

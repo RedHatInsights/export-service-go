@@ -60,10 +60,14 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 		BadRequestError(w, err.Error())
 		return
 	}
+	if sourceError.Message == "" || sourceError.Code == 0 {
+		BadRequestError(w, "Both 'message' and 'code' are required fields")
+		return
+	}
 	// convert the json error to a db error (because 'error' is called 'code' in the db)
 	modelError := models.SourceError{
-		Message: *sourceError.Message,
-		Code:    *sourceError.Code,
+		Message: sourceError.Message,
+		Code:    sourceError.Code,
 	}
 
 	payload, err := i.DB.Get(params.ExportUUID)

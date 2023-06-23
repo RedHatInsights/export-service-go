@@ -294,8 +294,8 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 		}
 
 		if source.SourceError != nil {
-			newSource.Message = &source.SourceError.Message
-			newSource.Code = &source.SourceError.Code
+			newSource.Message = source.SourceError.Message
+			newSource.Code = source.SourceError.Code
 		}
 
 		apiPayload.Sources = append(apiPayload.Sources, newSource)

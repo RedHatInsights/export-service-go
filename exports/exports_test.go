@@ -37,6 +37,9 @@ func generateExportRequestBody(name, format, expires, sources string) (exportReq
 	if expires != "" {
 		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires_at": "%s", "sources": [%s]}`, name, format, expires, sources))
 	}
+	if format == "" {
+		return []byte(fmt.Sprintf(`{"name": "%s", "sources": [%s]}`, name, sources))
+	}
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
 
@@ -64,6 +67,7 @@ var _ = Describe("The public API", func() {
 		Entry("with valid request", "Test Export Request", "json", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
 		Entry("with no expiration", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
 		Entry("with an invalid format", "Test Export Request", "abcde", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "invalid or missing payload format", http.StatusBadRequest),
+		Entry("with a missing format", "Test Export Request", "", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "invalid or missing payload format", http.StatusBadRequest),
 		Entry("With no sources", "Test Export Request", "json", "2023-01-01T00:00:00Z", "", "no sources provided", http.StatusBadRequest),
 	)
 

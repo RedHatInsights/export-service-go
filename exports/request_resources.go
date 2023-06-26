@@ -37,12 +37,13 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 			}
 
 			for _, source := range sources {
-				filters, err := ekafka.JsonToMap(source.Filters)
-				if err != nil {
-					log.Errorw("failed unmarshalling filters", "error", err)
-					// FIXME:
-					// return err
-					continue // Skip this source and continue with the next one
+				var filters map[string]interface{}
+
+				if source.Filters != nil && len(source.Filters) > 0 {
+					filters, err = ekafka.JsonToMap(source.Filters)
+					if err != nil {
+						log.Errorw("failed unmarshalling filters", "error", err)
+					}
 				}
 
 				format, ok := ekafka.ParseFormat(string(payload.Format))
@@ -69,13 +70,13 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 					DataSchema:  kafkaConfig.EventDataSchema,
 					Data: cloudEventSchema.ResourceRequest{
 						ResourceRequest: cloudEventSchema.ResourceRequestClass{
-							Application: source.Application,
+							Application:       source.Application,
 							ExportRequestUUID: payload.ID.String(),
-							Filters:     filters,
-							Format:      format,
-							Resource:    source.Resource,
-							UUID:        source.ID.String(),
-							XRhIdentity: identity,
+							Filters:           filters,
+							Format:            format,
+							Resource:          source.Resource,
+							UUID:              source.ID.String(),
+							XRhIdentity:       identity,
 						},
 					},
 				}

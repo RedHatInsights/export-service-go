@@ -37,6 +37,9 @@ func generateExportRequestBody(name, format, expires, sources string) (exportReq
 	if expires != "" {
 		return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "expires_at": "%s", "sources": [%s]}`, name, format, expires, sources))
 	}
+	if format == "" {
+		return []byte(fmt.Sprintf(`{"name": "%s", "sources": [%s]}`, name, sources))
+	}
 	return []byte(fmt.Sprintf(`{"name": "%s", "format": "%s", "sources": [%s]}`, name, format, sources))
 }
 
@@ -63,7 +66,8 @@ var _ = Describe("The public API", func() {
 	},
 		Entry("with valid request", "Test Export Request", "json", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
 		Entry("with no expiration", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
-		Entry("with an invalid format", "Test Export Request", "abcde", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "unknown payload format", http.StatusBadRequest),
+		Entry("with an invalid format", "Test Export Request", "abcde", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "invalid or missing payload format", http.StatusBadRequest),
+		Entry("with a missing format", "Test Export Request", "", "2023-01-01T00:00:00Z", `{"application":"exampleApp", "resource":"exampleResource"}`, "invalid or missing payload format", http.StatusBadRequest),
 		Entry("With no sources", "Test Export Request", "json", "2023-01-01T00:00:00Z", "", "no sources provided", http.StatusBadRequest),
 	)
 
@@ -516,6 +520,22 @@ var _ = Describe("The public API", func() {
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(http.StatusNotFound))
 		Expect(rr.Body.String()).To(ContainSubstring("not found"))
+	})
+
+	It("returns the appropriate error if the format is missing", func() {
+		router := setupTest(mockRequestApplicationResources)
+
+		rr := httptest.NewRecorder()
+
+		exportRequest := []byte(fmt.Sprintf(`{"name": "%s", "sources": [%s]}`, "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource"}`))
+		req, err := http.NewRequest("POST", "/api/export/v1/exports", bytes.NewBuffer(exportRequest))
+		Expect(err).To(BeNil())
+		req.Header.Set("Content-Type", "application/json")
+
+		AddDebugUserIdentity(req)
+		router.ServeHTTP(rr, req)
+		Expect(rr.Code).To(Equal(http.StatusBadRequest))
+		Expect(rr.Body.String()).To(ContainSubstring("invalid or missing payload format"))
 	})
 })
 

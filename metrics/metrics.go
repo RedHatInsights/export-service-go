@@ -14,14 +14,14 @@ import (
 var httpReqs = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "export_service_http_requests_total",
-		Help: "How many HTTP requests processed, partitioned by status code, http method and path.",
+		Help: "How many HTTP requests processed, partitioned by status code and http method.",
 	},
 	[]string{"code", "method"},
 )
 
 var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name: "export_service_http_response_time_seconds",
-	Help: "Duration of HTTP requests, partitioned by path.",
+	Help: "Duration of HTTP requests.",
 }, []string{"method"})
 
 type responseWriter struct {

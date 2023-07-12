@@ -16,13 +16,13 @@ var httpReqs = prometheus.NewCounterVec(
 		Name: "export_service_http_requests_total",
 		Help: "How many HTTP requests processed, partitioned by status code, http method and path.",
 	},
-	[]string{"code", "method", "path"},
+	[]string{"code", "method"},
 )
 
 var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Name: "export_service_http_response_time_seconds",
 	Help: "Duration of HTTP requests, partitioned by path.",
-}, []string{"path"})
+}, []string{"method"})
 
 type responseWriter struct {
 	http.ResponseWriter
@@ -40,13 +40,13 @@ func (rw *responseWriter) WriteHeader(code int) {
 
 func PrometheusMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		timer := prometheus.NewTimer(httpDuration.WithLabelValues(r.URL.Path))
+		timer := prometheus.NewTimer(httpDuration.WithLabelValues(r.Method))
 		rw := NewResponseWriter(w)
 		next.ServeHTTP(rw, r)
 
 		statusCode := rw.statusCode
 
-		httpReqs.WithLabelValues(strconv.Itoa(statusCode), r.Method, r.URL.Path).Inc()
+		httpReqs.WithLabelValues(strconv.Itoa(statusCode), r.Method).Inc()
 
 		timer.ObserveDuration()
 	})

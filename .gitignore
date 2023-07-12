@@ -5,6 +5,8 @@
 *.so
 *.dylib
 
+export-service
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -20,3 +22,6 @@ __debug_bin
 
 tmp/
 .env
+
+# Output from unit_test.sh
+artifacts/

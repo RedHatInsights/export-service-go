@@ -29,7 +29,7 @@ pipeline {
         IQE_FILTER_EXPRESSION=""
         IQE_CJI_TIMEOUT="30m"
 
-        CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd
+        CICD_URL='https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd'
     }
     stages {
         stage('Pipeline') {

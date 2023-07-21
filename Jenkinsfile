@@ -17,4 +17,23 @@ pipeline {
     options {
         timestamps()
     }
+    environment {
+        APP_NAME="export-service"  // name of app-sre "application" folder this component lives in
+        COMPONENT_NAME="export-service"  // name of app-sre "resourceTemplate" in deploy.yaml for this component
+        IMAGE="quay.io/cloudservices/export-service"
+
+        IQE_PLUGINS="export_service"
+        // IQE_IMAGE_TAG="export-service-b4619e78"
+        // IQE_MARKER_EXPRESSION="smoke"
+        IQE_FILTER_EXPRESSION=""
+        IQE_CJI_TIMEOUT="30m"
+
+        // Install bonfire repo/initialize
+        CICD_URL="https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd"
+    }
+    stages {
+        stage('Pipeline') {
+            sh 'mkdir -p artifacts'
+        }
+    }
 }

@@ -17,8 +17,4 @@ pipeline {
     options {
         timestamps()
     }
-    environment {}
-    stages {
-        stage('Pipeline') {}
-    }
 }

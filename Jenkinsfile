@@ -33,7 +33,9 @@ pipeline {
     }
     stages {
         stage('Pipeline') {
-            sh 'mkdir -p artifacts'
+            steps {
+                sh 'mkdir -p artifacts'
+            }
         }
     }
 }

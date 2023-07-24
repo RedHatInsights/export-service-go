@@ -55,7 +55,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": "Availability `>95% success` (Any HTTP status other than 500–599 is considered successful.)",
           "fieldConfig": {
@@ -68,8 +68,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -107,7 +106,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "1.00 - (sum(rate(api_3scale_gateway_api_status{exported_service=\"export\", status!~\"5xx\"}[5m]))or vector(0) / sum(rate(api_3scale_gateway_api_status{exported_service=\"export\"}[5m])) or vector(0))",
@@ -122,7 +121,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": " Latency - The proportion of sufficiently fast requests, as measured from the load balancer metrics. \"Sufficiently fast” is defined as < 400 ms and < 850 ms.",
           "fieldConfig": {
@@ -192,7 +191,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.9, rate(export_service_http_response_time_seconds_bucket{path=\"\"}[2d])) < 0.4",
@@ -203,7 +202,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.95, rate(export_service_http_response_time_seconds_bucket{path=\"\"}[2d])) < 0.8",
@@ -225,7 +224,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": "The number of requests the service can handle in a given period. The service should be capable of supporting at least 100 requests per second (RPS)",
           "fieldConfig": {
@@ -271,8 +270,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -331,7 +329,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "sum by(container) (rate(export_service_http_requests_total{service=\"export-service-service\"}[1m]))",
@@ -346,7 +344,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": "The percentage of requests that result in an error or failure. Any HTTP status other than 500–599 is considered successful.",
           "fieldConfig": {
@@ -359,8 +357,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "semi-dark-red",
-                    "value": null
+                    "color": "semi-dark-red"
                   }
                 ]
               },
@@ -416,7 +413,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "expr": "(sum(rate(export_service_http_requests_total{container=\"export-service-service\", code=\"5.*\"}[5m])) or vector(0) / sum(rate(export_service_http_requests_total{container=\"export-service-service\"}[5m])) or vector(0)) * 100",
@@ -432,7 +429,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -474,8 +471,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -537,7 +533,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "builder",
               "exemplar": true,
@@ -565,7 +561,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -577,8 +573,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -615,7 +610,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "builder",
               "expr": "sum(increase(export_service_failed_s3_uploads[1m]))",
@@ -631,7 +626,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "description": "How many HTTP Requests processed, partitioned by status code ",
           "fieldConfig": {
@@ -675,8 +670,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -740,7 +734,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -757,7 +751,7 @@ data:
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -799,8 +793,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -862,7 +855,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
+                "uid": "${datasource}"
               },
               "editorMode": "builder",
               "expr": "sum by(error) (increase(exports_service_failures_total[1m]))",
@@ -880,7 +873,27 @@ data:
       "style": "dark",
       "tags": [],
       "templating": {
-        "list": []
+        "list": [
+          {
+            "allValue": "",
+            "current": {
+              "selected": false,
+              "text": "crcs02ue1-prometheus",
+              "value": "crcs02ue1-prometheus"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "queryValue": "",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          }
+        ]
       },
       "time": {
         "from": "now-2d",
@@ -890,7 +903,7 @@ data:
       "timezone": "",
       "title": "ExportService Dashboard",
       "uid": "ir5blOCVk",
-      "version": 21,
+      "version": 24,
       "weekStart": ""
     }
 kind: ConfigMap

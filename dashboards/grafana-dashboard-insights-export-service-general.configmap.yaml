@@ -7,27 +7,48 @@ data:
           {
             "builtIn": 1,
             "datasource": {
-              "type": "grafana",
-              "uid": "-- Grafana --"
+              "type": "datasource",
+              "uid": "grafana"
             },
             "enable": true,
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
             "target": {
+              "columns": [],
+              "filters": [],
+              "format": "table",
+              "global_query_id": "",
               "limit": 100,
               "matchAny": false,
+              "refId": "",
+              "root_selector": "",
+              "source": "url",
               "tags": [],
-              "type": "dashboard"
+              "type": "dashboard",
+              "url": "https://github.com/yesoreyeram/grafana-infinity-datasource/blob/main/testdata/users.json",
+              "url_options": {
+                "data": "",
+                "method": "GET"
+              }
             },
             "type": "dashboard"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "PDD8BE47D10408F45"
+            },
+            "enable": true,
+            "iconColor": "red",
+            "name": "crcs02ue1-prometheus"
           }
         ]
       },
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 111604,
+      "id": 156458,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -36,6 +57,7 @@ data:
             "type": "prometheus",
             "uid": "PDD8BE47D10408F45"
           },
+          "description": "Availability `>95% success` (Any HTTP status other than 500–599 is considered successful.)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -60,8 +82,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 4,
-            "w": 3,
+            "h": 5,
+            "w": 8,
             "x": 0,
             "y": 0
           },
@@ -88,7 +110,7 @@ data:
                 "uid": "PDD8BE47D10408F45"
               },
               "editorMode": "code",
-              "expr": "1.00 - (sum(rate(api_3scale_gateway_api_status{exported_service=\"export\", status=\"5xx\"}[5m]))or vector(0) / sum(rate(api_3scale_gateway_api_status{exported_service=\"export\"}[5m])) or vector(0))",
+              "expr": "1.00 - (sum(rate(api_3scale_gateway_api_status{exported_service=\"export\", status!~\"5xx\"}[5m]))or vector(0) / sum(rate(api_3scale_gateway_api_status{exported_service=\"export\"}[5m])) or vector(0))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -102,6 +124,7 @@ data:
             "type": "prometheus",
             "uid": "PDD8BE47D10408F45"
           },
+          "description": " Latency - The proportion of sufficiently fast requests, as measured from the load balancer metrics. \"Sufficiently fast” is defined as < 400 ms and < 850 ms.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -118,23 +141,29 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 4,
-            "w": 5,
-            "x": 3,
+            "h": 10,
+            "w": 8,
+            "x": 8,
             "y": 0
           },
           "id": 14,
           "options": {
-            "calculate": false,
+            "calculate": true,
+            "calculation": {
+              "xBuckets": {
+                "mode": "size"
+              }
+            },
             "cellGap": 1,
             "color": {
               "exponent": 0.5,
               "fill": "dark-orange",
+              "min": 0,
               "mode": "scheme",
-              "reverse": false,
+              "reverse": true,
               "scale": "exponential",
               "scheme": "Oranges",
-              "steps": 64
+              "steps": 70
             },
             "exemplars": {
               "color": "rgba(255,0,255,0.7)"
@@ -154,7 +183,8 @@ data:
             },
             "yAxis": {
               "axisPlacement": "left",
-              "reverse": false
+              "reverse": false,
+              "unit": "s"
             }
           },
           "pluginVersion": "9.3.8",
@@ -165,13 +195,31 @@ data:
                 "uid": "PDD8BE47D10408F45"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, rate(export_service_http_response_time_seconds_bucket[28d])) < 0.4",
+              "expr": "histogram_quantile(0.9, rate(export_service_http_response_time_seconds_bucket{path=\"\"}[2d])) < 0.4",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PDD8BE47D10408F45"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.95, rate(export_service_http_response_time_seconds_bucket{path=\"\"}[2d])) < 0.8",
+              "hide": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Latency SLO",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
           "type": "heatmap"
         },
         {
@@ -179,10 +227,44 @@ data:
             "type": "prometheus",
             "uid": "PDD8BE47D10408F45"
           },
+          "description": "The number of requests the service can handle in a given period. The service should be capable of supporting at least 100 requests per second (RPS)",
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "thresholds"
+                "mode": "continuous-GrYlRd"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
               },
               "mappings": [],
               "thresholds": {
@@ -191,36 +273,58 @@ data:
                   {
                     "color": "green",
                     "value": null
-                  },
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "export-service-service"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
                   {
-                    "color": "red",
-                    "value": 80
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
                   }
                 ]
               }
-            },
-            "overrides": []
+            ]
           },
           "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 8,
+            "h": 10,
+            "w": 8,
+            "x": 16,
             "y": 0
           },
-          "id": 16,
+          "id": 22,
           "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
+            "legend": {
               "calcs": [
-                "lastNotNull"
+                "sum"
               ],
-              "fields": "",
-              "values": false
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "textMode": "auto"
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "pluginVersion": "9.3.8",
           "targets": [
@@ -230,20 +334,21 @@ data:
                 "uid": "PDD8BE47D10408F45"
               },
               "editorMode": "code",
-              "expr": "sum(rate(export_service_http_requests_total[28d])) > 100",
+              "expr": "sum by(container) (rate(export_service_http_requests_total{service=\"export-service-service\"}[1m]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
           "title": "Throughput SLO",
-          "type": "stat"
+          "type": "timeseries"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "PDD8BE47D10408F45"
           },
+          "description": "The percentage of requests that result in an error or failure. Any HTTP status other than 500–599 is considered successful.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -254,30 +359,47 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
+                    "color": "semi-dark-red",
                     "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               },
               "unit": "percent"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "NaN": {
+                            "color": "semi-dark-red",
+                            "index": 0,
+                            "text": "0%"
+                          }
+                        },
+                        "type": "value"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
-            "h": 4,
-            "w": 5,
-            "x": 12,
-            "y": 0
+            "h": 5,
+            "w": 8,
+            "x": 0,
+            "y": 5
           },
           "id": 18,
           "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
               "calcs": [
@@ -286,10 +408,8 @@ data:
               "fields": "",
               "values": false
             },
-            "text": {
-              "valueSize": 1
-            },
-            "textMode": "auto"
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
           },
           "pluginVersion": "9.3.8",
           "targets": [
@@ -299,14 +419,15 @@ data:
                 "uid": "PDD8BE47D10408F45"
               },
               "editorMode": "code",
-              "expr": "1 - (sum(rate(export_service_http_requests_total{code=~\"5.*\"}[28d])) / sum(rate(export_service_http_requests_total[28d]))) > 0.95",
+              "expr": "(sum(rate(export_service_http_requests_total{container=\"export-service-service\", code=\"5.*\"}[5m])) or vector(0) / sum(rate(export_service_http_requests_total{container=\"export-service-service\"}[5m])) or vector(0)) * 100",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
           "title": "Error Rate SLO",
-          "type": "stat"
+          "transformations": [],
+          "type": "gauge"
         },
         {
           "datasource": {
@@ -364,19 +485,46 @@ data:
               },
               "unit": "none"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "account = testAccount, app = testApp"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 4
+            "y": 10
           },
           "id": 6,
           "options": {
             "legend": {
-              "calcs": [],
-              "displayMode": "list",
+              "calcs": [
+                "sum"
+              ],
+              "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
             },
@@ -442,10 +590,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 6,
+            "h": 10,
             "w": 6,
             "x": 0,
-            "y": 15
+            "y": 21
           },
           "id": 2,
           "options": {
@@ -485,89 +633,7 @@ data:
             "type": "prometheus",
             "uid": "PDD8BE47D10408F45"
           },
-          "description": "Duration of HTTP requests, partitioned by path",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 12,
-            "w": 8,
-            "x": 6,
-            "y": 15
-          },
-          "id": 4,
-          "options": {
-            "calculate": false,
-            "cellGap": 2,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "min": 0,
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Oranges",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": true
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "show": true,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "none"
-            }
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
-              },
-              "editorMode": "code",
-              "expr": "sum by(le) (increase(export_service_http_response_time_seconds_bucket{container=\"export-service-service\"}[1m]))",
-              "format": "heatmap",
-              "interval": "15s",
-              "legendFormat": "{{le}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "HTTP Request Latency ",
-          "type": "heatmap"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
-          },
-          "description": "",
+          "description": "How many HTTP Requests processed, partitioned by status code ",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -588,7 +654,7 @@ data:
                   "viz": false
                 },
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -603,6 +669,7 @@ data:
                   "mode": "off"
                 }
               },
+              "decimals": 0,
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
@@ -616,7 +683,8 @@ data:
                     "value": 80
                   }
                 ]
-              }
+              },
+              "unit": "none"
             },
             "overrides": [
               {
@@ -646,10 +714,10 @@ data:
             ]
           },
           "gridPos": {
-            "h": 12,
-            "w": 10,
-            "x": 14,
-            "y": 15
+            "h": 10,
+            "w": 18,
+            "x": 6,
+            "y": 21
           },
           "id": 10,
           "options": {
@@ -676,7 +744,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(increase(export_service_http_requests_total{service=\"export-service-service\"}[1m])) by (code)",
+              "expr": "sum(increase(export_service_http_requests_total{service=\"export-service-service\"}[2d])) by (code)",
               "interval": "1m",
               "legendFormat": "{{code}}",
               "range": true,
@@ -685,72 +753,6 @@ data:
           ],
           "title": "Export Fulfillment latency ",
           "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDD8BE47D10408F45"
-          },
-          "description": "How many HTTP Requests processed, partitioned by status code ",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 6,
-            "x": 0,
-            "y": 21
-          },
-          "id": 8,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "auto"
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDD8BE47D10408F45"
-              },
-              "editorMode": "builder",
-              "expr": "sum by(code) (rate(export_service_http_requests_total[5m]))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "HTTP Request Rate",
-          "type": "stat"
         },
         {
           "datasource": {
@@ -835,10 +837,10 @@ data:
             ]
           },
           "gridPos": {
-            "h": 8,
-            "w": 12,
+            "h": 9,
+            "w": 24,
             "x": 0,
-            "y": 27
+            "y": 31
           },
           "id": 20,
           "options": {
@@ -886,9 +888,9 @@ data:
       },
       "timepicker": {},
       "timezone": "",
-      "title": "Export Service Dashboard",
-      "uid": "1BK3AJyVz",
-      "version": 15,
+      "title": "ExportService Dashboard",
+      "uid": "ir5blOCVk",
+      "version": 21,
       "weekStart": ""
     }
 kind: ConfigMap

@@ -22,7 +22,7 @@ pipeline {
         // Options that must be configured by app owner
         // --------------------------------------------
         APP_NAME="export-service"
-        COMPONENT_NAME="$APP_NAME"
+        COMPONENT_NAME="export-service"
         IMAGE="quay.io/cloudservices/export-service"
 
         IQE_PLUGINS="export_service"
@@ -44,6 +44,7 @@ pipeline {
                     }
                 }
                 
+
                 stage('Run Tests') {
                     steps {
                         withVault([configuration: configuration, vaultSecrets: secrets]) {

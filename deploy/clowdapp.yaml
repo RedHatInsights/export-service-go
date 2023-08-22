@@ -90,6 +90,9 @@ objects:
             requests:
               cpu: 250m
               memory: 256Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
 
     database:
       name: export-service
@@ -123,6 +126,9 @@ objects:
           requests:
             cpu: 100m
             memory: 64Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
 
 
 - apiVersion: v1

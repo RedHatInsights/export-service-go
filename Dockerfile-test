@@ -1,6 +1,9 @@
 FROM registry.access.redhat.com/ubi8/go-toolset:latest
 
-WORKDIR "$HOME/export-service-go"
+WORKDIR /workdir
 
 USER 0
-COPY . /workdir
+COPY --chown=1001:1001 . /workdir
+
+USER default
+RUN PATH=$HOME/go/bin:$PATH; go get -d ./... && make install

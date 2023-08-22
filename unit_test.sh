@@ -43,7 +43,7 @@ docker exec --workdir /workdir "$TEST_CONTAINER_NAME"  make install > 'artifacts
 
 echo -e "\n---------------------------------------------------------------\n"
 echo "Running tests"
-docker exec --workdir /workdir -e PATH=/opt/app-root/src/go/bin:$PATH "$TEST_CONTAINER_NAME" make test > 'artifacts/test_logs.txt'
+docker exec --workdir /workdir  --user 1001 -e PATH=/opt/app-root/src/go/bin:$PATH "$TEST_CONTAINER_NAME" make test > 'artifacts/test_logs.txt'
 TEST_RESULT=$?
 
 cat artifacts/test_logs.txt

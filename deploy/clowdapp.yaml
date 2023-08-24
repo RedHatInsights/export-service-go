@@ -189,7 +189,7 @@ parameters:
   - name: EXPORT_SERVICE_BUCKET
     value: exports-bucket
   - name: CLEANER_SCHEDULE
-    value: "* 1 * * *"
+    value: "0 1 * * *"
   - name: EXPORTS_PSKS
     value: testing-a-psk
   - name: LOG_LEVEL

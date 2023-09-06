@@ -28,7 +28,7 @@ vet:
 	go vet
 
 lint:
-	golint
+	golint ./...
 
 install:
 	go get ./...

@@ -6,4 +6,4 @@ USER 0
 COPY --chown=1001:1001 . /workdir
 
 USER default
-RUN PATH=$HOME/go/bin:$PATH; go get -d ./... && make install
+RUN PATH=$HOME/go/bin:$PATH; go get -d ./... && go mod download golang.org/x/lint && go install golang.org/x/lint/golint && make install

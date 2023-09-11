@@ -16,7 +16,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.7
 	github.com/onsi/ginkgo/v2 v2.9.7
-	github.com/onsi/gomega v1.27.6
+	github.com/onsi/gomega v1.27.7
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.6
 	github.com/redhatinsights/platform-go-middlewares v0.12.0

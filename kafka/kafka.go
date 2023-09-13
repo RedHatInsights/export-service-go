@@ -48,30 +48,35 @@ func (p *Producer) StartProducer(msgChan chan *kafka.Message) {
 	topic := cfg.KafkaConfig.ExportsTopic
 	for msg := range msgChan {
 		go func(msg *kafka.Message) {
+			deliveryChan := make(chan kafka.Event)
+			defer close(deliveryChan)
+
 			producerCount.Inc()
 			defer producerCount.Dec()
-			start := time.Now()
 
-			if err := p.Produce(msg, nil); err != nil { // pass nil chan so that delivery reports go to the Events() channel
+			start := time.Now()
+			err := p.Produce(msg, deliveryChan)
+
+			if err != nil {
 				log.Errorw("failed to produce message", "error", err)
 				return
 			}
 
 			messagePublishElapsed.With(prometheus.Labels{"topic": topic}).Observe(time.Since(start).Seconds())
 
-			// Delivery report handler for produced messages
-			for e := range p.Events() {
-				switch ev := e.(type) {
-				case *kafka.Message:
-					if ev.TopicPartition.Error != nil {
-						log.Errorw("error publishing to kafka", "error", ev.TopicPartition.Error)
-						msgChan <- msg
-						publishFailures.With(prometheus.Labels{"topic": topic}).Inc()
-					} else {
-						log.Infof("delivered message to %v", ev.TopicPartition)
-						messagesPublished.With(prometheus.Labels{"topic": topic}).Inc()
-					}
-				}
+			e := <-deliveryChan
+			m, ok := e.(*kafka.Message)
+			if !ok {
+				log.Errorw("error publishing to kafka", "error", "invalid message type")
+				return
+			}
+
+			if m.TopicPartition.Error != nil {
+				log.Errorw("error publishing to kafka", "error", m.TopicPartition.Error)
+				msgChan <- msg
+				publishFailures.With(prometheus.Labels{"topic": topic}).Inc()
+			} else {
+				messagesPublished.With(prometheus.Labels{"topic": topic}).Inc()
 			}
 		}(msg)
 	}

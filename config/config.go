@@ -203,23 +203,28 @@ func Get() *ExportConfig {
 				fmt.Println("WARNING: Export requests kafka topic is not set within Clowder!")
 			}
 
+			config.KafkaConfig.SSLConfig = kafkaSSLConfig{}
+
 			broker := cfg.Kafka.Brokers[0]
-			if broker.Authtype != nil {
+
+			if broker.Cacert != nil {
 				caPath, err := cfg.KafkaCa(broker)
 				if err != nil {
 					panic("Kafka CA failed to write")
 				}
+				config.KafkaConfig.SSLConfig.CA = caPath
+			}
+
+			if broker.Authtype != nil {
 				securityProtocol := "sasl_ssl"
 				if broker.SecurityProtocol != nil {
 					securityProtocol = *broker.SecurityProtocol
 				}
-				config.KafkaConfig.SSLConfig = kafkaSSLConfig{
-					Username:      *broker.Sasl.Username,
-					Password:      *broker.Sasl.Password,
-					SASLMechanism: *broker.Sasl.SaslMechanism,
-					Protocol:      securityProtocol,
-					CA:            caPath,
-				}
+
+				config.KafkaConfig.SSLConfig.Username = *broker.Sasl.Username
+				config.KafkaConfig.SSLConfig.Password = *broker.Sasl.Password
+				config.KafkaConfig.SSLConfig.SASLMechanism = *broker.Sasl.SaslMechanism
+				config.KafkaConfig.SSLConfig.Protocol = securityProtocol
 			}
 
 			config.Logging = &loggingConfig{

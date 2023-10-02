@@ -92,21 +92,23 @@ func NewProducer() (*Producer, error) {
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
 	)
+
 	kcfg := &kafka.ConfigMap{
 		"bootstrap.servers": brokers,
 		"client.id":         cfg.Hostname,
 	}
+
 	if cfg.KafkaConfig.SSLConfig.SASLMechanism != "" {
 		ssl := cfg.KafkaConfig.SSLConfig
-		kcfg = &kafka.ConfigMap{
-			"bootstrap.servers": brokers,
-			"client.id":         cfg.Hostname,
-			"security.protocol": ssl.Protocol,
-			"sasl.mechanism":    ssl.SASLMechanism,
-			"ssl.ca.location":   ssl.CA,
-			"sasl.username":     ssl.Username,
-			"sasl.password":     ssl.Password,
-		}
+
+		_ = kcfg.SetKey("security.protocol", ssl.Protocol)
+		_ = kcfg.SetKey("sasl.mechanism", ssl.SASLMechanism)
+		_ = kcfg.SetKey("sasl.username", ssl.Username)
+		_ = kcfg.SetKey("sasl.password", ssl.Password)
+	}
+
+	if cfg.KafkaConfig.SSLConfig.CA != "" {
+		_ = kcfg.SetKey("ssl.ca.location", cfg.KafkaConfig.SSLConfig.CA)
 	}
 
 	p, err := kafka.NewProducer(kcfg)

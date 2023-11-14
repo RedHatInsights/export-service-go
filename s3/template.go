@@ -18,6 +18,7 @@ type ExportMeta struct {
 	ExportOrgID string           `json:"export_org_id"`
 	FileMeta    []ExportFileMeta `json:"file_meta"`
 	HelpString  string           `json:"help_string"`
+	FailedFiles []FailedFileMeta `json:"failed_files,omitempty"`
 }
 
 // details for each file in the tar
@@ -27,6 +28,18 @@ type ExportFileMeta struct {
 	Resource    string `json:"resource"`
 	// Filters are a key-value pair of the filters used to create the export
 	Filters map[string]string `json:"filters"`
+}
+
+type FailedFileMeta struct {
+	Filename 	string `json:"filename"`
+	Application string `json:"application"`
+	Resource 	string `json:"resource"`
+	Error 		ExportError `json:"error"`
+}
+
+type ExportError struct{
+	Code 	string `json:"code"`
+	Message string `json:"message"`
 }
 
 const (
@@ -86,6 +99,18 @@ func BuildReadme(meta *ExportMeta) (string, error) {
 No data was found.
 `
 	}
+
+	failedFilesDetails := ""
+	for _, failedFile := range meta.FailedFiles {
+		failedFilesDetails += fmt.Sprintf(`
+### %s (Failed)
+- **Application**: %s
+- **Resource**: %s
+- **Error Code**: %s
+- **Error Message**: %s
+`, failedFile.Filename, failedFile.Application, failedFile.Resource, failedFile.Error.Code, failedFile.Error.Message)
+	}
+
 	// next, make a README.md file containing the ExportMeta data in a readable format
 	readme := fmt.Sprintf(`# Export Manifest
 
@@ -97,6 +122,10 @@ No data was found.
 ## Data Details
 This archive contains the following data:
 %s
+
+## Failed Files
+%s 
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -106,6 +135,7 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 		meta.ExportOrgID,
 		meta.ExportDate,
 		dataDetails,
+		failedFilesDetails,
 	)
 
 	return readme, nil

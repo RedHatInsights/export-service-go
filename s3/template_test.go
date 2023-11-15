@@ -63,8 +63,6 @@ var _ = Describe("Build files included in zip", func() {
 ## Data Details
 This archive contains the following data:
 
-## Failed Files
-
 No data was found.
 
 ## Help and Support
@@ -121,8 +119,6 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 ## Data Details
 This archive contains the following data:
 
-## Failed Files
-
 ### filename
 - **Application**: application
 - **Resource**: resource
@@ -167,8 +163,6 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 
 ## Data Details
 This archive contains the following data:
-
-## Failed Files
 
 ### filename
 - **Application**: application

@@ -65,6 +65,9 @@ This archive contains the following data:
 
 No data was found.
 
+
+## Failed Files
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -124,6 +127,8 @@ This archive contains the following data:
 - **Resource**: resource
 - **Filters**: None
 
+## Failed Files
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -175,6 +180,8 @@ This archive contains the following data:
 - **Resource**: resource2
 - **Filters**: 
   - filter_key: filter_value
+
+## Failed Files
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.

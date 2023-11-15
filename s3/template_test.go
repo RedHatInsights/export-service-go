@@ -39,7 +39,7 @@ var _ = Describe("Build files included in zip", func() {
 		metaDump, err := s3.BuildMeta(&meta)
 
 		Expect(err).To(BeNil())
-		Expect(metaDump).To(Equal([]byte(`{"exported_by":"user","export_date":"date","export_org_id":"org_id","file_meta":[{"filename":"filename","application":"application","resource":"resource","filters":{"filter_key":"filter_value"}}],"help_string":"Help me!","failed_files":[{"filename":"filename","application":"application","resource":"resource","export_error":[{"code":"code","message":"message"}]}]`)))
+		Expect(metaDump).To(Equal([]byte(`{"exported_by":"user","export_date":"date","export_org_id":"org_id","file_meta":[{"filename":"filename","application":"application","resource":"resource","filters":{"filter_key":"filter_value"}}],"help_string":"Help me!","failed_files":[{"filename":"filename","application":"application","resource":"resource","error":{"code":"code","message":"message"}}]}`)))
 
 		// Error should never occur, not even for nil case
 		_, err = s3.BuildMeta(nil)

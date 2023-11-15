@@ -239,6 +239,7 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 		Key:    key,
 		Body:   body,
 	}
+	
 	result, err := uploader.Upload(ctx, input)
 	if err != nil {
 		c.Log.Errorf("failed to uplodad tarfile `%s` to s3: %v", *key, err)

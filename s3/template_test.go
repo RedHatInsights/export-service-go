@@ -26,6 +26,14 @@ var _ = Describe("Build files included in zip", func() {
 				},
 			},
 			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
 		}
 
 		metaDump, err := s3.BuildMeta(&meta)
@@ -55,6 +63,8 @@ var _ = Describe("Build files included in zip", func() {
 ## Data Details
 This archive contains the following data:
 
+## Failed Files
+
 No data was found.
 
 ## Help and Support
@@ -78,6 +88,8 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 
 ## Data Details
 This archive contains the following data:
+
+## Failed Files
 
 No data was found.
 
@@ -110,6 +122,8 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 
 ## Data Details
 This archive contains the following data:
+
+## Failed Files
 
 ### filename
 - **Application**: application
@@ -155,6 +169,8 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 
 ## Data Details
 This archive contains the following data:
+
+## Failed Files
 
 ### filename
 - **Application**: application

@@ -68,6 +68,8 @@ No data was found.
 
 ## Failed Files
 
+##
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -91,6 +93,10 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 This archive contains the following data:
 
 No data was found.
+
+
+## Failed Files
+
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
@@ -126,6 +132,7 @@ This archive contains the following data:
 - **Application**: application
 - **Resource**: resource
 - **Filters**: None
+
 
 ## Failed Files
 
@@ -181,7 +188,8 @@ This archive contains the following data:
 - **Filters**: 
   - filter_key: filter_value
 
-## Failed Files
+
+  ## Failed Files
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.

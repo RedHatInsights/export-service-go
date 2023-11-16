@@ -205,7 +205,7 @@ This archive contains the following data:
 
 ## Failed Files
 
-### filename
+### filename (Failed)
 - **Application**: application
 - **Resource**: resource
 - **Error Code**: code

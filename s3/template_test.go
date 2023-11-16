@@ -148,7 +148,7 @@ This service is owned by the ConsoleDot Pipeline team. If you have any questions
 You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,
 		),
-		Entry("Multiple sources", s3.ExportMeta{
+		Entry("One failed file", s3.ExportMeta{
 			ExportBy:    "user",
 			ExportDate:  "date",
 			ExportOrgID: "org_id",
@@ -210,6 +210,64 @@ This archive contains the following data:
 - **Resource**: resource
 - **Error Code**: code
 - **Error Message**: message
+
+
+## Help and Support
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
+
+You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
+`,
+		),
+		Entry("Multiple sources", s3.ExportMeta{
+			ExportBy:    "user",
+			ExportDate:  "date",
+			ExportOrgID: "org_id",
+			FileMeta: []s3.ExportFileMeta{
+				{
+					Filename:    "filename",
+					Application: "application",
+					Resource:    "resource",
+					Filters: map[string]string{
+						"filter_key": "filter_value",
+					},
+				},
+				{
+					Filename:    "filename2",
+					Application: "application2",
+					Resource:    "resource2",
+					Filters: map[string]string{
+						"filter_key": "filter_value",
+					},
+				},
+			},
+			HelpString: "Help me!",
+		},
+			`# Export Manifest
+
+## Exported Information
+- **Exported by**: user
+- **Org ID**: org_id
+- **Export Date**: date
+
+## Data Details
+This archive contains the following data:
+
+### filename
+- **Application**: application
+- **Resource**: resource
+- **Filters**: 
+  - filter_key: filter_value
+
+### filename2
+- **Application**: application2
+- **Resource**: resource2
+- **Filters**: 
+  - filter_key: filter_value
+
+
+## Failed Files
+
+No data was found!
 
 
 ## Help and Support

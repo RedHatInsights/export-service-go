@@ -121,6 +121,8 @@ No data was found!
 
 ## Exported Information
 - **Exported by**: %s
+
+
 - **Org ID**: %s
 - **Export Date**: %s
 
@@ -129,7 +131,7 @@ This archive contains the following data:
 %s
 
 ## Failed Files
-%s 
+%s
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.

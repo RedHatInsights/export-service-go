@@ -110,6 +110,11 @@ No data was found.
 - **Error Message**: %s
 `, failedFile.Filename, failedFile.Application, failedFile.Resource, failedFile.Error.Code, failedFile.Error.Message)
 	}
+	if failedFilesDetails =="" {
+		failedFilesDetails = `
+No data was found.
+`
+	}
 
 	// next, make a README.md file containing the ExportMeta data in a readable format
 	readme := fmt.Sprintf(`# Export Manifest

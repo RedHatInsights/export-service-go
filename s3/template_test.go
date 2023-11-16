@@ -65,14 +65,9 @@ This archive contains the following data:
 
 No data was found.
 
-
 ## Failed Files
 
-### filename (Failed)
-- **Application**: 
-- **Resource**: 
-- **Error Code**:
-- **Error Message**: 
+No data was found.
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.

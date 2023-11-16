@@ -112,7 +112,7 @@ No data was found.
 	}
 	if failedFilesDetails =="" {
 		failedFilesDetails = `
-No data was found.
+No data was found!
 `
 	}
 

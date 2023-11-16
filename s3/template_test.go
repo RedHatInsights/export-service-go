@@ -68,7 +68,8 @@ No data was found.
 
 ## Failed Files
 
-No data was found.
+No data was found!
+
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
@@ -97,7 +98,7 @@ No data was found.
 
 ## Failed Files
 
-No data was found.
+No data was found!
 
 
 ## Help and Support
@@ -119,14 +120,6 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 				},
 			},
 			HelpString: "Help me!",
-			FailedFiles: []s3.FailedFileMeta{
-				{
-					Filename: 	 "filename",
-					Application: "application",
-					Resource: 	 "resource",
-					Error: 		s3.ExportError{"code","message"},
-				},
-			},
 		},
 			`# Export Manifest
 
@@ -145,6 +138,8 @@ This archive contains the following data:
 
 
 ## Failed Files
+
+No data was found!
 
 
 ## Help and Support

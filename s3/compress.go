@@ -239,7 +239,23 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 		Key:    key,
 		Body:   body,
 	}
-	return uploader.Upload(ctx, input)
+	
+	result, err := uploader.Upload(ctx, input)
+	if err != nil {
+		c.Log.Errorf("failed to uplodad tarfile `%s` to s3: %v", *key, err)
+
+		deleteInput := &s3.DeleteObjectInput{
+			Bucket: bucket,
+			Key: 	key,
+		}
+
+		_, deleteErr := s3client.DeleteObject(ctx, deleteInput)
+		if deleteErr != nil {
+			c.Log.Errorf("failed to delete partially upload object `%s` from s3: %v", *key, deleteErr)
+		}
+		return nil, err
+	}
+	return result, nil 
 }
 
 func getUploadSize(ctx context.Context, s3client *s3.Client, bucket, key *string) (int64, error) {

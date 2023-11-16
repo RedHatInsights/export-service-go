@@ -26,12 +26,20 @@ var _ = Describe("Build files included in zip", func() {
 				},
 			},
 			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
 		}
 
 		metaDump, err := s3.BuildMeta(&meta)
 
 		Expect(err).To(BeNil())
-		Expect(metaDump).To(Equal([]byte(`{"exported_by":"user","export_date":"date","export_org_id":"org_id","file_meta":[{"filename":"filename","application":"application","resource":"resource","filters":{"filter_key":"filter_value"}}],"help_string":"Help me!"}`)))
+		Expect(metaDump).To(Equal([]byte(`{"exported_by":"user","export_date":"date","export_org_id":"org_id","file_meta":[{"filename":"filename","application":"application","resource":"resource","filters":{"filter_key":"filter_value"}}],"help_string":"Help me!","failed_files":[{"filename":"filename","application":"application","resource":"resource","error":{"code":"code","message":"message"}}]}`)))
 
 		// Error should never occur, not even for nil case
 		_, err = s3.BuildMeta(nil)
@@ -57,6 +65,12 @@ This archive contains the following data:
 
 No data was found.
 
+
+## Failed Files
+
+No failures reported.
+
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -80,6 +94,12 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 This archive contains the following data:
 
 No data was found.
+
+
+## Failed Files
+
+No failures reported.
+
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
@@ -115,6 +135,82 @@ This archive contains the following data:
 - **Application**: application
 - **Resource**: resource
 - **Filters**: None
+
+
+## Failed Files
+
+No failures reported.
+
+
+## Help and Support
+This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
+
+You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
+`,
+		),
+		Entry("One failed file", s3.ExportMeta{
+			ExportBy:    "user",
+			ExportDate:  "date",
+			ExportOrgID: "org_id",
+			FileMeta: []s3.ExportFileMeta{
+				{
+					Filename:    "filename",
+					Application: "application",
+					Resource:    "resource",
+					Filters: map[string]string{
+						"filter_key": "filter_value",
+					},
+				},
+				{
+					Filename:    "filename2",
+					Application: "application2",
+					Resource:    "resource2",
+					Filters: map[string]string{
+						"filter_key": "filter_value",
+					},
+				},
+			},
+			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
+		},
+			`# Export Manifest
+
+## Exported Information
+- **Exported by**: user
+- **Org ID**: org_id
+- **Export Date**: date
+
+## Data Details
+This archive contains the following data:
+
+### filename
+- **Application**: application
+- **Resource**: resource
+- **Filters**: 
+  - filter_key: filter_value
+
+### filename2
+- **Application**: application2
+- **Resource**: resource2
+- **Filters**: 
+  - filter_key: filter_value
+
+
+## Failed Files
+
+### filename (Failed)
+- **Application**: application
+- **Resource**: resource
+- **Error Code**: code
+- **Error Message**: message
+
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
@@ -168,6 +264,12 @@ This archive contains the following data:
 - **Filters**: 
   - filter_key: filter_value
 
+
+## Failed Files
+
+No failures reported.
+
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -198,6 +300,14 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 				},
 			},
 			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
 		}
 
 		metaDump, err := s3.BuildMeta(&meta)

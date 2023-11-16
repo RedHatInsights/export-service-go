@@ -205,6 +205,13 @@ This archive contains the following data:
 
 ## Failed Files
 
+### filename
+- **Application**: application
+- **Resource**: resource
+- **Error Code**: code
+- **Error Message**: message
+
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 

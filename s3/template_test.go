@@ -117,6 +117,14 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 				},
 			},
 			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
 		},
 			`# Export Manifest
 
@@ -166,6 +174,14 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 				},
 			},
 			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
 		},
 			`# Export Manifest
 
@@ -222,6 +238,14 @@ You can also raise an issue on the [Export Service GitHub repo](https://github.c
 				},
 			},
 			HelpString: "Help me!",
+			FailedFiles: []s3.FailedFileMeta{
+				{
+					Filename: 	 "filename",
+					Application: "application",
+					Resource: 	 "resource",
+					Error: 		s3.ExportError{"code","message"},
+				},
+			},
 		}
 
 		metaDump, err := s3.BuildMeta(&meta)

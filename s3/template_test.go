@@ -68,7 +68,11 @@ No data was found.
 
 ## Failed Files
 
-##
+### filename (Failed)
+- **Application**: 
+- **Resource**: 
+- **Error Code**:
+- **Error Message**: 
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
@@ -136,6 +140,7 @@ This archive contains the following data:
 
 ## Failed Files
 
+
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
 
@@ -189,7 +194,7 @@ This archive contains the following data:
   - filter_key: filter_value
 
 
-  ## Failed Files
+## Failed Files
 
 ## Help and Support
 This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.

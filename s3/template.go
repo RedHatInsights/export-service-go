@@ -121,8 +121,6 @@ No data was found!
 
 ## Exported Information
 - **Exported by**: %s
-
-
 - **Org ID**: %s
 - **Export Date**: %s
 

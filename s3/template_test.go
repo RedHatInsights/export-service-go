@@ -68,7 +68,7 @@ No data was found.
 
 ## Failed Files
 
-No data was found!
+No failures reported.
 
 
 ## Help and Support
@@ -98,7 +98,7 @@ No data was found.
 
 ## Failed Files
 
-No data was found!
+No failures reported.
 
 
 ## Help and Support
@@ -139,7 +139,7 @@ This archive contains the following data:
 
 ## Failed Files
 
-No data was found!
+No failures reported.
 
 
 ## Help and Support
@@ -267,7 +267,7 @@ This archive contains the following data:
 
 ## Failed Files
 
-No data was found!
+No failures reported.
 
 
 ## Help and Support

@@ -28,7 +28,12 @@ vet:
 	go vet
 
 lint:
-	golint
+	golint ./...
+
+install:
+	go get ./...
+	go install github.com/onsi/ginkgo/v2/ginkgo
+	go get github.com/onsi/gomega/...
 
 build:
 	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
@@ -94,7 +99,7 @@ sample-request-internal-upload:
 sample-request-internal-error:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/error -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_error.json
 
-make test:
+test:
 	ginkgo -r --race --randomize-all --randomize-suites
 
 test-sql:

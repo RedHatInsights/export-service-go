@@ -18,23 +18,61 @@ pipeline {
         timestamps()
     }
     environment {
-        APP_NAME="export-service"  // name of app-sre "application" folder this component lives in
-        COMPONENT_NAME="export-service"  // name of app-sre "resourceTemplate" in deploy.yaml for this component
+        // --------------------------------------------
+        // Options that must be configured by app owner
+        // --------------------------------------------
+        APP_NAME="export-service"
+        COMPONENT_NAME="export-service"
         IMAGE="quay.io/cloudservices/export-service"
 
         IQE_PLUGINS="export_service"
-        // IQE_IMAGE_TAG="export-service-b4619e78"
-        // IQE_MARKER_EXPRESSION="smoke"
         IQE_FILTER_EXPRESSION=""
         IQE_CJI_TIMEOUT="30m"
 
-        // Install bonfire repo/initialize
-        CICD_URL="https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd"
+        CICD_URL='https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd'
     }
     stages {
         stage('Pipeline') {
-            steps {
-                sh 'mkdir -p artifacts'
+            parallel {
+                stage('Build the PR commit image') {
+                    steps {
+                        withVault([configuration: configuration, vaultSecrets: secrets]) {
+                            sh './build_deploy.sh'
+                        }
+                        
+                        sh 'mkdir -p artifacts'
+                    }
+                }
+                
+
+                stage('Run Tests') {
+                    steps {
+                        withVault([configuration: configuration, vaultSecrets: secrets]) {
+                            sh './unit_test.sh'
+                        }
+                    }
+                }
+
+                stage('Run Linter') {
+                    steps {
+                        withVault([configuration: configuration, vaultSecrets: secrets]) {
+                            sh './lint.sh'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always{
+            withVault([configuration: configuration, vaultSecrets: secrets]) {
+                sh '''
+                    curl -s $CICD_URL/bootstrap.sh > .cicd_bootstrap.sh
+                    source ./.cicd_bootstrap.sh
+
+                    source "${CICD_ROOT}/post_test_results.sh"
+                '''
             }
         }
     }

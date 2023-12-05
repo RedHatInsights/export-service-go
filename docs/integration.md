@@ -50,3 +50,5 @@ The body of the request to the `POST /exports` endpoint is outlined in [this exa
 To request that we add the required network policies and PSK needed for your service to communicate with the internal API, please reach out to *@crc-pipeline-team*, message the *team-consoledot-pipeline* channel, or email *platform-pipeline@redhat.com*.
 
 Please add an entry to the [Export-Service Onboarded Services spreadsheet](https://docs.google.com/spreadsheets/d/1_8gvQU7f1Pj82urIjSLpOaA1IXtIZJhyrugQC1Yey2U/edit#gid=0) when onboarding an application to the export-service.
+
+As part of the application onboarding process, please provide instructions/documentation on how to download and view the export report data, who can access the reports and how to request a change in user permissions to access the reporting functionality for the application.

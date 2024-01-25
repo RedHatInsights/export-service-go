@@ -16,7 +16,7 @@ import (
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 

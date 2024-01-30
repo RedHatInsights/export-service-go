@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -26,7 +26,7 @@ import (
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0K"
+const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0="
 const formatDateTime string = "2006-01-02T15:04:05Z" // ISO 8601
 
 func AddDebugUserIdentity(req *http.Request) {
@@ -638,7 +638,7 @@ func modifyExportSources(exportName string, application string, resource string)
 }
 
 func getExportNames(rr *httptest.ResponseRecorder) []string {
-	b, err := ioutil.ReadAll(rr.Body)
+	b, err := io.ReadAll(rr.Body)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	var exportResponse map[string]interface{}

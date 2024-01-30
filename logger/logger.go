@@ -12,8 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	middleware "github.com/go-chi/chi/v5/middleware"
-	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	lc "github.com/redhatinsights/platform-go-middlewares/v2/logging/cloudwatch"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -57,10 +57,11 @@ func Get() *zap.SugaredLogger {
 		if cfg.Logging != nil && cfg.Logging.Region != "" {
 			cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
 			awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
-			hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
+			batchLogWriter, err := lc.NewBatchWriterWithDuration(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 			if err != nil {
 				tmpLogger.Info(err.Error())
 			}
+			hook := zapcore.AddSync(batchLogWriter)
 			core = zapcore.NewTee(
 				zapcore.NewCore(consoleEncoder, consoleOutput, fn),
 				zapcore.NewCore(consoleEncoder, hook, fn),

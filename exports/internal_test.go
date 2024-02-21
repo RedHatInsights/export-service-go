@@ -11,7 +11,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"

@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhatinsights/export-service-go/middleware"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 var _ = Describe("Handler", func() {
@@ -61,6 +61,18 @@ var _ = Describe("Handler", func() {
 		Entry("Test with valid context", "540155", "1979710", "username",
 			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "org_id": "1979710", "internal": {"org_id": "1979710"}, "type": "User", "user": {"username": "username", "email": "boring@boring.mail.com", "first_name": "Jake", "last_name": "Logan", "is_active": true, "is_org_admin": false, "is_internal": true, "locale": "North America", "user_id": "1010101"} } }`,
 			http.StatusOK,
+		),
+		Entry("Test with valid service account", "540155", "1979710", "service-account-username",
+			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "org_id": "1979710", "internal": {"org_id": "1979710"}, "type": "ServiceAccount", "service_account": { "client_id": "b69eaf9e-e6a6-4f9e-805e-02987daddfbd", "username": "service-account-username" } } }`,
+			http.StatusOK,
+		),
+		Entry("Test with empty service account (handle the null)", "540155", "1979710", "service-account-username",
+			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "org_id": "1979710", "internal": {"org_id": "1979710"}, "type": "ServiceAccount", "service_account":  } }`,
+			http.StatusBadRequest,
+		),
+		Entry("Test with service account with empty username", "540155", "1979710", "service-account-username",
+			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "org_id": "1979710", "internal": {"org_id": "1979710"}, "type": "ServiceAccount", "service_account": { "client_id": "b69eaf9e-e6a6-4f9e-805e-02987daddfbd", "username": null } } }`,
+			http.StatusBadRequest,
 		),
 		Entry("Test without org_id", "540155", "", "username",
 			`{ "identity": {"account_number": "540155", "auth_type": "jwt-auth", "internal": {}, "type": "User", "user": {"username": "username", "email": "boring@boring.mail.com", "first_name": "Jake", "last_name": "Logan", "is_active": true, "is_org_admin": false, "is_internal": true, "locale": "North America", "user_id": "1010101"} } }`,

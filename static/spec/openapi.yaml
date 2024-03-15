@@ -17,7 +17,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ExportRequest'
       responses:
-        '200':
+        '202':
           description: Export scheduled
           content:
             application/json:

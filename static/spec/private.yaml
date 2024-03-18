@@ -107,4 +107,4 @@ components:
     psk:
       type: apiKey
       in: header
-      name: x-rh-export-psk
+      name: x-rh-exports-psk

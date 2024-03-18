@@ -78,7 +78,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "example": "subscriptions"
+              "example": "urn:redhat:application:notifications"
             }
           },
           {
@@ -86,7 +86,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "example": "systems"
+              "example": "urn:redhat:application:notifications:export:events"
             }
           },
           {

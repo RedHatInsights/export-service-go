@@ -132,9 +132,7 @@ This archive contains the following data:
 %s
 
 ## Help and Support
-This service is owned by the ConsoleDot Pipeline team. If you have any questions, or need support with this service, please contact Red Hat Support.
-
-You can also raise an issue on the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
+If you have any questions, or need support with this service, please contact Red Hat Support or visit the [Export Service GitHub repo](https://github.com/RedHatInsights/export-service-go/).
 `,
 		meta.ExportBy,
 		meta.ExportOrgID,

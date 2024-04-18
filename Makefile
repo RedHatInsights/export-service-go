@@ -11,6 +11,9 @@ DOCKER_COMPOSE = $(OCI_TOOL)-compose
 
 CONTAINER_TAG="quay.io/cloudservices/export-service-go"
 
+IDENTITY_HEADER="eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiAiYWNjb3VudDEyMyIsICJvcmdfaWQiOiAib3JnMTIzIiwgInR5cGUiOiAiVXNlciIsICJ1c2VyIjogeyJpc19vcmdfYWRtaW4iOiB0cnVlLCAidXNlcm5hbWUiOiAiZnJlZCJ9LCAiaW50ZXJuYWwiOiB7Im9yZ19pZCI6ICJvcmcxMjMifX19"
+
+
 help:
 	@echo "Please use \`make <target>' where <target> is one of:"
 	@echo ""
@@ -69,24 +72,24 @@ migrate_db: build-local
 run: docker-up-no-server run-api
 
 sample-request-create-export:
-	@curl -sS -X POST http://localhost:8000/api/export/v1/exports -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" -H "Content-Type: application/json" -d @example_export_request.json > response.json
+	@curl -sS -X POST http://localhost:8000/api/export/v1/exports -H "x-rh-identity: ${IDENTITY_HEADER}" -H "Content-Type: application/json" -d @example_export_request.json > response.json
 	@cat response.json | jq
 	@cat response.json | jq -r '.id' | xargs -I {} echo "EXPORT_ID: {}"
 	@cat response.json | jq -r '.sources[] | "EXPORT_APPLICATION: \(.application)\nEXPORT_RESOURCE: \(.id)\n---"'
 	@rm response.json
 
 sample-request-get-exports:
-	curl -X GET http://localhost:8000/api/export/v1/exports -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" | jq
+	curl -X GET http://localhost:8000/api/export/v1/exports -H "x-rh-identity: ${IDENTITY_HEADER}" | jq
 
 # set the variables below based your info from the request above
 EXPORT_ID=5a252691-b241-4ef5-a0c4-4b64b96faf61
 EXPORT_APPLICATION=exampleApplication
 EXPORT_RESOURCE=ee3453cb-eb84-4258-b5f4-228c0fc73719
 sample-request-export-status:
-	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID)/status -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" | jq
+	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID)/status -H "x-rh-identity: ${IDENTITY_HEADER}" | jq
 
 sample-request-export-download:
-	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID) -H "x-rh-identity: eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K" -f --output ./export_download.zip
+	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID) -H "x-rh-identity: ${IDENTITY_HEADER}" -f --output ./export_download.zip
 
 sample-request-internal-upload:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_upload.json

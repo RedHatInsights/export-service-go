@@ -16,7 +16,8 @@ RUN go mod download
 # RUN go mod download -x
 
 # Now copy the rest of the files for build
-COPY . .
+COPY --parents docs s3 metrics cmd static db artifacts utils config logger exports kafka models middleware .
+
 # Build the binary
 RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-service/*.go
 ############################

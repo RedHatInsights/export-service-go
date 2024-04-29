@@ -7,8 +7,8 @@ USER root
 
 WORKDIR /workspace
 # Cache deps before copying source so that we do not need to re-download for every build
-COPY go.mod go.mod
-COPY go.sum go.sum
+COPY go.mod go.sum .
+
 # Fetch dependencies
 RUN go mod download
 
@@ -16,7 +16,20 @@ RUN go mod download
 # RUN go mod download -x
 
 # Now copy the rest of the files for build
-COPY --parents docs s3 metrics cmd static db artifacts utils config logger exports kafka models middleware .
+COPY docs docs
+COPY s3 s3
+COPY metrics metrics
+COPY cmd cmd
+COPY static static
+COPY db db
+COPY artifacts artifacts
+COPY utils utils
+COPY config config
+COPY logger logger
+COPY exports exports
+COPY kafka kafka
+COPY models models
+COPY middleware middleware
 
 # Build the binary
 RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-service/*.go

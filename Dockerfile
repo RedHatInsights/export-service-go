@@ -22,7 +22,6 @@ COPY metrics metrics
 COPY cmd cmd
 COPY static static
 COPY db db
-COPY artifacts artifacts
 COPY utils utils
 COPY config config
 COPY logger logger

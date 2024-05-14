@@ -9,8 +9,6 @@ WORKDIR /workspace
 # Cache deps before copying source so that we do not need to re-download for every build
 COPY go.mod go.sum .
 
-COPY licenses/LICENSE /licenses/LICENSE
-
 # Fetch dependencies
 RUN go mod download
 
@@ -45,6 +43,8 @@ COPY --from=builder /workspace/export-service /usr/bin
 COPY --from=builder /workspace/db/migrations /db/migrations/
 COPY --from=builder /workspace/static/spec/openapi.json /var/tmp/openapi.json
 COPY --from=builder /workspace/static/spec/private.json /var/tmp/private.json
+
+COPY licenses/LICENSE /licenses/LICENSE
 
 USER 1001
 

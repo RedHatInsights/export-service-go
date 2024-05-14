@@ -44,6 +44,8 @@ COPY --from=builder /workspace/db/migrations /db/migrations/
 COPY --from=builder /workspace/static/spec/openapi.json /var/tmp/openapi.json
 COPY --from=builder /workspace/static/spec/private.json /var/tmp/private.json
 
+COPY licenses/LICENSE /licenses/LICENSE
+
 USER 1001
 
 CMD ["export-service"]

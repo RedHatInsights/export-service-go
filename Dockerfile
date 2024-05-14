@@ -9,6 +9,8 @@ WORKDIR /workspace
 # Cache deps before copying source so that we do not need to re-download for every build
 COPY go.mod go.sum .
 
+COPY licenses/LICENSE /licenses/LICENSE
+
 # Fetch dependencies
 RUN go mod download
 

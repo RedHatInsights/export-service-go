@@ -6,21 +6,20 @@ linters-settings:
     # Put imports beginning with prefix after 3rd-party packages.
     # It's a comma-separated list of prefixes.
     local-prefixes: github.com/redhatinsights/export-service-go
+  errcheck:
+    ignore: ''
 
 linters:
   disable-all: true
   enable:
     ## enabled by default
-    - deadcode
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
 
     - goimports
     - gofumpt

@@ -1,9 +1,8 @@
 package s3
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -63,8 +62,7 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	var fileMeta []ExportFileMeta
 
 	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
-	tarWriter := tar.NewWriter(gzipWriter)
+	zipWriter := zip.NewWriter(&buf)
 
 	s3client := NewS3Client(c.Cfg, c.Log)
 
@@ -101,16 +99,17 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 
 		fileMeta = append(fileMeta, *tempFileMeta)
 
-		header, err := tar.FileInfoHeader(fi, basename)
+		header, err := zip.FileInfoHeader(fi)
 		if err != nil {
 			return fmt.Errorf("failed to create file header: %w", err)
 		}
 		header.Name = basename
 
-		if err = tarWriter.WriteHeader(header); err != nil {
+		var zippedFile io.Writer
+		if zippedFile, err = zipWriter.CreateHeader(header); err != nil {
 			return fmt.Errorf("failed to write header: %w", err)
 		}
-		if _, err := io.Copy(tarWriter, f); err != nil {
+		if _, err := io.Copy(zippedFile, f); err != nil {
 			return fmt.Errorf("failed to copy data into tar file: %w", err)
 		}
 		c.Log.Infof("added file %s to payload", basename)
@@ -124,46 +123,33 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 		return fmt.Errorf("failed to marshal meta struct: %w", err)
 	}
 
-	// add the json file to the tar
-	metaHeader := &tar.Header{
-		Name: "meta.json",
-		Mode: 0600,
-		Size: int64(len(metaJSON)),
-	}
-
-	if err := tarWriter.WriteHeader(metaHeader); err != nil {
-		return fmt.Errorf("failed to write header: %w", err)
-	}
-	if _, err := tarWriter.Write(metaJSON); err != nil {
-		return fmt.Errorf("failed to write meta.json: %w", err)
-	}
-
 	readme, err := BuildReadme(&meta)
-
 	if err != nil {
 		return fmt.Errorf("failed to build README.md: %w", err)
 	}
 
-	// add the README.md file to the tar
-	readmeHeader := &tar.Header{
-		Name: "README.md",
-		Mode: 0600,
-		Size: int64(len(readme)),
+	var files = []struct {
+		Name string
+		Body []byte
+	}{
+		{"meta.json", metaJSON},
+		{"README.md", []byte(readme)},
 	}
 
-	if err := tarWriter.WriteHeader(readmeHeader); err != nil {
-		return fmt.Errorf("failed to write header: %w", err)
-	}
-	if _, err := tarWriter.Write([]byte(readme)); err != nil {
-		return fmt.Errorf("failed to write README.md: %w", err)
+	for _, fileToAdd := range files {
+		zipFile, err := zipWriter.Create(fileToAdd.Name)
+		if err != nil {
+			return fmt.Errorf("failed to create file %s in zip file: %w", err)
+		}
+
+		_, err = zipFile.Write(fileToAdd.Body)
+		if err != nil {
+			return fmt.Errorf("failed to write file %s to zip file: %w", err)
+		}
 	}
 
-	// produce tar
-	if err := tarWriter.Close(); err != nil {
-		return fmt.Errorf("failed to close tar writer: %w", err)
-	}
-	// produce gzip
-	if err := gzipWriter.Close(); err != nil {
+	// produce zip
+	if err := zipWriter.Close(); err != nil {
 		return fmt.Errorf("failed to close gzip writer: %w", err)
 	}
 
@@ -239,14 +225,14 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 		Key:    key,
 		Body:   body,
 	}
-	
+
 	result, err := uploader.Upload(ctx, input)
 	if err != nil {
 		c.Log.Errorf("failed to uplodad tarfile `%s` to s3: %v", *key, err)
 
 		deleteInput := &s3.DeleteObjectInput{
 			Bucket: bucket,
-			Key: 	key,
+			Key:    key,
 		}
 
 		_, deleteErr := s3client.DeleteObject(ctx, deleteInput)
@@ -255,7 +241,7 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 		}
 		return nil, err
 	}
-	return result, nil 
+	return result, nil
 }
 
 func getUploadSize(ctx context.Context, s3client *s3.Client, bucket, key *string) (int64, error) {

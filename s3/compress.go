@@ -139,12 +139,12 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	for _, fileToAdd := range files {
 		zipFile, err := zipWriter.Create(fileToAdd.Name)
 		if err != nil {
-			return fmt.Errorf("failed to create file %s in zip file: %w", err)
+			return fmt.Errorf("failed to create file %s in zip file: %w", fileToAdd.Name, err)
 		}
 
 		_, err = zipFile.Write(fileToAdd.Body)
 		if err != nil {
-			return fmt.Errorf("failed to write file %s to zip file: %w", err)
+			return fmt.Errorf("failed to write file %s to zip file: %w", fileToAdd.Name, err)
 		}
 	}
 

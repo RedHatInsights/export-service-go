@@ -16,6 +16,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
+	"github.com/redhatinsights/export-service-go/config"
 	export_logger "github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
@@ -66,6 +67,33 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		logger.Errorw("error while parsing params", "error", err)
 		BadRequestError(w, err.Error())
 		return
+	}
+
+	if len(apiExport.Sources) == 0 {
+		logger.Errorw("no sources provided", "error", err)
+		BadRequestError(w, "no sources provided")
+		return
+	}
+
+	cfg := config.Get()
+	for _, source:= range apiExport.Sources{
+		_, ok := cfg.ExportableApplications[source.Application]
+		if !ok {
+			logger.Errorw("invalid application","error",err)
+			StatusNotAcceptableError(w, "wrong application")
+			return
+		}
+		resourceFound := false
+		for _, resource := range cfg.ExportableApplications[source.Application]{
+			if resource == source.Resource {
+				resourceFound = true
+			}
+		}
+		if !resourceFound {
+			logger.Errorw("invalid resource","error",err)
+			StatusNotAcceptableError(w, "wrong resource")
+			return
+		}
 	}
 
 	dbExport, err := APIExportToDBExport(apiExport)

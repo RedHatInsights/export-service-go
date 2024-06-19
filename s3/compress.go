@@ -104,13 +104,14 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 			return fmt.Errorf("failed to create file header: %w", err)
 		}
 		header.Name = basename
+		header.Method = zip.Deflate // DEFLATE compressed
 
 		var zippedFile io.Writer
 		if zippedFile, err = zipWriter.CreateHeader(header); err != nil {
 			return fmt.Errorf("failed to write header: %w", err)
 		}
 		if _, err := io.Copy(zippedFile, f); err != nil {
-			return fmt.Errorf("failed to copy data into tar file: %w", err)
+			return fmt.Errorf("failed to copy data into zip file: %w", err)
 		}
 		c.Log.Infof("added file %s to payload", basename)
 	}
@@ -118,35 +119,9 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	// add the file metadata to the ExportMeta struct
 	meta.FileMeta = fileMeta
 
-	metaJSON, err := BuildMeta(&meta)
-	if err != nil {
-		return fmt.Errorf("failed to marshal meta struct: %w", err)
-	}
-
-	readme, err := BuildReadme(&meta)
-	if err != nil {
-		return fmt.Errorf("failed to build README.md: %w", err)
-	}
-
-	var files = []struct {
-		Name string
-		Body []byte
-	}{
-		{"meta.json", metaJSON},
-		{"README.md", []byte(readme)},
-	}
-
-	for _, fileToAdd := range files {
-		zipFile, err := zipWriter.Create(fileToAdd.Name)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s in zip file: %w", fileToAdd.Name, err)
-		}
-
-		_, err = zipFile.Write(fileToAdd.Body)
-		if err != nil {
-			return fmt.Errorf("failed to write file %s to zip file: %w", fileToAdd.Name, err)
-		}
-	}
+    if err := addMetadataFilesToZip(&meta, zipWriter) ; err != nil {
+        return err
+    }
 
 	// produce zip
 	if err := zipWriter.Close(); err != nil {
@@ -171,18 +146,55 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	}
 
 	if _, err := c.Upload(ctx, f, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
-		return fmt.Errorf("failed to upload tarfile `%s` to s3: %w", s3key, err)
+		return fmt.Errorf("failed to upload zipfile `%s` to s3: %w", s3key, err)
 	}
 
 	return nil
 }
+
+
+func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
+
+	metaJSON, err := BuildMeta(meta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal meta struct: %w", err)
+	}
+
+	readme, err := BuildReadme(meta)
+	if err != nil {
+		return fmt.Errorf("failed to build README.md: %w", err)
+	}
+
+	var metadataFiles = []struct {
+		Name string
+		Body []byte
+	}{
+		{"meta.json", metaJSON},
+		{"README.md", []byte(readme)},
+	}
+
+	for _, fileToAdd := range metadataFiles {
+		zipFile, err := zipWriter.Create(fileToAdd.Name)
+		if err != nil {
+			return fmt.Errorf("failed to create file %s in zip file: %w", fileToAdd.Name, err)
+		}
+
+		_, err = zipFile.Write(fileToAdd.Body)
+		if err != nil {
+			return fmt.Errorf("failed to write file %s to zip file: %w", fileToAdd.Name, err)
+		}
+	}
+
+    return nil
+}
+
 
 func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error) {
 	t := time.Now()
 
 	c.Log.Infof("starting payload compression for %s", m.ID)
 	prefix := fmt.Sprintf("%s/%s/", m.OrganizationID, m.ID)
-	filename := fmt.Sprintf("%s-%s.tar.gz", t.UTC().Format(formatDateTime), m.ID.String())
+	filename := fmt.Sprintf("%s-%s.zip", t.UTC().Format(formatDateTime), m.ID.String())
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
 
 	sources, err := m.GetSources()

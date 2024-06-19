@@ -54,104 +54,182 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 }
 
 func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key string, meta ExportMeta, sources []models.Source) error {
-	input := &s3.ListObjectsV2Input{
-		Bucket: &c.Bucket,
-		Prefix: &prefix,
-	}
 
-	var fileMeta []ExportFileMeta
-
-	var buf bytes.Buffer
-	zipWriter := zip.NewWriter(&buf)
-
-	s3client := NewS3Client(c.Cfg, c.Log)
-
-	resp, err := GetObjects(ctx, s3client, input)
+	// Use this temp directory for all temp files
+	tempDirName, err := os.MkdirTemp("", filename)
 	if err != nil {
-		return fmt.Errorf("failed to list bucket objects: %w", err)
+		return err
 	}
 
-	for _, obj := range resp.Contents {
+	// Delete the contents of the temp directory when this function returns
+	defer os.RemoveAll(tempDirName)
 
-		c.Log.Infof("downloading s3://%s/%s...", c.Bucket, *obj.Key)
-		basename := filepath.Base(*obj.Key)
-
-		// save id from the basename without the extension
-		id := strings.Split(basename, ".")[0]
-
-		f, err := os.CreateTemp("", basename)
-		if err != nil {
-			return fmt.Errorf("failed to create temp file: %w", err)
-		}
-		if _, err := c.Download(ctx, f, &c.Bucket, obj.Key); err != nil {
-			return fmt.Errorf("failed to download to file: %w", err)
-		}
-		fi, err := f.Stat()
-		if err != nil {
-			return fmt.Errorf("failed to get file info: %w", err)
-		}
-
-		tempFileMeta, err := findFileMeta(id, basename, sources)
-
-		if err != nil {
-			return fmt.Errorf("failed to parse file meta: %w", err)
-		}
-
-		fileMeta = append(fileMeta, *tempFileMeta)
-
-		header, err := zip.FileInfoHeader(fi)
-		if err != nil {
-			return fmt.Errorf("failed to create file header: %w", err)
-		}
-		header.Name = basename
-		header.Method = zip.Deflate // DEFLATE compressed
-
-		var zippedFile io.Writer
-		if zippedFile, err = zipWriter.CreateHeader(header); err != nil {
-			return fmt.Errorf("failed to write header: %w", err)
-		}
-		if _, err := io.Copy(zippedFile, f); err != nil {
-			return fmt.Errorf("failed to copy data into zip file: %w", err)
-		}
-		c.Log.Infof("added file %s to payload", basename)
-	}
-
-	// add the file metadata to the ExportMeta struct
-	meta.FileMeta = fileMeta
-
-    if err := addMetadataFilesToZip(&meta, zipWriter) ; err != nil {
-        return err
-    }
-
-	// produce zip
-	if err := zipWriter.Close(); err != nil {
-		return fmt.Errorf("failed to close gzip writer: %w", err)
-	}
-
-	f, err := os.CreateTemp("", filename)
+	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, c.Log, c.Bucket, prefix, tempDirName)
 	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
+		return err
 	}
 
-	if _, err := io.Copy(f, &buf); err != nil {
-		return fmt.Errorf("failed to copy buffer into file: %w", err)
+	fileMetadata, err := buildFileMetadata(downloadedFiles, sources)
+	if err != nil {
+		return err
 	}
 
-	c.Log.Infof("saving temp file %s", filename)
+	meta.FileMeta = fileMetadata
+
+	zippedBuffer, err := writeFilesToZip(c.Log, downloadedFiles, meta)
+	if err != nil {
+		return err
+	}
+
+	tempExportFile, err := writeBufferToTempFile(c.Log, zippedBuffer, filename, tempDirName)
+	if err != nil {
+		return err
+	}
+
 	c.Log.Infof("shipping %s to s3", filename)
-
-	// seek to the beginning of the file so that we can reuse the file handler for upload
-	if _, err := f.Seek(0, 0); err != nil {
-		return fmt.Errorf("failed to seek to beginning of file: %w", err)
-	}
-
-	if _, err := c.Upload(ctx, f, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+	if _, err := c.Upload(ctx, tempExportFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
 		return fmt.Errorf("failed to upload zipfile `%s` to s3: %w", s3key, err)
 	}
 
 	return nil
 }
 
+type s3FileData struct {
+	file     *os.File
+	basename string
+}
+
+func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap.SugaredLogger, bucket string, prefix string, tempDir string) ([]s3FileData, error) {
+	input := &s3.ListObjectsV2Input{
+		Bucket: &bucket,
+		Prefix: &prefix,
+	}
+
+	s3client := NewS3Client(cfg, log)
+
+	resp, err := GetObjects(ctx, s3client, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list bucket objects: %w", err)
+	}
+
+	if len(resp.Contents) < 1 {
+		return nil, fmt.Errorf("failed to list bucket objects: %w", err)
+	}
+
+	downloadedFiles := make([]s3FileData, 0, len(resp.Contents))
+
+	for _, obj := range resp.Contents {
+
+		log.Infof("downloading s3://%s/%s...", bucket, *obj.Key)
+		basename := filepath.Base(*obj.Key)
+
+		f, err := os.CreateTemp(tempDir, basename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create temp file: %w", err)
+		}
+
+		downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
+			d.PartSize = 100 * 1024 * 1024 // 100 MiB
+		})
+
+		input := &s3.GetObjectInput{Bucket: &bucket, Key: obj.Key}
+
+		if _, err := downloader.Download(ctx, f, input); err != nil {
+			return nil, fmt.Errorf("failed to download to file: %w", err)
+		}
+
+		downloadedFiles = append(downloadedFiles, s3FileData{f, basename})
+	}
+
+	return downloadedFiles, nil
+}
+
+func buildFileMetadata(files []s3FileData, sources []models.Source) ([]ExportFileMeta, error) {
+
+	fileMeta := make([]ExportFileMeta, 0, len(files))
+
+	for _, f := range files {
+
+		id := strings.Split(f.basename, ".")[0]
+
+		tempFileMeta, err := findFileMeta(id, f.basename, sources)
+		if err != nil {
+			return nil, err
+		}
+
+		fileMeta = append(fileMeta, *tempFileMeta)
+	}
+
+	return fileMeta, nil
+}
+
+func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta) (*bytes.Buffer, error) {
+
+	var buf bytes.Buffer
+	zipWriter := zip.NewWriter(&buf)
+
+	defer zipWriter.Close()
+
+	for _, f := range files {
+
+		fi, err := f.file.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get file info: %w", err)
+		}
+
+		header, err := zip.FileInfoHeader(fi)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create file header: %w", err)
+		}
+		header.Name = f.basename
+		header.Method = zip.Deflate // DEFLATE compressed
+
+		var zippedFile io.Writer
+		if zippedFile, err = zipWriter.CreateHeader(header); err != nil {
+			return nil, fmt.Errorf("failed to write header: %w", err)
+		}
+
+		if _, err := io.Copy(zippedFile, f.file); err != nil {
+			return nil, fmt.Errorf("failed to copy data into zip file: %w", err)
+		}
+
+		log.Infof("added file %s to payload", f.basename)
+	}
+
+	if err := addMetadataFilesToZip(&meta, zipWriter); err != nil {
+		return nil, err
+	}
+
+	/*
+		// produce zip
+		if err := zipWriter.Close(); err != nil {
+			return fmt.Errorf("failed to close gzip writer: %w", err)
+		}
+	*/
+
+	return &buf, nil
+}
+
+func writeBufferToTempFile(log *zap.SugaredLogger, buf *bytes.Buffer, filename string, tempDir string) (*os.File, error) {
+
+	f, err := os.CreateTemp(tempDir, filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	if _, err := io.Copy(f, buf); err != nil {
+		return nil, fmt.Errorf("failed to copy buffer into file: %w", err)
+	}
+
+	log.Infof("saving temp file %s", filename)
+
+	// seek to the beginning of the file so that we can reuse the file handler for upload
+	if _, err := f.Seek(0, 0); err != nil {
+		return nil, fmt.Errorf("failed to seek to beginning of file: %w", err)
+	}
+
+	return f, nil
+}
 
 func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
 
@@ -185,9 +263,8 @@ func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
 		}
 	}
 
-    return nil
+	return nil
 }
-
 
 func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error) {
 	t := time.Now()

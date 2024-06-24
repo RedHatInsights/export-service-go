@@ -28,10 +28,10 @@ var _ = Describe("Build files included in zip", func() {
 			HelpString: "Help me!",
 			FailedFiles: []s3.FailedFileMeta{
 				{
-					Filename: 	 "filename",
+					Filename:    "filename",
 					Application: "application",
-					Resource: 	 "resource",
-					Error: 		s3.ExportError{"code","message"},
+					Resource:    "resource",
+					Error:       s3.ExportError{"code", "message"},
 				},
 			},
 		}
@@ -167,10 +167,10 @@ If you have any questions, or need support with this service, please contact Red
 			HelpString: "Help me!",
 			FailedFiles: []s3.FailedFileMeta{
 				{
-					Filename: 	 "filename",
+					Filename:    "filename",
 					Application: "application",
-					Resource: 	 "resource",
-					Error: 		s3.ExportError{"code","message"},
+					Resource:    "resource",
+					Error:       s3.ExportError{"code", "message"},
 				},
 			},
 		},
@@ -292,10 +292,10 @@ If you have any questions, or need support with this service, please contact Red
 			HelpString: "Help me!",
 			FailedFiles: []s3.FailedFileMeta{
 				{
-					Filename: 	 "filename",
+					Filename:    "filename",
 					Application: "application",
-					Resource: 	 "resource",
-					Error: 		s3.ExportError{"code","message"},
+					Resource:    "resource",
+					Error:       s3.ExportError{"code", "message"},
 				},
 			},
 		}

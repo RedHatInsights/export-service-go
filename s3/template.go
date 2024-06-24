@@ -31,14 +31,14 @@ type ExportFileMeta struct {
 }
 
 type FailedFileMeta struct {
-	Filename 	string `json:"filename"`
-	Application string `json:"application"`
-	Resource 	string `json:"resource"`
-	Error 		ExportError `json:"error"`
+	Filename    string      `json:"filename"`
+	Application string      `json:"application"`
+	Resource    string      `json:"resource"`
+	Error       ExportError `json:"error"`
 }
 
-type ExportError struct{
-	Code 	string `json:"code"`
+type ExportError struct {
+	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
@@ -110,7 +110,7 @@ No data was found.
 - **Error Message**: %s
 `, failedFile.Filename, failedFile.Application, failedFile.Resource, failedFile.Error.Code, failedFile.Error.Message)
 	}
-	if failedFilesDetails =="" {
+	if failedFilesDetails == "" {
 		failedFilesDetails = `
 No failures reported.
 `

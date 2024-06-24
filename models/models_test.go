@@ -11,7 +11,6 @@ import (
 	m "github.com/redhatinsights/export-service-go/models"
 )
 
-
 var _ = Describe("Models", func() {
 	var (
 		exportPayload *m.ExportPayload

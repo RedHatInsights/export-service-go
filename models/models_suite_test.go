@@ -17,14 +17,13 @@ import (
 var (
 	testDB     *embeddedpostgres.EmbeddedPostgres
 	testGormDB *gorm.DB
-	exportDB	*models.ExportDB
+	exportDB   *models.ExportDB
 )
 
 func TestModels(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Models Suite")
 }
-
 
 var _ = BeforeSuite(func() {
 	cfg := config.Get()

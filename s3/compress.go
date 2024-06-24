@@ -88,7 +88,7 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 
 	c.Log.Infof("shipping %s to s3", filename)
 	if _, err := c.Upload(ctx, tempExportFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
-		return fmt.Errorf("failed to upload zipfile `%s` to s3: %w", s3key, err)
+		return fmt.Errorf("failed to upload zip file `%s` to s3: %w", s3key, err)
 	}
 
 	return nil
@@ -194,18 +194,12 @@ func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta
 		}
 
 		log.Infof("added file %s to payload", f.basename)
+
 	}
 
 	if err := addMetadataFilesToZip(&meta, zipWriter); err != nil {
 		return nil, err
 	}
-
-	/*
-		// produce zip
-		if err := zipWriter.Close(); err != nil {
-			return fmt.Errorf("failed to close gzip writer: %w", err)
-		}
-	*/
 
 	return &buf, nil
 }

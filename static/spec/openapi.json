@@ -37,6 +37,28 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -139,6 +161,17 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Failed to get object",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -172,6 +205,17 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Not ready for download",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -195,6 +239,39 @@
         "responses": {
           "202": {
             "description": "Export deleted (if it existed)"
+          },
+          "400": {
+            "description": "Not a valid export UUID",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Record not found",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error deleting paylod entry",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -224,6 +301,17 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExportStatus"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error while encoding",
+            "content":{
+              "application/json": {
+                "schema": {
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }

@@ -9,11 +9,10 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/redhatinsights/export-service-go/config"
 	db_utils "github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/logger"
-	"github.com/redhatinsights/export-service-go/config"
 )
-
 
 func CreateTestDB(cfg config.ExportConfig) (*embeddedpostgres.EmbeddedPostgres, *gorm.DB, error) {
 	dbStartTime := time.Now()

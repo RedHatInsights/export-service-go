@@ -76,19 +76,14 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cfg := config.Get()
-
-	var exportableApplications = config.ConvertConfigtoInternal(cfg.ExportableApplications)
 	
-	for _, source:= range apiExport.Sources{
-		
-		if err = verifyExportableApplication(exportableApplications, source.Application, source.Resource); err != nil{
-			logger.Errorw("Payload does not match Configured Exports","error",err)
-			StatusNotAcceptableError(w, "Payload does not match Configured Exports")
-			return
-		}
+	if err = verifyExportableApplication(cfg.ExportableApplications, apiExport.Sources); err != nil{
+		logger.Errorw("Payload does not match Configured Exports","error",err)
+		StatusNotAcceptableError(w, "Payload does not match Configured Exports")
+		return
+	}
 
-	 }
-
+	
 	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
 		logger.Errorw("unable to convert api export into db export", "error", err)
@@ -122,16 +117,19 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 }
 
 //verifyEdportableApplications verifies if an application or resource is in the map 
-func verifyExportableApplication(exportableApplications map[string]map[string]bool, app string, resource string) error{
-	_, ok := exportableApplications[app]
-	if !ok {
-		return fmt.Errorf("invalid application")
+func verifyExportableApplication(exportableApplications map[string]map[string]bool, payloadSources []Source) error{
+	for _, source:= range payloadSources {
+
+		_, ok := exportableApplications[source.Application]
+		if !ok {
+			return fmt.Errorf("invalid application")
+		}
+		_, ok = exportableApplications[source.Application][source.Resource]
+		if !ok {
+			return fmt.Errorf("invalid resource")
+		}
 	}
-	_, ok = exportableApplications[app][resource]
-	if !ok {
-		return fmt.Errorf("invalid resource")
-	}
-	return nil
+	return nil 
 }
 
 // ListExports handle GET requests to the /exports endpoint.

@@ -32,7 +32,7 @@ type ExportConfig struct {
 	OpenAPIPublicPath  string
 	Psks               []string
 	ExportExpiryDays   int
-	ExportableApplications map[string][]string
+	ExportableApplications map[string]map[string]bool
 }
 
 type dbConfig struct {
@@ -140,7 +140,7 @@ func Get() *ExportConfig {
 			OpenAPIPrivatePath: 	options.GetString("OPEN_API_PRIVATE_PATH"),
 			Psks:               	options.GetStringSlice("PSKS"),
 			ExportExpiryDays:   	options.GetInt("EXPORT_EXPIRY_DAYS"),
-			ExportableApplications: options.GetStringMapStringSlice("EXPORT_ENABLE_APPS"),
+			ExportableApplications: convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
 		}
 
 		config.DBConfig = dbConfig{
@@ -274,7 +274,7 @@ func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {
 	return fmt.Sprintf("%s://%s:%d", protocol, hostname, port)
 }
 
-func ConvertConfigtoInternal(config map[string][]string) map[string]map[string]bool {
+func convertExportableAppsFromConfigToInternal(config map[string][]string) map[string]map[string]bool {
 	exportableApps := make(map[string]map[string]bool)
 
 	for app, resources := range config {

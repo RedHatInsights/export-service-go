@@ -76,35 +76,23 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cfg := config.Get()
+
+	var exportableApplications = config.ConvertConfigtoInternal(cfg.ExportableApplications)
+	
 	for _, source:= range apiExport.Sources{
-		_, ok := cfg.ExportableApplications[source.Application]
-		if !ok {
-			logger.Errorw("invalid application","error",err)
-			StatusNotAcceptableError(w, "wrong application")
+		
+		if err = verifyExportableApplication(exportableApplications, source.Application, source.Resource); err != nil{
+			logger.Errorw("Payload does not match Configured Exports","error",err)
+			StatusNotAcceptableError(w, "Payload does not match Configured Exports")
 			return
 		}
-		resourceFound := false
-		for _, resource := range cfg.ExportableApplications[source.Application]{
-			if resource == source.Resource {
-				resourceFound = true
-			}
-		}
-		if !resourceFound {
-			logger.Errorw("invalid resource","error",err)
-			StatusNotAcceptableError(w, "wrong resource")
-			return
-		}
-	}
+
+	 }
 
 	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
 		logger.Errorw("unable to convert api export into db export", "error", err)
 		BadRequestError(w, err.Error())
-		return
-	}
-	if len(apiExport.Sources) == 0 {
-		logger.Errorw("no sources provided", "error", err)
-		BadRequestError(w, "no sources provided")
 		return
 	}
 
@@ -131,6 +119,19 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
 	e.RequestAppResources(r.Context(), logger, r.Header["X-Rh-Identity"][0], *dbExport)
+}
+
+//verifyEdportableApplications verifies if an application or resource is in the map 
+func verifyExportableApplication(exportableApplications map[string]map[string]bool, app string, resource string) error{
+	_, ok := exportableApplications[app]
+	if !ok {
+		return fmt.Errorf("invalid application")
+	}
+	_, ok = exportableApplications[app][resource]
+	if !ok {
+		return fmt.Errorf("invalid resource")
+	}
+	return nil
 }
 
 // ListExports handle GET requests to the /exports endpoint.

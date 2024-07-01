@@ -273,3 +273,19 @@ func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {
 
 	return fmt.Sprintf("%s://%s:%d", protocol, hostname, port)
 }
+
+func ConvertConfigtoInternal(config map[string][]string) map[string]map[string]bool {
+	exportableApps := make(map[string]map[string]bool)
+
+	for app, resources := range config {
+		if _, ok := exportableApps[app]; !ok {
+			exportableApps[app] = make(map[string]bool)
+		}
+		
+		for _, resource := range resources {
+			exportableApps[app][resource] = true
+		}
+	}
+	
+	return exportableApps
+}

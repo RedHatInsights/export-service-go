@@ -16,6 +16,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"go.uber.org/zap"
 
+	"github.com/redhatinsights/export-service-go/config"
 	export_logger "github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
@@ -68,15 +69,25 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(apiExport.Sources) == 0 {
+		logger.Errorw("no sources provided", "error", err)
+		BadRequestError(w, "no sources provided")
+		return
+	}
+
+	cfg := config.Get()
+	
+	if err = verifyExportableApplication(cfg.ExportableApplications, apiExport.Sources); err != nil{
+		logger.Errorw("Payload does not match Configured Exports","error",err)
+		StatusNotAcceptableError(w, "Payload does not match Configured Exports")
+		return
+	}
+
+	
 	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
 		logger.Errorw("unable to convert api export into db export", "error", err)
 		BadRequestError(w, err.Error())
-		return
-	}
-	if len(apiExport.Sources) == 0 {
-		logger.Errorw("no sources provided", "error", err)
-		BadRequestError(w, "no sources provided")
 		return
 	}
 
@@ -103,6 +114,22 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	// send the payload to the producer with a goroutine so
 	// that we do not block the response
 	e.RequestAppResources(r.Context(), logger, r.Header["X-Rh-Identity"][0], *dbExport)
+}
+
+//verifyEdportableApplications verifies if an application or resource is in the map 
+func verifyExportableApplication(exportableApplications map[string]map[string]bool, payloadSources []Source) error{
+	for _, source:= range payloadSources {
+
+		_, ok := exportableApplications[source.Application]
+		if !ok {
+			return fmt.Errorf("invalid application")
+		}
+		_, ok = exportableApplications[source.Application][source.Resource]
+		if !ok {
+			return fmt.Errorf("invalid resource")
+		}
+	}
+	return nil 
 }
 
 // ListExports handle GET requests to the /exports endpoint.

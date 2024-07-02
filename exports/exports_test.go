@@ -537,6 +537,23 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Code).To(Equal(http.StatusBadRequest))
 		Expect(rr.Body.String()).To(ContainSubstring("invalid or missing payload format"))
 	})
+	
+	It("returns the appropriate error if an application or resource is incorrect ", func() {
+		router := setupTest(mockRequestApplicationResources)
+
+		rr := httptest.NewRecorder()
+
+		req := createExportRequest(
+			"Test Export Request",
+			"json",
+			"",
+			`{"application":"exampleApp", "resource":"exampleResource"}`,
+		)
+		AddDebugUserIdentity(req)
+		router.ServeHTTP(rr, req)
+		Expect(rr.Code).To(Equal(http.StatusNotAcceptable))
+		Expect(rr.Body.String()).To(ContainSubstring("Payload does not match Configured Exports"))
+	})
 })
 
 func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {

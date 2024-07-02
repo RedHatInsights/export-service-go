@@ -53,3 +53,9 @@ func NotFoundError(w http.ResponseWriter, err interface{}) {
 func NotImplementedError(w http.ResponseWriter) {
 	JSONError(w, "not implemented", http.StatusNotImplemented)
 }
+
+// StatusNotAcceptableError returns a 406 json response
+func StatusNotAcceptableError(w http.ResponseWriter, err interface{}) {
+	JSONError(w, err, http.StatusNotAcceptable)
+}
+

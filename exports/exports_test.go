@@ -538,22 +538,22 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Body.String()).To(ContainSubstring("invalid or missing payload format"))
 	})
 	
-	It("returns the appropriate error if an application or resource is incorrect ", func() {
+	DescribeTable("can return the appropriate error if an application or resource is incorrect", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
 		router := setupTest(mockRequestApplicationResources)
 
 		rr := httptest.NewRecorder()
 
-		req := createExportRequest(
-			"Test Export Request",
-			"json",
-			"",
-			`{"application":"exampleApp", "resource":"exampleResource"}`,
-		)
+		req := createExportRequest(name, format, expires, sources)
+
 		AddDebugUserIdentity(req)
 		router.ServeHTTP(rr, req)
-		Expect(rr.Code).To(Equal(http.StatusNotAcceptable))
-		Expect(rr.Body.String()).To(ContainSubstring("Payload does not match Configured Exports"))
-	})
+		Expect(rr.Code).To(Equal(expectedStatus))
+		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
+	},
+		Entry("with valid export", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
+		Entry("with invalid application", "Test Export Request", "json", "", `{"application":"wrongexampleApp", "resource":"exampleResource"}`, "Payload does not match Configured Exports", http.StatusNotAcceptable),
+		Entry("with invalid resource", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"wrongexampleResource"}`, "Payload does not match Configured Exports", http.StatusNotAcceptable),
+	) 
 })
 
 func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {

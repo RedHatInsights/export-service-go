@@ -100,7 +100,7 @@ func Get() *ExportConfig {
 		options.SetDefault("OPEN_API_PRIVATE_PATH", "./static/spec/private.json")
 		options.SetDefault("PSKS", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
-		options.SetDefault("EXPORT_ENABLE_APPS","{\"exampleApplication\":[\"exampleResource\", \"anotherExampleResource\"]}")
+		options.SetDefault("EXPORT_ENABLE_APPS","{\"exampleApp\":[\"exampleResource\", \"anotherExampleResource\"]}")
 
 		// DB defaults
 		options.SetDefault("PGSQL_USER", "postgres")

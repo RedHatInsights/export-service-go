@@ -74,6 +74,8 @@ objects:
             secretKeyRef:
               name: export-service-psks
               key: psk-list
+        - name: EXPORT_ENABLE_APPS
++         value: ${EXPORT_ENABLE_APPS}
         initContainers:
         - args:
           - export-service

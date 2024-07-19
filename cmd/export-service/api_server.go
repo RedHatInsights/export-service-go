@@ -167,6 +167,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		"debug", cfg.Debug,
 		"publicopenapifilepath", cfg.OpenAPIPublicPath,
 		"privateopenapifilepath", cfg.OpenAPIPrivatePath,
+		"exportableApplications", cfg.ExportableApplications,
 	)
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)

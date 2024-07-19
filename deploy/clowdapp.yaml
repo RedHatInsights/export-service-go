@@ -199,4 +199,4 @@ parameters:
   - name: LOG_LEVEL
     value: INFO
   - name: EXPORT_ENABLE_APPS
-    value: "{\"exampleApp\":[\"exampleResource\", \"anotherExampleResource\"]}"
+    value: "{\"exampleApplication\":[\"exampleResource\", \"anotherExampleResource\"]}"

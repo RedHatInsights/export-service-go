@@ -199,4 +199,4 @@ parameters:
   - name: LOG_LEVEL
     value: INFO
   - name: EXPORT_ENABLE_APPS
-    value: "{\"exampleApp\":[\"exampleResource\",\"anotherExampleResource\"],\"urn:redhat:application:inventory\":[\"urn:redhat:application:inventory:export:systems\"]}"
+    value: "{\"exampleApplication\":[\"exampleResource\",\"anotherExampleResource\"],\"urn:redhat:application:inventory\":[\"urn:redhat:application:inventory:export:systems\"]}"

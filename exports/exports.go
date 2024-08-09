@@ -13,7 +13,7 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/export-service-go/config"

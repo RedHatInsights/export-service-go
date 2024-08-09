@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	middleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	lc "github.com/redhatinsights/platform-go-middlewares/v2/logging/cloudwatch"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

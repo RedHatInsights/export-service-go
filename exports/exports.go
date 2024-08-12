@@ -338,6 +338,16 @@ func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error
 
 	var sources []models.Source
 	for _, source := range apiPayload.Sources {
+
+        if source.Filters != nil {
+            var dst any
+            // Verify the incoming filters are valid json
+            err := json.Unmarshal(source.Filters, &dst)
+            if err != nil{
+                return nil, fmt.Errorf("invalid json format of filters")
+            }
+        }
+
 		sources = append(sources, models.Source{
 			Application: source.Application,
 			Status:      models.RPending,

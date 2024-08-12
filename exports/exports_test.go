@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -537,7 +538,29 @@ var _ = Describe("The public API", func() {
 		Expect(rr.Code).To(Equal(http.StatusBadRequest))
 		Expect(rr.Body.String()).To(ContainSubstring("invalid or missing payload format"))
 	})
-	
+
+	DescribeTable("can return the appropriate error if an application or resource is incorrect", func(name, sources, expectedBody string, expectedStatus int) {
+		router := setupTest(mockRequestApplicationResources)
+
+		rr := httptest.NewRecorder()
+
+		req := createExportRequest(name, "json", "", sources)
+
+		AddDebugUserIdentity(req)
+
+        req.Header.Add("x-rh-insights-request-id", name)
+
+		router.ServeHTTP(rr, req)
+		Expect(rr.Code).To(Equal(expectedStatus))
+		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
+	},
+        Entry("without filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
+        Entry("with valid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"ima_filter":"ima_filter_value"}}`, "", http.StatusAccepted),
+        Entry("with filters set to null", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": null}`, "", http.StatusAccepted),
+        Entry("with filters set to empty json", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": "{}"}`, "", http.StatusAccepted),
+        Entry("with invalid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"im invalid json ahhhh"}}`, "invalid character", http.StatusBadRequest),
+	) 
+
 	DescribeTable("can return the appropriate error if an application or resource is incorrect", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
 		router := setupTest(mockRequestApplicationResources)
 
@@ -578,6 +601,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 
 	router = chi.NewRouter()
 	router.Use(
+		request_id.RequestID,
 		identity.EnforceIdentity,
 		emiddleware.EnforceUserIdentity,
 	)

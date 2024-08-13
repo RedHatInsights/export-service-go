@@ -40,7 +40,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 
 	// setup middleware
 	router.Use(
-		request_id.RequestID,
+		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		emiddleware.JSONContentType, // Set content-Type headers as application/json
 		logger.ResponseLogger,
 		setupDocsMiddleware,

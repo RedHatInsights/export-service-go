@@ -76,14 +76,13 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cfg := config.Get()
-	
-	if err = verifyExportableApplication(cfg.ExportableApplications, apiExport.Sources); err != nil{
-		logger.Errorw("Payload does not match Configured Exports","error",err)
+
+	if err = verifyExportableApplication(cfg.ExportableApplications, apiExport.Sources); err != nil {
+		logger.Errorw("Payload does not match Configured Exports", "error", err)
 		StatusNotAcceptableError(w, "Payload does not match Configured Exports")
 		return
 	}
 
-	
 	dbExport, err := APIExportToDBExport(apiExport)
 	if err != nil {
 		logger.Errorw("unable to convert api export into db export", "error", err)
@@ -116,9 +115,9 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 	e.RequestAppResources(r.Context(), logger, r.Header["X-Rh-Identity"][0], *dbExport)
 }
 
-//verifyEdportableApplications verifies if an application or resource is in the map 
-func verifyExportableApplication(exportableApplications map[string]map[string]bool, payloadSources []Source) error{
-	for _, source:= range payloadSources {
+// verifyEdportableApplications verifies if an application or resource is in the map
+func verifyExportableApplication(exportableApplications map[string]map[string]bool, payloadSources []Source) error {
+	for _, source := range payloadSources {
 
 		_, ok := exportableApplications[source.Application]
 		if !ok {
@@ -129,7 +128,7 @@ func verifyExportableApplication(exportableApplications map[string]map[string]bo
 			return fmt.Errorf("invalid resource")
 		}
 	}
-	return nil 
+	return nil
 }
 
 // ListExports handle GET requests to the /exports endpoint.
@@ -339,14 +338,14 @@ func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error
 	var sources []models.Source
 	for _, source := range apiPayload.Sources {
 
-        if source.Filters != nil {
-            var dst any
-            // Verify the incoming filters are valid json
-            err := json.Unmarshal(source.Filters, &dst)
-            if err != nil{
-                return nil, fmt.Errorf("invalid json format of filters")
-            }
-        }
+		if source.Filters != nil {
+			var dst any
+			// Verify the incoming filters are valid json
+			err := json.Unmarshal(source.Filters, &dst)
+			if err != nil {
+				return nil, fmt.Errorf("invalid json format of filters")
+			}
+		}
 
 		sources = append(sources, models.Source{
 			Application: source.Application,

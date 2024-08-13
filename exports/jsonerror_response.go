@@ -58,4 +58,3 @@ func NotImplementedError(w http.ResponseWriter) {
 func StatusNotAcceptableError(w http.ResponseWriter, err interface{}) {
 	JSONError(w, err, http.StatusNotAcceptable)
 }
-

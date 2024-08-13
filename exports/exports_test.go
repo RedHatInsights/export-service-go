@@ -16,8 +16,8 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -548,18 +548,18 @@ var _ = Describe("The public API", func() {
 
 		AddDebugUserIdentity(req)
 
-        req.Header.Add("x-rh-insights-request-id", name)
+		req.Header.Add("x-rh-insights-request-id", name)
 
 		router.ServeHTTP(rr, req)
 		Expect(rr.Code).To(Equal(expectedStatus))
 		Expect(rr.Body.String()).To(ContainSubstring(expectedBody))
 	},
-        Entry("without filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
-        Entry("with valid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"ima_filter":"ima_filter_value"}}`, "", http.StatusAccepted),
-        Entry("with filters set to null", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": null}`, "", http.StatusAccepted),
-        Entry("with filters set to empty json", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": "{}"}`, "", http.StatusAccepted),
-        Entry("with invalid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"im invalid json ahhhh"}}`, "invalid character", http.StatusBadRequest),
-	) 
+		Entry("without filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
+		Entry("with valid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"ima_filter":"ima_filter_value"}}`, "", http.StatusAccepted),
+		Entry("with filters set to null", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": null}`, "", http.StatusAccepted),
+		Entry("with filters set to empty json", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": "{}"}`, "", http.StatusAccepted),
+		Entry("with invalid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"im invalid json ahhhh"}}`, "invalid character", http.StatusBadRequest),
+	)
 
 	DescribeTable("can return the appropriate error if an application or resource is incorrect", func(name, format, expires, sources, expectedBody string, expectedStatus int) {
 		router := setupTest(mockRequestApplicationResources)
@@ -576,7 +576,7 @@ var _ = Describe("The public API", func() {
 		Entry("with valid export", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`, "", http.StatusAccepted),
 		Entry("with invalid application", "Test Export Request", "json", "", `{"application":"wrongexampleApp", "resource":"exampleResource"}`, "Payload does not match Configured Exports", http.StatusNotAcceptable),
 		Entry("with invalid resource", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"wrongexampleResource"}`, "Payload does not match Configured Exports", http.StatusNotAcceptable),
-	) 
+	)
 })
 
 func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {

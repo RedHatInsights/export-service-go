@@ -120,6 +120,11 @@ func (ep *ExportPayload) GetSources() ([]Source, error) {
 
 func (es *Source) GetFilters() (map[string]string, error) {
 	var filters map[string]string
+
+	if es.Filters == nil {
+		return filters, nil
+	}
+
 	err := json.Unmarshal([]byte(es.Filters), &filters)
 	return filters, err
 }

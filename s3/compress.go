@@ -309,7 +309,7 @@ func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *st
 		Body:   body,
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	result, err := uploader.Upload(ctx, input)

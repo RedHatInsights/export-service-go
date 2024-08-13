@@ -16,8 +16,8 @@ import (
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -40,7 +40,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 
 	// setup middleware
 	router.Use(
-		request_id.RequestID,
+		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		emiddleware.JSONContentType, // Set content-Type headers as application/json
 		logger.ResponseLogger,
 		setupDocsMiddleware,

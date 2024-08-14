@@ -41,11 +41,11 @@ type S3ListObjectsAPI interface {
 }
 
 type StorageHandler interface {
-	Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error)
-	Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error)
-	Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
-	CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error
-	GetObject(ctx context.Context, key string) (io.ReadCloser, error)
+	Compress(ctx context.Context, logger *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error)
+	Download(ctx context.Context, logger *zap.SugaredLogger, w io.WriterAt, bucket, key *string) (n int64, err error)
+	Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
+	CreateObject(ctx context.Context, logger *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error
+	GetObject(ctx context.Context, logger *zap.SugaredLogger, key string) (io.ReadCloser, error)
 	ProcessSources(db models.DBInterface, uid uuid.UUID)
 }
 
@@ -53,7 +53,7 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 	return api.ListObjectsV2(c, input)
 }
 
-func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key string, meta ExportMeta, sources []models.Source) error {
+func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, prefix, filename, s3key string, meta ExportMeta, sources []models.Source) error {
 
 	// Use this temp directory for all temp files
 	tempDirName, err := os.MkdirTemp("", filename)
@@ -64,7 +64,7 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 	// Delete the contents of the temp directory when this function returns
 	defer os.RemoveAll(tempDirName)
 
-	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, c.Log, c.Bucket, prefix, tempDirName)
+	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, logger, c.Bucket, prefix, tempDirName)
 	if err != nil {
 		return err
 	}
@@ -76,18 +76,18 @@ func (c *Compressor) zipExport(ctx context.Context, prefix, filename, s3key stri
 
 	meta.FileMeta = fileMetadata
 
-	zippedBuffer, err := writeFilesToZip(c.Log, downloadedFiles, meta)
+	zippedBuffer, err := writeFilesToZip(logger, downloadedFiles, meta)
 	if err != nil {
 		return err
 	}
 
-	tempExportFile, err := writeBufferToTempFile(c.Log, zippedBuffer, filename, tempDirName)
+	tempExportFile, err := writeBufferToTempFile(logger, zippedBuffer, filename, tempDirName)
 	if err != nil {
 		return err
 	}
 
-	c.Log.Infof("shipping %s to s3", filename)
-	if _, err := c.Upload(ctx, tempExportFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+	logger.Infof("shipping %s to s3", filename)
+	if _, err := c.Upload(ctx, logger, tempExportFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
 		return fmt.Errorf("failed to upload zip file `%s` to s3: %w", s3key, err)
 	}
 
@@ -260,10 +260,10 @@ func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
 	return nil
 }
 
-func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error) {
+func (c *Compressor) Compress(ctx context.Context, logger *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error) {
 	t := time.Now()
 
-	c.Log.Infof("starting payload compression for %s", m.ID)
+	logger.Infof("starting payload compression for %s", m.ID)
 	prefix := fmt.Sprintf("%s/%s/", m.OrganizationID, m.ID)
 	filename := fmt.Sprintf("%s-%s.zip", t.UTC().Format(formatDateTime), m.ID.String())
 	s3key := fmt.Sprintf("%s/%s", m.OrganizationID, filename)
@@ -280,11 +280,11 @@ func (c *Compressor) Compress(ctx context.Context, m *models.ExportPayload) (tim
 		HelpString:  helpString,
 	}
 
-	err = c.zipExport(ctx, prefix, filename, s3key, meta, sources)
+	err = c.zipExport(ctx, logger, prefix, filename, s3key, meta, sources)
 	return t, filename, s3key, err
 }
 
-func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error) {
+func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w io.WriterAt, bucket, key *string) (n int64, err error) {
 	s3client := NewS3Client(c.Cfg, c.Log)
 
 	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
@@ -296,7 +296,7 @@ func (c *Compressor) Download(ctx context.Context, w io.WriterAt, bucket, key *s
 	return downloader.Download(ctx, w, input)
 }
 
-func (c *Compressor) Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
+func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
 	s3client := NewS3Client(c.Cfg, c.Log)
 
 	uploader := manager.NewUploader(s3client, func(u *manager.Uploader) {
@@ -339,22 +339,22 @@ func getUploadSize(ctx context.Context, s3client *s3.Client, bucket, key *string
 	return headObjOutput.ContentLength, nil
 }
 
-func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
+func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
 	filename := fmt.Sprintf("%s/%s/%s.%s", payload.OrganizationID, payload.ID, resourceUUID, payload.Format)
 
 	if err := payload.SetStatusRunning(db); err != nil {
-		c.Log.Errorw("failed to set running status", "error", err)
+		logger.Errorw("failed to set running status", "error", err)
 		return err
 	}
 
-	_, uploadErr := c.Upload(ctx, body, &c.Bucket, &filename)
+	_, uploadErr := c.Upload(ctx, logger, body, &c.Bucket, &filename)
 	totalUploads.Inc()
 	if uploadErr != nil {
 		failUploads.Inc()
-		c.Log.Errorf("error during upload: %v", uploadErr)
+		logger.Errorf("error during upload: %v", uploadErr)
 		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
 		if err := payload.SetSourceStatus(db, resourceUUID, models.RFailed, &statusError); err != nil {
-			c.Log.Errorw("failed to set source status after failed upload", "error", err)
+			logger.Errorw("failed to set source status after failed upload", "error", err)
 			return uploadErr
 		}
 		return uploadErr
@@ -362,7 +362,7 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 
 	uploadSize, err := getUploadSize(ctx, &c.Client, &c.Bucket, &filename)
 	if err != nil {
-		c.Log.Errorw("failed to get metric for upload size", "error", err)
+		logger.Errorw("failed to get metric for upload size", "error", err)
 	} else {
 		uploadSizes.With(prometheus.Labels{"account": payload.AccountID, "org_id": payload.OrganizationID, "app": application}).Observe(float64(uploadSize))
 	}
@@ -370,7 +370,7 @@ func (c *Compressor) CreateObject(ctx context.Context, db models.DBInterface, bo
 	return nil
 }
 
-func (c *Compressor) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+func (c *Compressor) GetObject(ctx context.Context, logger *zap.SugaredLogger, key string) (io.ReadCloser, error) {
 	input := &s3.GetObjectInput{Bucket: &c.Bucket, Key: &key}
 	//return GetObject(ctx, &c.Client, input)
 	s3Object, err := GetObject(ctx, &c.Client, input)
@@ -380,20 +380,21 @@ func (c *Compressor) GetObject(ctx context.Context, key string) (io.ReadCloser, 
 	return s3Object.Body, err
 }
 
-func (c *Compressor) compressPayload(db models.DBInterface, payload *models.ExportPayload) {
-	t, filename, s3key, err := c.Compress(context.TODO(), payload)
+func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
+
+	t, filename, s3key, err := c.Compress(context.TODO(), logger, payload)
 	if err != nil {
-		c.Log.Errorw("failed to compress payload", "error", err)
+		logger.Errorw("failed to compress payload", "error", err)
 		if err := payload.SetStatusFailed(db); err != nil {
-			c.Log.Errorw("failed to set status failed", "error", err)
+			logger.Errorw("failed to set status failed", "error", err)
 			return
 		}
 	}
 
-	c.Log.Infof("done uploading %s", filename)
+	logger.Infof("done uploading %s", filename)
 	ready, err := payload.GetAllSourcesStatus()
 	if err != nil {
-		c.Log.Errorf("failed to get all source status: %v", err)
+		logger.Errorf("failed to get all source status: %v", err)
 		return
 	}
 
@@ -405,7 +406,7 @@ func (c *Compressor) compressPayload(db models.DBInterface, payload *models.Expo
 	}
 
 	if err != nil {
-		c.Log.Errorw("failed updating model status", "error", err)
+		logger.Errorw("failed updating model status", "error", err)
 		return
 	}
 }
@@ -428,7 +429,7 @@ func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
 	case models.StatusComplete, models.StatusPartial:
 		if payload.Status == models.Running {
 			logger.Infow("ready for zipping", "export-uuid", payload.ID)
-			go c.compressPayload(db, payload) // start a go-routine to not block
+			go c.compressPayload(logger, db, payload) // start a go-routine to not block
 		}
 	case models.StatusPending:
 		return
@@ -443,27 +444,27 @@ func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
 type MockStorageHandler struct {
 }
 
-func (mc *MockStorageHandler) Compress(ctx context.Context, m *models.ExportPayload) (time.Time, string, string, error) {
+func (mc *MockStorageHandler) Compress(ctx context.Context, l *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error) {
 	fmt.Println("Ran mockStorageHandler.Compress")
 	return time.Now(), "filename", "s3key", nil
 }
 
-func (mc *MockStorageHandler) Download(ctx context.Context, w io.WriterAt, bucket, key *string) (n int64, err error) {
+func (mc *MockStorageHandler) Download(ctx context.Context, l *zap.SugaredLogger, w io.WriterAt, bucket, key *string) (n int64, err error) {
 	fmt.Println("Ran mockStorageHandler.Download")
 	return 0, nil
 }
 
-func (mc *MockStorageHandler) Upload(ctx context.Context, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
+func (mc *MockStorageHandler) Upload(ctx context.Context, l *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
 	fmt.Println("Ran mockStorageHandler.Upload")
 	return nil, nil
 }
 
-func (mc *MockStorageHandler) CreateObject(ctx context.Context, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
+func (mc *MockStorageHandler) CreateObject(ctx context.Context, l *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
 	fmt.Println("Ran mockStorageHandler.CreateObject")
 	return nil
 }
 
-func (mc *MockStorageHandler) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+func (mc *MockStorageHandler) GetObject(ctx context.Context, l *zap.SugaredLogger, key string) (io.ReadCloser, error) {
 	fmt.Println("Ran mockStorageHandler.GetObject")
 
 	return nil, nil

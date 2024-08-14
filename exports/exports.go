@@ -190,7 +190,7 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := e.StorageHandler.GetObject(r.Context(), export.S3Key)
+	out, err := e.StorageHandler.GetObject(r.Context(), logger, export.S3Key)
 	if err != nil {
 		logger.Errorw("failed to get object", "error", err)
 		InternalServerError(w, err)

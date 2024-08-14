@@ -559,7 +559,7 @@ var _ = Describe("The public API", func() {
 		Entry("with filters set to null", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": null}`, "", http.StatusAccepted),
 		Entry("with filters set to empty json", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {}}`, "", http.StatusAccepted),
 		Entry("with filters set to empty json which is really a string", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": "{}"}`, "invalid json format of filters", http.StatusBadRequest),
-		Entry("with invalid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"im invalid json ahhhh"}}`, "invalid json format of filters", http.StatusBadRequest),
+		Entry("with invalid filters", "Test Export Request", `{"application":"exampleApp", "resource":"exampleResource", "filters": {"im invalid json ahhhh"}}`, "invalid character", http.StatusBadRequest),
 	)
 
 	DescribeTable("can return the appropriate error if an application or resource is incorrect", func(name, format, expires, sources, expectedBody string, expectedStatus int) {

@@ -339,7 +339,7 @@ func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error
 	for _, source := range apiPayload.Sources {
 
 		if source.Filters != nil {
-			var dst any
+			var dst map[string]interface{}
 			// Verify the incoming filters are valid json
 			err := json.Unmarshal(source.Filters, &dst)
 			if err != nil {

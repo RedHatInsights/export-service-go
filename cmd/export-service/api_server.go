@@ -67,7 +67,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.PublicPort),
 		Handler:      router,
-		ReadTimeout:  5 * time.Second,
+		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 	// server.RegisterOnShutdown(func() {
@@ -108,7 +108,7 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 		Handler: router,
 		// TODO: tune these timeouts. This server is repsonsible for writing to s3.
 		// It is possible these values are way too low depending on the dataset received.
-		ReadTimeout:  5 * time.Second,
+		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 }

@@ -299,6 +299,9 @@ func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w 
 func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
 	s3client := NewS3Client(c.Cfg, c.Log)
 
+    ctx, cancel := context.WithTimeout(ctx, 10 * time.Second)
+    defer cancel()
+
 	uploader := manager.NewUploader(s3client, func(u *manager.Uploader) {
 		u.PartSize = 100 * 1024 * 1024 // 100 MiB
 	})

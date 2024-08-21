@@ -8,8 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
+    chi_middleware "github.com/go-chi/chi/v5/middleware"
+
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 
@@ -32,6 +35,7 @@ type Internal struct {
 // application name, and resourceuuid.
 func (i *Internal) InternalRouter(r chi.Router) {
 	r.Route("/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
+        sub.Use(chi_middleware.Timeout(60 * time.Second))
 		sub.Use(middleware.URLParamsCtx)
 		sub.Post("/upload", i.PostUpload)
 		sub.Post("/error", i.PostError)

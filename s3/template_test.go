@@ -20,7 +20,7 @@ var _ = Describe("Build files included in zip", func() {
 					Filename:    "filename",
 					Application: "application",
 					Resource:    "resource",
-					Filters: map[string]string{
+					Filters: map[string]interface{}{
 						"filter_key": "filter_value",
 					},
 				},
@@ -112,7 +112,7 @@ If you have any questions, or need support with this service, please contact Red
 					Filename:    "filename",
 					Application: "application",
 					Resource:    "resource",
-					Filters:     map[string]string{},
+					Filters:     map[string]interface{}{},
 				},
 			},
 			HelpString: "Help me!",
@@ -151,7 +151,7 @@ If you have any questions, or need support with this service, please contact Red
 					Filename:    "filename",
 					Application: "application",
 					Resource:    "resource",
-					Filters: map[string]string{
+					Filters: map[string]interface{}{
 						"filter_key": "filter_value",
 					},
 				},
@@ -159,7 +159,7 @@ If you have any questions, or need support with this service, please contact Red
 					Filename:    "filename2",
 					Application: "application2",
 					Resource:    "resource2",
-					Filters: map[string]string{
+					Filters: map[string]interface{}{
 						"filter_key": "filter_value",
 					},
 				},
@@ -219,7 +219,7 @@ If you have any questions, or need support with this service, please contact Red
 					Filename:    "filename",
 					Application: "application",
 					Resource:    "resource",
-					Filters: map[string]string{
+					Filters: map[string]interface{}{
 						"filter_key": "filter_value",
 					},
 				},
@@ -227,7 +227,7 @@ If you have any questions, or need support with this service, please contact Red
 					Filename:    "filename2",
 					Application: "application2",
 					Resource:    "resource2",
-					Filters: map[string]string{
+					Filters: map[string]interface{}{
 						"filter_key": "filter_value",
 					},
 				},
@@ -269,7 +269,7 @@ If you have any questions, or need support with this service, please contact Red
 	)
 
 	It("test the filters are right", func() {
-		filters := map[string]string{
+		filters := map[string]interface{}{
 			"filter_key":  "filter_value",
 			"filter_key2": "filter_value2",
 			"filter_key3": "filter_value3",

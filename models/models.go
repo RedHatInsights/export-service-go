@@ -118,8 +118,8 @@ func (ep *ExportPayload) GetSources() ([]Source, error) {
 	return ep.Sources, nil
 }
 
-func (es *Source) GetFilters() (map[string]string, error) {
-	var filters map[string]string
+func (es *Source) GetFilters() (map[string]interface{}, error) {
+	var filters map[string]interface{}
 
 	if es.Filters == nil {
 		return filters, nil

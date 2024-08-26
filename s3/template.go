@@ -27,7 +27,7 @@ type ExportFileMeta struct {
 	Application string `json:"application"`
 	Resource    string `json:"resource"`
 	// Filters are a key-value pair of the filters used to create the export
-	Filters map[string]string `json:"filters"`
+	Filters map[string]interface{} `json:"filters"`
 }
 
 type FailedFileMeta struct {

@@ -45,8 +45,7 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -56,8 +55,7 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -171,8 +169,7 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -217,8 +214,7 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -253,8 +249,7 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -264,19 +259,17 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
           "500": {
-            "description": "Error deleting paylod entry",
+            "description": "Error deleting payload entry",
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -320,8 +313,7 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "message": "string",
-                  "code": "string"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -557,6 +549,19 @@
                 "format": "integer"
               }
             }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Something went wrong"
+          },
+          "code": {
+            "type": "string",
+            "example": "123"
           }
         }
       }

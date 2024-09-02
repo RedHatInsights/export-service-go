@@ -10,6 +10,8 @@ servers:
 paths:
   /exports:
     post:
+      description: Creates a new export request. Use this endpoint to create an export request that will call the solicited services so that the services can gather the requested data.
+      summary: Create a new export request
       operationId: createExport
       requestBody:
         content:
@@ -27,6 +29,8 @@ paths:
         - 3ScaleIdentity: []
     get:
       operationId: getExports
+      description: Provides a list of export requests and the resolution status of each request. Use this endpoint to review all of the export requests that the user has requested.
+      summary: List the export requests
       parameters:
         - name: name
           in: query
@@ -90,6 +94,8 @@ paths:
         - 3ScaleIdentity: []
   /exports/{id}:
     get:
+      summary: Download the exported data
+      description: Download the exported data from the specified export request. When the export request is ready, use this endpoint to download the exported data.
       operationId: downloadExport
       parameters:
         - name: id
@@ -108,6 +114,8 @@ paths:
       security:
         - 3ScaleIdentity: []
     delete:
+      summary: Delete an existing export request
+      description: Delete the specified export request. Use this endpoint to delete available export requests.
       operationId: deleteExport
       parameters:
         - name: id
@@ -122,6 +130,8 @@ paths:
         - 3ScaleIdentity: []
   /exports/{id}/status:
     get:
+      summary: Check the status of the export request
+      description: Check the status of the specified export request. Use this endpoint to check the status of an export request.
       operationId: getExportStatus
       parameters:
         - name: id

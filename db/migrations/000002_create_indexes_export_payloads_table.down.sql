@@ -1,3 +1,1 @@
 DROP INDEX CONCURRENTLY IF EXISTS export_payloads_account_id_org_id_username_index;
-
-DROP INDEX CONCURRENTLY IF EXISTS export_payloads_account_id_org_id_username_created_at_index

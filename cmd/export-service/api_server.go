@@ -197,10 +197,10 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Client: *s3Client,
 		Cfg:    *cfg,
         Uploader: s3_manager.NewUploader(s3Client, func(u *s3_manager.Uploader) {
-            u.PartSize = 100 * 1024 * 1024 // 100 MiB
+            u.PartSize = 10 * 1024 * 1024 // 10 MiB
         }), 
         Downloader: s3_manager.NewDownloader(s3Client, func(d *s3_manager.Downloader) {
-            d.PartSize = 100 * 1024 * 1024 // 100 MiB
+            d.PartSize = 10 * 1024 * 1024 // 10 MiB
         }),
 	}
 

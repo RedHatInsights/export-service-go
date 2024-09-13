@@ -29,7 +29,9 @@ type Compressor struct {
 	Log    *zap.SugaredLogger
 	Client s3.Client
 	Cfg    econfig.ExportConfig
+    Uploader *manager.Uploader
 }
+
 
 // S3ListObjectsAPI defines the interface for the ListObjectsV2 function.
 // We use this interface to test the function using a mocked service.
@@ -296,12 +298,10 @@ func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w 
 	return downloader.Download(ctx, w, input)
 }
 
-func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
-	s3client := NewS3Client(c.Cfg, c.Log)
 
-	uploader := manager.NewUploader(s3client, func(u *manager.Uploader) {
-		u.PartSize = 100 * 1024 * 1024 // 100 MiB
-	})
+func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
+
+	s3client := NewS3Client(c.Cfg, c.Log)
 
 	input := &s3.PutObjectInput{
 		Bucket: bucket,
@@ -309,7 +309,7 @@ func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body
 		Body:   body,
 	}
 
-	result, err := uploader.Upload(ctx, input)
+	result, err := c.Uploader.Upload(ctx, input)
 	if err != nil {
 		c.Log.Errorf("failed to uplodad tarfile `%s` to s3: %v", *key, err)
 

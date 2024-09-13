@@ -31,6 +31,7 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -195,6 +196,9 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Log:    log,
 		Client: *s3Client,
 		Cfg:    *cfg,
+        Uploader: s3_manager.NewUploader(s3Client, func(u *s3_manager.Uploader) {
+            u.PartSize = 100 * 1024 * 1024 // 100 MiB
+        }),
 	}
 
 	external := exports.Export{

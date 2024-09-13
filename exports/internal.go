@@ -32,7 +32,7 @@ type Internal struct {
 // InternalRouter is a router for all of the internal routes which require exportuuid,
 // application name, and resourceuuid.
 func (i *Internal) InternalRouter(r chi.Router) {
-	r.Mount("/debug", ch_middleware.Profiler())
+	r.Mount("/debug", chi_middleware.Profiler())
 	r.Route("/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
 		sub.Use(middleware.URLParamsCtx)
 		sub.Post("/upload", i.PostUpload)

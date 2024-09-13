@@ -95,6 +95,7 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 	)
 
 	router.Get("/", statusOK)
+	router.Mount("/debug", middleware.Profiler())
 
 	router.Route("/app/export/v1", func(r chi.Router) {
 		r.Use(emiddleware.EnforcePSK)

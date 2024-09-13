@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	chi "github.com/go-chi/chi/v5"
-	chi_middleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 
@@ -32,7 +31,6 @@ type Internal struct {
 // InternalRouter is a router for all of the internal routes which require exportuuid,
 // application name, and resourceuuid.
 func (i *Internal) InternalRouter(r chi.Router) {
-	r.Mount("/debug", chi_middleware.Profiler())
 	r.Route("/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
 		sub.Use(middleware.URLParamsCtx)
 		sub.Post("/upload", i.PostUpload)

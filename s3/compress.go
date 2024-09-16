@@ -25,14 +25,13 @@ import (
 const formatDateTime = "2006-01-02T15:04:05Z" // ISO 8601
 
 type Compressor struct {
-	Bucket string
-	Log    *zap.SugaredLogger
-	Client s3.Client
-	Cfg    econfig.ExportConfig
-    Uploader *manager.Uploader
-    Downloader *manager.Downloader
+	Bucket     string
+	Log        *zap.SugaredLogger
+	Client     s3.Client
+	Cfg        econfig.ExportConfig
+	Uploader   *manager.Uploader
+	Downloader *manager.Downloader
 }
-
 
 // S3ListObjectsAPI defines the interface for the ListObjectsV2 function.
 // We use this interface to test the function using a mocked service.
@@ -289,7 +288,6 @@ func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w 
 
 	return c.Downloader.Download(ctx, w, input)
 }
-
 
 func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
 

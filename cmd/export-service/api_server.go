@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
@@ -22,6 +21,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 
+	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -31,7 +31,6 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
-	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -68,8 +67,8 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.PublicPort),
 		Handler:      router,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  cfg.PublicHttpServerReadTimeout,
+		WriteTimeout: cfg.PublicHttpServerWriteTimeout,
 	}
 	// server.RegisterOnShutdown(func() {
 	// 	// initialize Kafka producers/consumers here
@@ -85,7 +84,6 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
-
 
 	// setup middleware
 	router.Use(
@@ -111,8 +109,8 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 		Handler: router,
 		// TODO: tune these timeouts. This server is repsonsible for writing to s3.
 		// It is possible these values are way too low depending on the dataset received.
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  cfg.PrivateHttpServerReadTimeout,
+		WriteTimeout: cfg.PrivateHttpServerWriteTimeout,
 	}
 }
 
@@ -196,12 +194,12 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Log:    log,
 		Client: *s3Client,
 		Cfg:    *cfg,
-        Uploader: s3_manager.NewUploader(s3Client, func(u *s3_manager.Uploader) {
-            u.PartSize = 10 * 1024 * 1024 // 10 MiB
-        }), 
-        Downloader: s3_manager.NewDownloader(s3Client, func(d *s3_manager.Downloader) {
-            d.PartSize = 10 * 1024 * 1024 // 10 MiB
-        }),
+		Uploader: s3_manager.NewUploader(s3Client, func(u *s3_manager.Uploader) {
+			u.PartSize = cfg.StorageConfig.AwsUploaderBufferSize
+		}),
+		Downloader: s3_manager.NewDownloader(s3Client, func(d *s3_manager.Downloader) {
+			d.PartSize = cfg.StorageConfig.AwsDownloaderBufferSize
+		}),
 	}
 
 	external := exports.Export{

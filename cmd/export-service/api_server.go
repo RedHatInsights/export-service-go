@@ -163,12 +163,18 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
 		"publicport", cfg.PublicPort,
+		"public_http_server_read_timeout", cfg.PublicHttpServerReadTimeout,
+		"public_http_server_write_timeout", cfg.PublicHttpServerWriteTimeout,
+		"private_http_server_read_timeout", cfg.PrivateHttpServerReadTimeout,
+		"private_http_server_write_timeout", cfg.PrivateHttpServerWriteTimeout,
 		"metricsport", cfg.MetricsPort,
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
 		"publicopenapifilepath", cfg.OpenAPIPublicPath,
 		"privateopenapifilepath", cfg.OpenAPIPrivatePath,
 		"exportableApplications", cfg.ExportableApplications,
+		"aws_uploader_buffer_size", cfg.StorageConfig.AwsUploaderBufferSize,
+		"aws_downloader_buffer_size", cfg.StorageConfig.AwsDownloaderBufferSize,
 	)
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)

@@ -165,7 +165,7 @@
             }
           },
           "500": {
-            "description": "Failed to get object",
+            "description": "Unexpected server side error",
             "content":{
               "application/json": {
                 "schema": {
@@ -309,7 +309,7 @@
             }
           },
           "500": {
-            "description": "Error while encoding",
+            "description": "Unexpected server side error",
             "content":{
               "application/json": {
                 "schema": {

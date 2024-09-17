@@ -103,7 +103,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExportList'
         '500':
-          description: Failed to get object
+          description: Unexpected server side error
           content:
             application/json:
               schema:
@@ -189,7 +189,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExportStatus'
         '500':
-          description: Error while encoding
+          description: Unexpected server side error
           content:
             application/json:
               schema:

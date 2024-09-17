@@ -94,7 +94,6 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 		middleware.Recoverer,
 	)
 
-	router.Mount("/debug", middleware.Profiler())
 	router.Get("/", statusOK)
 
 	router.Route("/app/export/v1", func(r chi.Router) {

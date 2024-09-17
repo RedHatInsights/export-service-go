@@ -258,13 +258,11 @@ func Get() *ExportConfig {
 			}
 
 			bucket := cfg.ObjectStore.Buckets[0]
-			config.StorageConfig = storageConfig{
-				Bucket:    exportBucketInfo.RequestedName,
-				Endpoint:  buildBaseHttpUrl(cfg.ObjectStore.Tls, cfg.ObjectStore.Hostname, cfg.ObjectStore.Port),
-				AccessKey: *bucket.AccessKey,
-				SecretKey: *bucket.SecretKey,
-				UseSSL:    cfg.ObjectStore.Tls,
-			}
+			config.StorageConfig.Bucket = exportBucketInfo.RequestedName
+			config.StorageConfig.Endpoint = buildBaseHttpUrl(cfg.ObjectStore.Tls, cfg.ObjectStore.Hostname, cfg.ObjectStore.Port)
+			config.StorageConfig.AccessKey = *bucket.AccessKey
+			config.StorageConfig.SecretKey = *bucket.SecretKey
+			config.StorageConfig.UseSSL = cfg.ObjectStore.Tls
 		}
 	})
 

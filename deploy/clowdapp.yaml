@@ -80,6 +80,14 @@ objects:
           value: ${AWS_UPLOADER_BUFFER_SIZE}
         - name: AWS_DOWNLOADER_BUFFER_SIZE
           value: ${AWS_DOWNLOADER_BUFFER_SIZE}
+        - name: PUBLIC_HTTP_SERVER_READ_TIMEOUT
+          value: ${PUBLIC_HTTP_SERVER_READ_TIMEOUT}
+        - name: PUBLIC_HTTP_SERVER_WRITE_TIMEOUT
+          value: ${PUBLIC_HTTP_SERVER_WRITE_TIMEOUT}
+        - name: PRIVATE_HTTP_SERVER_READ_TIMEOUT
+          value: ${PRIVATE_HTTP_SERVER_READ_TIMEOUT}
+        - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
+          value: ${PRIVATE_HTTP_SERVER_WRITE_TIMEOUT}
         initContainers:
         - args:
           - export-service

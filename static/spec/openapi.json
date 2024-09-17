@@ -560,8 +560,8 @@
             "example": "Something went wrong"
           },
           "code": {
-            "type": "string",
-            "example": "123"
+            "type": "integer",
+            "example": 12345
           }
         }
       }

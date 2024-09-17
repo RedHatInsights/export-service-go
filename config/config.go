@@ -172,6 +172,8 @@ func Get() *ExportConfig {
 			},
 		}
 
+		config.Logging = &loggingConfig{}
+
 		config.StorageConfig = storageConfig{
 			Bucket:                  "exports-bucket",
 			Endpoint:                buildBaseHttpUrl(options.GetBool("MINIO_SSL"), options.GetString("MINIO_HOST"), options.GetInt("MINIO_PORT")),

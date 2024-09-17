@@ -179,7 +179,7 @@ func Get() *ExportConfig {
 			SecretKey:               options.GetString("AWS_SECRET_ACCESS_KEY"),
 			UseSSL:                  options.GetBool("MINIO_SSL"),
 			AwsUploaderBufferSize:   options.GetInt64("AWS_UPLOADER_BUFFER_SIZE"),
-			AwsDownloaderBufferSize: options.GetInt64("AWS_DOWNLOADER_LOADER_BUFFER_SIZE"),
+			AwsDownloaderBufferSize: options.GetInt64("AWS_DOWNLOADER_BUFFER_SIZE"),
 		}
 
 		config.KafkaConfig = kafkaConfig{

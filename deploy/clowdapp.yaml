@@ -76,6 +76,18 @@ objects:
               key: psk-list
         - name: EXPORT_ENABLE_APPS
           value: ${EXPORT_ENABLE_APPS}
+        - name: AWS_UPLOADER_BUFFER_SIZE
+          value: ${AWS_UPLOADER_BUFFER_SIZE}
+        - name: AWS_DOWNLOADER_BUFFER_SIZE
+          value: ${AWS_DOWNLOADER_BUFFER_SIZE}
+        - name: PUBLIC_HTTP_SERVER_READ_TIMEOUT
+          value: ${PUBLIC_HTTP_SERVER_READ_TIMEOUT}
+        - name: PUBLIC_HTTP_SERVER_WRITE_TIMEOUT
+          value: ${PUBLIC_HTTP_SERVER_WRITE_TIMEOUT}
+        - name: PRIVATE_HTTP_SERVER_READ_TIMEOUT
+          value: ${PRIVATE_HTTP_SERVER_READ_TIMEOUT}
+        - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
+          value: ${PRIVATE_HTTP_SERVER_WRITE_TIMEOUT}
         initContainers:
         - args:
           - export-service
@@ -200,3 +212,15 @@ parameters:
     value: INFO
   - name: EXPORT_ENABLE_APPS
     value: "{\"exampleApplication\":[\"exampleResource\",\"anotherExampleResource\"],\"urn:redhat:application:inventory\":[\"urn:redhat:application:inventory:export:systems\"],\"urn:redhat:application:notifications\":[\"urn:redhat:application:notifications:export:events\"]}"
+  - name: AWS_UPLOADER_BUFFER_SIZE
+    value: "10485760"
+  - name: AWS_DOWNLOADER_BUFFER_SIZE
+    value: "10485760"
+  - name: PUBLIC_HTTP_SERVER_READ_TIMEOUT
+    value: "5s"
+  - name: PUBLIC_HTTP_SERVER_WRITE_TIMEOUT
+    value: "10s"
+  - name: PRIVATE_HTTP_SERVER_READ_TIMEOUT
+    value: "5s"
+  - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
+    value: "10s"

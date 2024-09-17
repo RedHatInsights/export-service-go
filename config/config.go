@@ -208,17 +208,13 @@ func Get() *ExportConfig {
 				panic("RDS CA failed to write: " + err.Error())
 			}
 
-			config.DBConfig = dbConfig{
-				User:     cfg.Database.Username,
-				Password: cfg.Database.Password,
-				Hostname: cfg.Database.Hostname,
-				Port:     fmt.Sprint(cfg.Database.Port),
-				Name:     cfg.Database.Name,
-				SSLCfg: dbSSLConfig{
-					SSLMode: cfg.Database.SslMode,
-					RdsCa:   rdsCaPath,
-				},
-			}
+			config.DBConfig.User = cfg.Database.Username
+			config.DBConfig.Password = cfg.Database.Password
+			config.DBConfig.Hostname = cfg.Database.Hostname
+			config.DBConfig.Port = fmt.Sprint(cfg.Database.Port)
+			config.DBConfig.Name = cfg.Database.Name
+			config.DBConfig.SSLCfg.SSLMode = cfg.Database.SslMode
+			config.DBConfig.SSLCfg.RdsCa = rdsCaPath
 
 			config.KafkaConfig.Brokers = clowder.KafkaServers
 			config.KafkaConfig.ExportsTopic = clowder.KafkaTopics[ExportTopic].Name
@@ -250,12 +246,10 @@ func Get() *ExportConfig {
 				config.KafkaConfig.SSLConfig.Protocol = securityProtocol
 			}
 
-			config.Logging = &loggingConfig{
-				AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
-				SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
-				LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
-				Region:          cfg.Logging.Cloudwatch.Region,
-			}
+			config.Logging.AccessKeyID = cfg.Logging.Cloudwatch.AccessKeyId
+			config.Logging.SecretAccessKey = cfg.Logging.Cloudwatch.SecretAccessKey
+			config.Logging.LogGroup = cfg.Logging.Cloudwatch.LogGroup
+			config.Logging.Region = cfg.Logging.Cloudwatch.Region
 
 			bucket := cfg.ObjectStore.Buckets[0]
 			config.StorageConfig.Bucket = exportBucketInfo.RequestedName

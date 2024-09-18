@@ -17,8 +17,6 @@
   "paths": {
     "/exports": {
       "post": {
-        "description": "Creates a new export request. Use this endpoint to create an export request that will call the solicited services so that the services can gather the requested data.",
-        "summary": "Create a new export request",
         "operationId": "createExport",
         "requestBody": {
           "content": {
@@ -45,7 +43,8 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -55,7 +54,8 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -69,8 +69,6 @@
       },
       "get": {
         "operationId": "getExports",
-        "description": "Provides a list of export requests and the resolution status of each request. Use this endpoint to review all of the export requests that the user has requested.",
-        "summary": "List the export requests",
         "parameters": [
           {
             "name": "name",
@@ -165,11 +163,12 @@
             }
           },
           "500": {
-            "description": "Unexpected server side error",
+            "description": "Failed to get object",
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -184,8 +183,6 @@
     },
     "/exports/{id}": {
       "get": {
-        "summary": "Download the exported data",
-        "description": "Download the exported data from the specified export request. When the export request is ready, use this endpoint to download the exported data.",
         "operationId": "downloadExport",
         "parameters": [
           {
@@ -214,7 +211,8 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -227,8 +225,6 @@
         ]
       },
       "delete": {
-        "summary": "Delete an existing export request",
-        "description": "Delete the specified export request. Use this endpoint to delete available export requests.",
         "operationId": "deleteExport",
         "parameters": [
           {
@@ -249,7 +245,8 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -259,17 +256,19 @@
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
           },
           "500": {
-            "description": "Error deleting payload entry",
+            "description": "Error deleting paylod entry",
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -284,8 +283,6 @@
     },
     "/exports/{id}/status": {
       "get": {
-        "summary": "Check the status of the export request",
-        "description": "Check the status of the specified export request. Use this endpoint to check the status of an export request.",
         "operationId": "getExportStatus",
         "parameters": [
           {
@@ -309,11 +306,12 @@
             }
           },
           "500": {
-            "description": "Unexpected server side error",
+            "description": "Error while encoding",
             "content":{
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "message": "string",
+                  "code": "string"
                 }
               }
             }
@@ -549,19 +547,6 @@
                 "format": "integer"
               }
             }
-          }
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "example": "Something went wrong"
-          },
-          "code": {
-            "type": "integer",
-            "example": 12345
           }
         }
       }

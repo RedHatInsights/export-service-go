@@ -10,6 +10,8 @@ servers:
 paths:
   /exports:
     post:
+      description: Creates a new export request. Use this endpoint to create an export request that will call the solicited services so that the services can gather the requested data.
+      summary: Create a new export request
       operationId: createExport
       requestBody:
         content:
@@ -17,16 +19,30 @@ paths:
             schema:
               $ref: '#/components/schemas/ExportRequest'
       responses:
-        '202':
+        '200':
           description: Export scheduled
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExportStatus'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
     get:
       operationId: getExports
+      description: Provides a list of export requests and the resolution status of each request. Use this endpoint to review all of the export requests that the user has requested.
+      summary: List the export requests
       parameters:
         - name: name
           in: query
@@ -48,12 +64,12 @@ paths:
           in: query
           schema:
             type: string
-            example: subscriptions
+            example: urn:redhat:application:notifications
         - name: resource
           in: query
           schema:
             type: string
-            example: systems
+            example: urn:redhat:application:notifications:export:events
         - name: offset
           in: query
           schema:
@@ -86,10 +102,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExportList'
+        '500':
+          description: Unexpected server side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
   /exports/{id}:
     get:
+      summary: Download the exported data
+      description: Download the exported data from the specified export request. When the export request is ready, use this endpoint to download the exported data.
       operationId: downloadExport
       parameters:
         - name: id
@@ -105,9 +129,17 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          description: Not ready for download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
     delete:
+      summary: Delete an existing export request
+      description: Delete the specified export request. Use this endpoint to delete available export requests.
       operationId: deleteExport
       parameters:
         - name: id
@@ -118,10 +150,30 @@ paths:
       responses:
         '202':
           description: Export deleted (if it existed)
+        '400':
+          description: Not a valid export UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error deleting payload entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
   /exports/{id}/status:
     get:
+      summary: Check the status of the export request
+      description: Check the status of the specified export request. Use this endpoint to check the status of an export request.
       operationId: getExportStatus
       parameters:
         - name: id
@@ -136,9 +188,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExportStatus'
+        '500':
+          description: Unexpected server side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
-
 components:
   schemas:
     Format:
@@ -294,18 +351,24 @@ components:
             count:
               type: number
               format: integer
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Something went wrong
+        code:
+          type: integer
+          example: 12345
   securitySchemes:
     3ScaleIdentity:
       type: apiKey
       in: header
       name: x-rh-identity
-      description: >
+      description: |
         Base64-encoded JSON identity header provided by 3Scale. Contains an
-
         account number of the user issuing the request. Format of the JSON:
-
         ```
-
         {
             "identity": {
                 "account_number": "account123",
@@ -319,9 +382,6 @@ components:
                 }
             }
         }
-
         ```
-
         Encoded (via `base64 -w0`):
-
         `eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K`

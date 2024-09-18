@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 
-	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -67,8 +67,8 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.PublicPort),
 		Handler:      router,
-		ReadTimeout:  cfg.PublicHttpServerReadTimeout,
-		WriteTimeout: cfg.PublicHttpServerWriteTimeout,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 	// server.RegisterOnShutdown(func() {
 	// 	// initialize Kafka producers/consumers here
@@ -108,8 +108,8 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 		Handler: router,
 		// TODO: tune these timeouts. This server is repsonsible for writing to s3.
 		// It is possible these values are way too low depending on the dataset received.
-		ReadTimeout:  cfg.PrivateHttpServerReadTimeout,
-		WriteTimeout: cfg.PrivateHttpServerWriteTimeout,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 }
 
@@ -162,18 +162,12 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
 		"publicport", cfg.PublicPort,
-		"public_http_server_read_timeout", cfg.PublicHttpServerReadTimeout,
-		"public_http_server_write_timeout", cfg.PublicHttpServerWriteTimeout,
-		"private_http_server_read_timeout", cfg.PrivateHttpServerReadTimeout,
-		"private_http_server_write_timeout", cfg.PrivateHttpServerWriteTimeout,
 		"metricsport", cfg.MetricsPort,
 		"loglevel", cfg.LogLevel,
 		"debug", cfg.Debug,
 		"publicopenapifilepath", cfg.OpenAPIPublicPath,
 		"privateopenapifilepath", cfg.OpenAPIPrivatePath,
 		"exportableApplications", cfg.ExportableApplications,
-		"aws_uploader_buffer_size", cfg.StorageConfig.AwsUploaderBufferSize,
-		"aws_downloader_buffer_size", cfg.StorageConfig.AwsDownloaderBufferSize,
 	)
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)
@@ -199,12 +193,6 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Log:    log,
 		Client: *s3Client,
 		Cfg:    *cfg,
-		Uploader: s3_manager.NewUploader(s3Client, func(u *s3_manager.Uploader) {
-			u.PartSize = cfg.StorageConfig.AwsUploaderBufferSize
-		}),
-		Downloader: s3_manager.NewDownloader(s3Client, func(d *s3_manager.Downloader) {
-			d.PartSize = cfg.StorageConfig.AwsDownloaderBufferSize
-		}),
 	}
 
 	external := exports.Export{

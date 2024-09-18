@@ -25,12 +25,10 @@ import (
 const formatDateTime = "2006-01-02T15:04:05Z" // ISO 8601
 
 type Compressor struct {
-	Bucket     string
-	Log        *zap.SugaredLogger
-	Client     s3.Client
-	Cfg        econfig.ExportConfig
-	Uploader   *manager.Uploader
-	Downloader *manager.Downloader
+	Bucket string
+	Log    *zap.SugaredLogger
+	Client s3.Client
+	Cfg    econfig.ExportConfig
 }
 
 // S3ListObjectsAPI defines the interface for the ListObjectsV2 function.
@@ -66,7 +64,7 @@ func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, p
 	// Delete the contents of the temp directory when this function returns
 	defer os.RemoveAll(tempDirName)
 
-	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, logger, c.Downloader, c.Bucket, prefix, tempDirName)
+	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, logger, c.Bucket, prefix, tempDirName)
 	if err != nil {
 		return err
 	}
@@ -101,8 +99,7 @@ type s3FileData struct {
 	basename string
 }
 
-func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap.SugaredLogger, downloader *manager.Downloader, bucket string, prefix string, tempDir string) ([]s3FileData, error) {
-
+func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap.SugaredLogger, bucket string, prefix string, tempDir string) ([]s3FileData, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket: &bucket,
 		Prefix: &prefix,
@@ -130,6 +127,10 @@ func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap
 		if err != nil {
 			return nil, fmt.Errorf("failed to create temp file: %w", err)
 		}
+
+		downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
+			d.PartSize = 100 * 1024 * 1024 // 100 MiB
+		})
 
 		input := &s3.GetObjectInput{Bucket: &bucket, Key: obj.Key}
 
@@ -284,14 +285,23 @@ func (c *Compressor) Compress(ctx context.Context, logger *zap.SugaredLogger, m 
 }
 
 func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w io.WriterAt, bucket, key *string) (n int64, err error) {
+	s3client := NewS3Client(c.Cfg, c.Log)
+
+	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
+		d.PartSize = 100 * 1024 * 1024 // 100 MiB
+	})
+
 	input := &s3.GetObjectInput{Bucket: bucket, Key: key}
 
-	return c.Downloader.Download(ctx, w, input)
+	return downloader.Download(ctx, w, input)
 }
 
 func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
-
 	s3client := NewS3Client(c.Cfg, c.Log)
+
+	uploader := manager.NewUploader(s3client, func(u *manager.Uploader) {
+		u.PartSize = 100 * 1024 * 1024 // 100 MiB
+	})
 
 	input := &s3.PutObjectInput{
 		Bucket: bucket,
@@ -299,7 +309,7 @@ func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body
 		Body:   body,
 	}
 
-	result, err := c.Uploader.Upload(ctx, input)
+	result, err := uploader.Upload(ctx, input)
 	if err != nil {
 		c.Log.Errorf("failed to uplodad tarfile `%s` to s3: %v", *key, err)
 

@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -19,25 +18,21 @@ const ExportTopic string = "platform.export.requests"
 
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
-	Hostname                      string
-	PublicPort                    int
-	PublicHttpServerReadTimeout   time.Duration
-	PublicHttpServerWriteTimeout  time.Duration
-	PrivateHttpServerReadTimeout  time.Duration
-	PrivateHttpServerWriteTimeout time.Duration
-	MetricsPort                   int
-	PrivatePort                   int
-	Logging                       *loggingConfig
-	LogLevel                      string
-	Debug                         bool
-	DBConfig                      dbConfig
-	StorageConfig                 storageConfig
-	KafkaConfig                   kafkaConfig
-	OpenAPIPrivatePath            string
-	OpenAPIPublicPath             string
-	Psks                          []string
-	ExportExpiryDays              int
-	ExportableApplications        map[string]map[string]bool
+	Hostname               string
+	PublicPort             int
+	MetricsPort            int
+	PrivatePort            int
+	Logging                *loggingConfig
+	LogLevel               string
+	Debug                  bool
+	DBConfig               dbConfig
+	StorageConfig          storageConfig
+	KafkaConfig            kafkaConfig
+	OpenAPIPrivatePath     string
+	OpenAPIPublicPath      string
+	Psks                   []string
+	ExportExpiryDays       int
+	ExportableApplications map[string]map[string]bool
 }
 
 type dbConfig struct {
@@ -82,13 +77,11 @@ type kafkaSSLConfig struct {
 }
 
 type storageConfig struct {
-	Bucket                  string
-	Endpoint                string
-	AccessKey               string
-	SecretKey               string
-	UseSSL                  bool
-	AwsUploaderBufferSize   int64
-	AwsDownloaderBufferSize int64
+	Bucket    string
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+	UseSSL    bool
 }
 
 var config *ExportConfig
@@ -101,10 +94,6 @@ func Get() *ExportConfig {
 		options.SetDefault("PUBLIC_PORT", 8000)
 		options.SetDefault("METRICS_PORT", 9000)
 		options.SetDefault("PRIVATE_PORT", 10000)
-		options.SetDefault("PUBLIC_HTTP_SERVER_READ_TIMEOUT", 5*time.Second)
-		options.SetDefault("PUBLIC_HTTP_SERVER_WRITE_TIMEOUT", 10*time.Second)
-		options.SetDefault("PRIVATE_HTTP_SERVER_READ_TIMEOUT", 5*time.Second)
-		options.SetDefault("PRIVATE_HTTP_SERVER_WRITE_TIMEOUT", 10*time.Second)
 		options.SetDefault("LOG_LEVEL", "INFO")
 		options.SetDefault("DEBUG", false)
 		options.SetDefault("OPEN_API_FILE_PATH", "./static/spec/openapi.json")
@@ -135,30 +124,23 @@ func Get() *ExportConfig {
 		options.SetDefault("KAFKA_EVENT_DATASCHEMA", "https://console.redhat.com/api/schemas/apps/export-service/v1/resource-request.json")
 		options.SetDefault("KAFKA_EVENT_SCHEMA", "https://console.redhat.com/api/schemas/events/v1/events.json")
 
-		options.SetDefault("AWS_UPLOADER_BUFFER_SIZE", 10*1024*1024)
-		options.SetDefault("AWS_DOWNLOADER_BUFFER_SIZE", 10*1024*1024)
-
 		options.AutomaticEnv()
 
 		kubenv := viper.New()
 		kubenv.AutomaticEnv()
 
 		config = &ExportConfig{
-			Hostname:                      kubenv.GetString("Hostname"),
-			PublicPort:                    options.GetInt("PUBLIC_PORT"),
-			MetricsPort:                   options.GetInt("METRICS_PORT"),
-			PrivatePort:                   options.GetInt("PRIVATE_PORT"),
-			PublicHttpServerReadTimeout:   options.GetDuration("PUBLIC_HTTP_SERVER_READ_TIMEOUT"),
-			PublicHttpServerWriteTimeout:  options.GetDuration("PUBLIC_HTTP_SERVER_WRITE_TIMEOUT"),
-			PrivateHttpServerReadTimeout:  options.GetDuration("PRIVATE_HTTP_SERVER_READ_TIMEOUT"),
-			PrivateHttpServerWriteTimeout: options.GetDuration("PRIVATE_HTTP_SERVER_WRITE_TIMEOUT"),
-			Debug:                         options.GetBool("DEBUG"),
-			LogLevel:                      options.GetString("LOG_LEVEL"),
-			OpenAPIPublicPath:             options.GetString("OPEN_API_FILE_PATH"),
-			OpenAPIPrivatePath:            options.GetString("OPEN_API_PRIVATE_PATH"),
-			Psks:                          options.GetStringSlice("PSKS"),
-			ExportExpiryDays:              options.GetInt("EXPORT_EXPIRY_DAYS"),
-			ExportableApplications:        convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
+			Hostname:               kubenv.GetString("Hostname"),
+			PublicPort:             options.GetInt("PUBLIC_PORT"),
+			MetricsPort:            options.GetInt("METRICS_PORT"),
+			PrivatePort:            options.GetInt("PRIVATE_PORT"),
+			Debug:                  options.GetBool("DEBUG"),
+			LogLevel:               options.GetString("LOG_LEVEL"),
+			OpenAPIPublicPath:      options.GetString("OPEN_API_FILE_PATH"),
+			OpenAPIPrivatePath:     options.GetString("OPEN_API_PRIVATE_PATH"),
+			Psks:                   options.GetStringSlice("PSKS"),
+			ExportExpiryDays:       options.GetInt("EXPORT_EXPIRY_DAYS"),
+			ExportableApplications: convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
 		}
 
 		config.DBConfig = dbConfig{
@@ -172,16 +154,12 @@ func Get() *ExportConfig {
 			},
 		}
 
-		config.Logging = &loggingConfig{}
-
 		config.StorageConfig = storageConfig{
-			Bucket:                  "exports-bucket",
-			Endpoint:                buildBaseHttpUrl(options.GetBool("MINIO_SSL"), options.GetString("MINIO_HOST"), options.GetInt("MINIO_PORT")),
-			AccessKey:               options.GetString("AWS_ACCESS_KEY"),
-			SecretKey:               options.GetString("AWS_SECRET_ACCESS_KEY"),
-			UseSSL:                  options.GetBool("MINIO_SSL"),
-			AwsUploaderBufferSize:   options.GetInt64("AWS_UPLOADER_BUFFER_SIZE"),
-			AwsDownloaderBufferSize: options.GetInt64("AWS_DOWNLOADER_BUFFER_SIZE"),
+			Bucket:    "exports-bucket",
+			Endpoint:  buildBaseHttpUrl(options.GetBool("MINIO_SSL"), options.GetString("MINIO_HOST"), options.GetInt("MINIO_PORT")),
+			AccessKey: options.GetString("AWS_ACCESS_KEY"),
+			SecretKey: options.GetString("AWS_SECRET_ACCESS_KEY"),
+			UseSSL:    options.GetBool("MINIO_SSL"),
 		}
 
 		config.KafkaConfig = kafkaConfig{
@@ -210,13 +188,17 @@ func Get() *ExportConfig {
 				panic("RDS CA failed to write: " + err.Error())
 			}
 
-			config.DBConfig.User = cfg.Database.Username
-			config.DBConfig.Password = cfg.Database.Password
-			config.DBConfig.Hostname = cfg.Database.Hostname
-			config.DBConfig.Port = fmt.Sprint(cfg.Database.Port)
-			config.DBConfig.Name = cfg.Database.Name
-			config.DBConfig.SSLCfg.SSLMode = cfg.Database.SslMode
-			config.DBConfig.SSLCfg.RdsCa = rdsCaPath
+			config.DBConfig = dbConfig{
+				User:     cfg.Database.Username,
+				Password: cfg.Database.Password,
+				Hostname: cfg.Database.Hostname,
+				Port:     fmt.Sprint(cfg.Database.Port),
+				Name:     cfg.Database.Name,
+				SSLCfg: dbSSLConfig{
+					SSLMode: cfg.Database.SslMode,
+					RdsCa:   rdsCaPath,
+				},
+			}
 
 			config.KafkaConfig.Brokers = clowder.KafkaServers
 			config.KafkaConfig.ExportsTopic = clowder.KafkaTopics[ExportTopic].Name
@@ -248,17 +230,21 @@ func Get() *ExportConfig {
 				config.KafkaConfig.SSLConfig.Protocol = securityProtocol
 			}
 
-			config.Logging.AccessKeyID = cfg.Logging.Cloudwatch.AccessKeyId
-			config.Logging.SecretAccessKey = cfg.Logging.Cloudwatch.SecretAccessKey
-			config.Logging.LogGroup = cfg.Logging.Cloudwatch.LogGroup
-			config.Logging.Region = cfg.Logging.Cloudwatch.Region
+			config.Logging = &loggingConfig{
+				AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
+				SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
+				LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
+				Region:          cfg.Logging.Cloudwatch.Region,
+			}
 
 			bucket := cfg.ObjectStore.Buckets[0]
-			config.StorageConfig.Bucket = exportBucketInfo.RequestedName
-			config.StorageConfig.Endpoint = buildBaseHttpUrl(cfg.ObjectStore.Tls, cfg.ObjectStore.Hostname, cfg.ObjectStore.Port)
-			config.StorageConfig.AccessKey = *bucket.AccessKey
-			config.StorageConfig.SecretKey = *bucket.SecretKey
-			config.StorageConfig.UseSSL = cfg.ObjectStore.Tls
+			config.StorageConfig = storageConfig{
+				Bucket:    exportBucketInfo.RequestedName,
+				Endpoint:  buildBaseHttpUrl(cfg.ObjectStore.Tls, cfg.ObjectStore.Hostname, cfg.ObjectStore.Port),
+				AccessKey: *bucket.AccessKey,
+				SecretKey: *bucket.SecretKey,
+				UseSSL:    cfg.ObjectStore.Tls,
+			}
 		}
 	})
 

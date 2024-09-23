@@ -100,6 +100,7 @@ func SetResponseLogger(l *zap.SugaredLogger) func(next http.Handler) http.Handle
 					"status", ww.Status(),
 					"size", ww.BytesWritten(),
 					"request_id", request_id.GetReqID(r.Context()),
+					"user-agent", r.UserAgent(),
 				)
 			}()
 			next.ServeHTTP(ww, r)

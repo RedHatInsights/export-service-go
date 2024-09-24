@@ -6,11 +6,14 @@ servers:
   - url: '{server}/api/export/v1'
     variables:
       server:
-        default: http://localhost:8080
+        default: 'http://localhost:8080'
 paths:
   /exports:
     post:
-      description: Creates a new export request. Use this endpoint to create an export request that will call the solicited services so that the services can gather the requested data.
+      description: >-
+        Creates a new export request. Use this endpoint to create an export
+        request that will call the solicited services so that the services can
+        gather the requested data.
       summary: Create a new export request
       operationId: createExport
       requestBody:
@@ -41,7 +44,10 @@ paths:
         - 3ScaleIdentity: []
     get:
       operationId: getExports
-      description: Provides a list of export requests and the resolution status of each request. Use this endpoint to review all of the export requests that the user has requested.
+      description: >-
+        Provides a list of export requests and the resolution status of each
+        request. Use this endpoint to review all of the export requests that the
+        user has requested.
       summary: List the export requests
       parameters:
         - name: name
@@ -64,12 +70,12 @@ paths:
           in: query
           schema:
             type: string
-            example: urn:redhat:application:notifications
+            example: 'urn:redhat:application:notifications'
         - name: resource
           in: query
           schema:
             type: string
-            example: urn:redhat:application:notifications:export:events
+            example: 'urn:redhat:application:notifications:export:events'
         - name: offset
           in: query
           schema:
@@ -110,10 +116,13 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
-  /exports/{id}:
+  '/exports/{id}':
     get:
       summary: Download the exported data
-      description: Download the exported data from the specified export request. When the export request is ready, use this endpoint to download the exported data.
+      description: >-
+        Download the exported data from the specified export request. When the
+        export request is ready, use this endpoint to download the exported
+        data.
       operationId: downloadExport
       parameters:
         - name: id
@@ -139,7 +148,9 @@ paths:
         - 3ScaleIdentity: []
     delete:
       summary: Delete an existing export request
-      description: Delete the specified export request. Use this endpoint to delete available export requests.
+      description: >-
+        Delete the specified export request. Use this endpoint to delete
+        available export requests.
       operationId: deleteExport
       parameters:
         - name: id
@@ -170,10 +181,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
         - 3ScaleIdentity: []
-  /exports/{id}/status:
+  '/exports/{id}/status':
     get:
       summary: Check the status of the export request
-      description: Check the status of the specified export request. Use this endpoint to check the status of an export request.
+      description: >-
+        Check the status of the specified export request. Use this endpoint to
+        check the status of an export request.
       operationId: getExportStatus
       parameters:
         - name: id
@@ -206,7 +219,7 @@ components:
     UUID:
       type: string
       format: uuid
-      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       minLength: 36
       maxLength: 36
     Status:
@@ -217,8 +230,14 @@ components:
         - running
         - complete
         - failed
+    ErrorMessage:
+      type: string
+    Error:
+      type: integer
     ExportRequestResource:
-      description: A resource to be exported (no status or id) used only to create a new export.
+      description: >-
+        A resource to be exported (no status or id) used only to create a new
+        export.
       type: object
       required:
         - application
@@ -231,7 +250,9 @@ components:
         filters:
           type: object
     ExportRequest:
-      description: A request to export data for specific resources (no status or id) used only to create a new export.
+      description: >-
+        A request to export data for specific resources (no status or id) used
+        only to create a new export.
       type: object
       required:
         - name
@@ -263,6 +284,10 @@ components:
               $ref: '#/components/schemas/UUID'
             status:
               $ref: '#/components/schemas/Status'
+            message:
+              $ref: '#/components/schemas/ErrorMessage'
+            error:
+              $ref: '#/components/schemas/Error'
     Export:
       description: A request to export data for specific resources
       allOf:
@@ -365,10 +390,13 @@ components:
       type: apiKey
       in: header
       name: x-rh-identity
-      description: |
+      description: >
         Base64-encoded JSON identity header provided by 3Scale. Contains an
+
         account number of the user issuing the request. Format of the JSON:
+
         ```
+
         {
             "identity": {
                 "account_number": "account123",
@@ -382,6 +410,10 @@ components:
                 }
             }
         }
+
         ```
+
         Encoded (via `base64 -w0`):
+
         `eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiJhY2NvdW50MTIzIiwib3JnX2lkIjoib3JnMTIzIiwidHlwZSI6IlVzZXIiLCJ1c2VyIjp7ImlzX29yZ19hZG1pbiI6dHJ1ZX0sImludGVybmFsIjp7Im9yZ19pZCI6Im9yZzEyMyJ9fX0K`
+

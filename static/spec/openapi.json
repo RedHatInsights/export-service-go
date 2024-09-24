@@ -353,6 +353,12 @@
           "failed"
         ]
       },
+      "ErrorMessage": {
+        "type": "string"
+      },
+      "Error": {
+        "type": "integer"
+      },
       "ExportRequestResource": {
         "description": "A resource to be exported (no status or id) used only to create a new export.",
         "type": "object",
@@ -418,6 +424,12 @@
               },
               "status": {
                 "$ref": "#/components/schemas/Status"
+              },
+              "message": {
+                "$ref": "#/components/schemas/ErrorMessage"
+              },
+              "error": {
+                "$ref": "#/components/schemas/Error"
               }
             }
           }

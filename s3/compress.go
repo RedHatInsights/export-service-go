@@ -354,7 +354,7 @@ func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger
 	if err != nil {
 		logger.Errorw("failed to get metric for upload size", "error", err)
 	} else {
-		uploadSizes.With(prometheus.Labels{"account": payload.AccountID, "org_id": payload.OrganizationID, "app": application}).Observe(float64(uploadSize))
+		uploadSizes.With(prometheus.Labels{"app": application}).Observe(float64(uploadSize))
 	}
 
 	return nil

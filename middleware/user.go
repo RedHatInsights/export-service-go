@@ -19,6 +19,7 @@ const (
 	UserIdentityKey    userIdentityKey = iota
 	userType                           = "user"
 	serviceAccountType                 = "serviceaccount"
+	certIdType                         = "system"
 )
 
 type User struct {
@@ -70,6 +71,13 @@ func getUsernameFromIdentityHeader(id identity.XRHID) (string, error) {
 			return "", fmt.Errorf("Missing ServiceAccount data.")
 		}
 		return verifyUsername(id.Identity.ServiceAccount.Username)
+	}
+
+	if identityType == certIdType {
+		if id.Identity.System == nil {
+			return "", fmt.Errorf("Missing cert data.")
+		}
+		return verifyUsername(id.Identity.System.CommonName)
 	}
 
 	return "", fmt.Errorf("'%s' is not a valid user type", id.Identity.Type)

@@ -60,8 +60,6 @@ func GetUserIdentity(ctx context.Context) User {
 
 func getUsernameFromIdentityHeader(id identity.XRHID) (string, error) {
 
-    fmt.Printf("id: %+v\n", id)
-
 	identityType := strings.ToLower(id.Identity.Type)
 
 	if identityType == userType {

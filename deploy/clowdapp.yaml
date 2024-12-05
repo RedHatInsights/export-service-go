@@ -54,8 +54,8 @@ objects:
             cpu: ${{CPU_LIMIT}}
             memory: ${MEMORY_LIMIT}
           requests:
-            cpu: 500m
-            memory: 512Mi
+            cpu: ${CPU_REQUEST}
+            memory: ${MEMORY_REQUEST}
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}
@@ -101,11 +101,11 @@ objects:
           image: ${IMAGE}:${IMAGE_TAG}
           resources:
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: ${INIT_CONTAINERS_CPU_LIMIT}
+              memory: ${INIT_CONTAINERS_MEMORY_LIMIT}
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: ${INIT_CONTAINERS_CPU_REQUEST}
+              memory: ${INIT_CONTAINERS_MEMORY_REQUEST}
 
     database:
       name: export-service
@@ -134,12 +134,11 @@ objects:
           value: ${DB_SSLMODE}
         resources:
           limits:
-            cpu: 200m
-            memory: 128Mi
+            cpu: ${CLEANER_JOB_CPU_LIMIT}
+            memory: ${CLEANER_JOB_MEMORY_LIMIT}
           requests:
-            cpu: 100m
-            memory: 64Mi
-
+            cpu: ${CLEANER_JOB_CPU_REQUEST}
+            memory: ${CLEANER_JOB_MEMORY_REQUEST}
 
 - apiVersion: v1
   kind: Service
@@ -175,12 +174,46 @@ parameters:
     description: Application common name
     required: true
     value: export-service
+
   - description: Cpu limit of service
     name: CPU_LIMIT
     value: "1"
+  - description: CPU requested by the service
+    name: CPU_REQUEST
+    value: 500m
   - description: memory limit of service
     name: MEMORY_LIMIT
     value: 1Gi
+  - description: Memory requested by the service
+    name: MEMORY_REQUEST
+    value: 512Mi
+
+  - description: CPU limit of the init containers
+    name: INIT_CONTAINERS_CPU_LIMIT
+    value: 250m
+  - description: CPU requested by the init containers
+    name: INIT_CONTAINERS_CPU_REQUEST
+    value: 200m
+  - description: Memory limit of the init containers
+    name: INIT_CONTAINERS_MEMORY_LIMIT
+    value: 256Mi
+  - description: Memory requested by the init containers
+    name: INIT_CONTAINERS_MEMORY_REQUEST
+    value: 128Mi
+
+  - description: CPU limit of the cleaner job
+    name: CLEANER_JOB_CPU_LIMIT
+    value: 200m
+  - description: CPU requested by the cleaner job
+    name: CLEANER_JOB_CPU_REQUEST
+    value: 100m
+  - description: Memory limit of the cleaner job
+    name: CLEANER_JOB_MEMORY_LIMIT
+    value: 128Mi
+  - description: Memory requested by the cleaner job
+    name: CLEANER_JOB_MEMORY_REQUEST
+    value: 64Mi
+
   - name: MIN_REPLICAS
     value: "1"
   - description: Image tag

@@ -14,11 +14,11 @@ require (
 	github.com/go-openapi/runtime v0.23.3
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
-	github.com/lib/pq v1.10.7
+	github.com/lib/pq v1.10.9
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/redhatinsights/app-common-go v1.6.6
+	github.com/redhatinsights/app-common-go v1.6.8
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/spf13/cobra v1.1.3

@@ -1,7 +1,7 @@
 ################################
 # STEP 1 build executable binary
 ################################
-FROM registry.access.redhat.com/ubi8/go-toolset:latest AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
 
 USER root
 

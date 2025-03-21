@@ -34,7 +34,7 @@ services:
       - POSTGRES_PASSWORD=postgres
     privileged: true
     ports:
-      - 5432:5432
+      - "${POSTGRES_SQL_SERVICE_PORT:-5432}:5432"
     volumes:
       - ./tmp/db:/var/lib/postgresql/data
     command:

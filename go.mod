@@ -3,8 +3,8 @@ module github.com/redhatinsights/export-service-go
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.55.6
 	github.com/RedHatInsights/event-schemas-go v1.0.6
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/aws/aws-sdk-go-v2 v1.16.2
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.5
@@ -70,7 +70,7 @@ require (
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/pgx/v4 v4.18.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

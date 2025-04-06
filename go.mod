@@ -1,10 +1,12 @@
 module github.com/redhatinsights/export-service-go
 
-go 1.20
+go 1.22
+
+toolchain go1.22.9
 
 require (
-	github.com/aws/aws-sdk-go v1.55.6
 	github.com/RedHatInsights/event-schemas-go v1.0.6
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/aws/aws-sdk-go-v2 v1.16.2
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.5
@@ -41,7 +43,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.3 // indirect
-	github.com/aws/smithy-go v1.11.2 // indirect
+	github.com/aws/smithy-go v1.22.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

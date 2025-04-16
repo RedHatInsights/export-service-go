@@ -1,7 +1,7 @@
 ################################
 # STEP 1 build executable binary
 ################################
-FROM registry.access.redhat.com/ubi8/go-toolset:latest AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
 
 USER root
 
@@ -35,7 +35,7 @@ RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-servic
 ############################
 # STEP 2 build a small image
 ############################
-FROM registry.access.redhat.com/ubi8-minimal:latest
+FROM registry.access.redhat.com/ubi9-minimal:latest
 
 RUN microdnf update -y
 

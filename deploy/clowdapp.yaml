@@ -109,7 +109,7 @@ objects:
 
     database:
       name: export-service
-      version: 12
+      version: 16
     objectStore:
     - ${EXPORT_SERVICE_BUCKET}
     kafkaTopics:

@@ -316,7 +316,7 @@ func getUploadSize(ctx context.Context, s3client *s3.Client, bucket, key *string
 		Key:    key,
 	}
 	headObjOutput, err := s3client.HeadObject(ctx, headObj)
-	if err != nil || headObjOutput == nil {
+	if err != nil || (headObjOutput == nil || headObjOutput.ContentLength == nil) {
 		return 0, err
 	}
 

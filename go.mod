@@ -2,7 +2,7 @@ module github.com/redhatinsights/export-service-go
 
 go 1.22
 
-toolchain go1.22.9
+toolchain go1.24.3
 
 require (
 	github.com/RedHatInsights/event-schemas-go v1.0.6

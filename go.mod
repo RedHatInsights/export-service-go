@@ -7,10 +7,10 @@ toolchain go1.24.3
 require (
 	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/aws/aws-sdk-go v1.55.6
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.72
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
-	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/fergusstrange/embedded-postgres v1.19.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-openapi/runtime v0.23.3
@@ -62,7 +62,7 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
+	github.com/google/pprof v0.0.0-20211008130755-947d60d73cc0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

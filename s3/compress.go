@@ -56,7 +56,6 @@ func GetObjects(c context.Context, api S3ListObjectsAPI, input *s3.ListObjectsV2
 }
 
 func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, prefix, filename, s3key string, meta ExportMeta, sources []models.Source) error {
-
 	// Use this temp directory for all temp files
 	tempDirName, err := os.MkdirTemp("", filename)
 	if err != nil {
@@ -102,7 +101,6 @@ type s3FileData struct {
 }
 
 func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap.SugaredLogger, downloader *manager.Downloader, bucket string, prefix string, tempDir string) ([]s3FileData, error) {
-
 	input := &s3.ListObjectsV2Input{
 		Bucket: &bucket,
 		Prefix: &prefix,
@@ -144,7 +142,6 @@ func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap
 }
 
 func buildFileMetadata(files []s3FileData, sources []models.Source) ([]ExportFileMeta, error) {
-
 	fileMeta := make([]ExportFileMeta, 0, len(files))
 
 	for _, f := range files {
@@ -163,7 +160,6 @@ func buildFileMetadata(files []s3FileData, sources []models.Source) ([]ExportFil
 }
 
 func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta) (*bytes.Buffer, error) {
-
 	var buf bytes.Buffer
 	zipWriter := zip.NewWriter(&buf)
 
@@ -204,7 +200,6 @@ func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta
 }
 
 func writeBufferToTempFile(log *zap.SugaredLogger, buf *bytes.Buffer, filename string, tempDir string) (*os.File, error) {
-
 	f, err := os.CreateTemp(tempDir, filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
@@ -225,7 +220,6 @@ func writeBufferToTempFile(log *zap.SugaredLogger, buf *bytes.Buffer, filename s
 }
 
 func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
-
 	metaJSON, err := BuildMeta(meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal meta struct: %w", err)
@@ -236,7 +230,7 @@ func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
 		return fmt.Errorf("failed to build README.md: %w", err)
 	}
 
-	var metadataFiles = []struct {
+	metadataFiles := []struct {
 		Name string
 		Body []byte
 	}{
@@ -290,7 +284,6 @@ func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w 
 }
 
 func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
-
 	s3client := NewS3Client(c.Cfg, c.Log)
 
 	input := &s3.PutObjectInput{
@@ -323,10 +316,11 @@ func getUploadSize(ctx context.Context, s3client *s3.Client, bucket, key *string
 		Key:    key,
 	}
 	headObjOutput, err := s3client.HeadObject(ctx, headObj)
-	if err != nil {
+	if err != nil || (headObjOutput == nil || headObjOutput.ContentLength == nil) {
 		return 0, err
 	}
-	return headObjOutput.ContentLength, nil
+
+	return *headObjOutput.ContentLength, nil
 }
 
 func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
@@ -362,7 +356,7 @@ func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger
 
 func (c *Compressor) GetObject(ctx context.Context, logger *zap.SugaredLogger, key string) (io.ReadCloser, error) {
 	input := &s3.GetObjectInput{Bucket: &c.Bucket, Key: &key}
-	//return GetObject(ctx, &c.Client, input)
+	// return GetObject(ctx, &c.Client, input)
 	s3Object, err := GetObject(ctx, &c.Client, input)
 	if err != nil {
 		return nil, err
@@ -371,7 +365,6 @@ func (c *Compressor) GetObject(ctx context.Context, logger *zap.SugaredLogger, k
 }
 
 func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
-
 	t, filename, s3key, err := c.Compress(context.TODO(), logger, payload)
 	if err != nil {
 		logger.Errorw("failed to compress payload", "error", err)
@@ -402,7 +395,6 @@ func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInte
 }
 
 func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
-
 	logger := c.Log.With(export_logger.ExportIDField(uid.String()))
 
 	payload, err := db.Get(uid)
@@ -431,8 +423,7 @@ func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
 	}
 }
 
-type MockStorageHandler struct {
-}
+type MockStorageHandler struct{}
 
 func (mc *MockStorageHandler) Compress(ctx context.Context, l *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error) {
 	fmt.Println("Ran mockStorageHandler.Compress")

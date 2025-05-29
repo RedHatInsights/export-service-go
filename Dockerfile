@@ -6,6 +6,11 @@ FROM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
 USER root
 
 WORKDIR /workspace
+
+# The current ubi9 image does not include Go 1.24, so we specify it.
+# Adding "auto" will allow a newer version to be downloaded if specified in go.mod
+ARG GOTOOLCHAIN=go1.24.3+auto
+
 # Cache deps before copying source so that we do not need to re-download for every build
 COPY go.mod go.sum .
 

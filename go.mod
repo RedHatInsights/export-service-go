@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.72
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 	github.com/confluentinc/confluent-kafka-go v1.8.2
-	github.com/fergusstrange/embedded-postgres v1.19.0
+	github.com/fergusstrange/embedded-postgres v1.31.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-openapi/runtime v0.23.3
 	github.com/golang-migrate/migrate/v4 v4.18.3

@@ -33,15 +33,6 @@ data:
               }
             },
             "type": "dashboard"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "PDD8BE47D10408F45"
-            },
-            "enable": true,
-            "iconColor": "red",
-            "name": "crcs02ue1-prometheus"
           }
         ]
       },
@@ -49,7 +40,20 @@ data:
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
       "id": 886205,
-      "links": [],
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "dashboard",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": true,
+          "title": "AWS RDS dashboard for Export Service",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.app-sre.devshift.net/d/AWSRDSdbi/aws-rds?var-datasource=PD4288CE6A02EB473&var-region=default&var-dbinstanceidentifier=export-service-prod"
+        }
+      ],
       "liveNow": false,
       "panels": [
         {
@@ -805,9 +809,9 @@ data:
           {
             "allValue": "",
             "current": {
-              "selected": false,
-              "text": "crcs02ue1-prometheus",
-              "value": "crcs02ue1-prometheus"
+              "selected": true,
+              "text": "crcp01ue1-prometheus",
+              "value": "crcp01ue1-prometheus"
             },
             "hide": 0,
             "includeAll": false,
@@ -831,7 +835,7 @@ data:
       "timezone": "",
       "title": "ExportService Dashboard",
       "uid": "ir5blOCVk",
-      "version": 1,
+      "version": 3,
       "weekStart": ""
     }
 kind: ConfigMap

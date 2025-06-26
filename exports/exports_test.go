@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,11 +28,17 @@ import (
 	es3 "github.com/redhatinsights/export-service-go/s3"
 )
 
-const debugHeader string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0="
-const formatDateTime string = "2006-01-02T15:04:05Z" // ISO 8601
+const (
+	debugHeader    string = "eyJpZGVudGl0eSI6eyJhY2NvdW50X251bWJlciI6IjEwMDAxIiwib3JnX2lkIjoiMTAwMDAwMDEiLCJpbnRlcm5hbCI6eyJvcmdfaWQiOiIxMDAwMDAwMSJ9LCJ0eXBlIjoiVXNlciIsInVzZXIiOnsidXNlcm5hbWUiOiJ1c2VyX2RldiJ9fX0="
+	formatDateTime string = "2006-01-02T15:04:05Z" // ISO 8601
+)
 
 func AddDebugUserIdentity(req *http.Request) {
 	req.Header.Add("x-rh-identity", debugHeader)
+}
+
+func MakeContentLengthTooLarge(req *http.Request) {
+	req.ContentLength = math.MaxInt64
 }
 
 func generateExportRequestBody(name, format, expires, sources string) (exportRequest []byte) {
@@ -366,7 +373,6 @@ var _ = Describe("The public API", func() {
 		for i, name := range expectedNames {
 			Expect(name).To(Equal(recieved[i]))
 		}
-
 	},
 		Entry("default of created asc", "",
 			"Test Export Request 2",

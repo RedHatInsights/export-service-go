@@ -30,7 +30,6 @@ var _ = Context("Set up internal handler", func() {
 	var router *chi.Mux
 
 	BeforeEach(func() {
-
 		internalHandler = &exports.Internal{
 			Cfg:        cfg,
 			Compressor: &es3.MockStorageHandler{},
@@ -187,6 +186,36 @@ var _ = Context("Set up internal handler", func() {
 			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusBadRequest))
+		})
+
+		It("disallows the user to upload a large payload", func() {
+			// We should be generating a roughly 10MB body later
+			cfg.MaxPayloadSize = 5
+			rr := httptest.NewRecorder()
+
+			req := createExportRequest("testRequest", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			AddDebugUserIdentity(req)
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+
+			// grab the 'id' from the response
+			// Example: {"id":"288b57e9-e776-46e3-827d-9ed94fd36a6b","created":"2022-12-13T14:37:14.573655756-05:00","name":"testRequest","format":"json","status":"pending","sources":[{"id":"1663cd53-4b72-4c9d-98a7-8433595723df","application":"exampleApp","status":"pending","resource":"exampleResource","filters":null}]}
+			var exportResponse map[string]interface{}
+			err := json.Unmarshal(rr.Body.Bytes(), &exportResponse)
+			Expect(err).ShouldNot(HaveOccurred())
+			exportUUID := exportResponse["id"].(string)
+			sources := exportResponse["sources"].([]interface{})
+			source := sources[0].(map[string]interface{})
+			resourceUUID := source["id"].(string)
+
+			rr = httptest.NewRecorder()
+			dummyBody := `{"data": "dummy data"}`
+
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			AddDebugUserIdentity(req)
+			MakeContentLengthTooLarge(req)
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusRequestEntityTooLarge))
 		})
 	})
 })

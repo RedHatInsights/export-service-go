@@ -38,6 +38,7 @@ type ExportConfig struct {
 	Psks                          []string
 	ExportExpiryDays              int
 	ExportableApplications        map[string]map[string]bool
+	MaxPayloadSize                int
 }
 
 type dbConfig struct {
@@ -91,8 +92,10 @@ type storageConfig struct {
 	AwsDownloaderBufferSize int64
 }
 
-var config *ExportConfig
-var doOnce sync.Once
+var (
+	config *ExportConfig
+	doOnce sync.Once
+)
 
 // initialize the configuration for service
 func Get() *ExportConfig {
@@ -112,6 +115,7 @@ func Get() *ExportConfig {
 		options.SetDefault("PSKS", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
 		options.SetDefault("EXPORT_ENABLE_APPS", "{\"exampleApp\":[\"exampleResource\", \"anotherExampleResource\"]}")
+		options.SetDefault("MAX_PAYLOAD_SIZE", 500)
 
 		// DB defaults
 		options.SetDefault("PGSQL_USER", "postgres")
@@ -159,6 +163,7 @@ func Get() *ExportConfig {
 			Psks:                          options.GetStringSlice("PSKS"),
 			ExportExpiryDays:              options.GetInt("EXPORT_EXPIRY_DAYS"),
 			ExportableApplications:        convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
+			MaxPayloadSize:                options.GetInt("MAX_PAYLOAD_SIZE"),
 		}
 
 		config.DBConfig = dbConfig{

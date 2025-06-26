@@ -94,6 +94,11 @@ sample-request-export-download:
 sample-request-internal-upload:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_upload.json
 
+sample-request-internal-upload-large:
+	go run generate_too_large_upload.go
+	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_upload_large.json
+	rm example_export_upload_large.json
+
 sample-request-internal-error:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/error -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_error.json
 

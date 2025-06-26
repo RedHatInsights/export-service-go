@@ -41,7 +41,6 @@ func (i *Internal) InternalRouter(r chi.Router) {
 // PostError receives a POST request from the export source which contains the
 // errors associated with creating the export for the given resource.
 func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
-
 	reqID := request_id.GetReqID(r.Context())
 
 	logger := i.Log.With(export_logger.RequestIDField(reqID))
@@ -117,7 +116,6 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 // PostUpload receives a POST request from the export source containing
 // the exported data. This data is uploaded to S3.
 func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
-
 	reqID := request_id.GetReqID(r.Context())
 
 	logger := i.Log.With(export_logger.RequestIDField(reqID))
@@ -156,6 +154,15 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
 		w.WriteHeader(http.StatusGone)
 		Logerr(w.Write([]byte("this resource has already been processed")))
+		return
+	}
+
+	rContentLength := r.ContentLength / (1024 * 1024)
+	cfg := config.Get()
+
+	if rContentLength >= int64(cfg.MaxPayloadSize) {
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
+		Logerr(fmt.Fprintf(w, "payload is too large, max size: %dMB", cfg.MaxPayloadSize))
 		return
 	}
 

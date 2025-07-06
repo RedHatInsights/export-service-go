@@ -19,7 +19,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
 	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/redhatinsights/export-service-go/config"

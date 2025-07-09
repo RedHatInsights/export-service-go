@@ -6,6 +6,7 @@ package exports
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -116,6 +117,9 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 // PostUpload receives a POST request from the export source containing
 // the exported data. This data is uploaded to S3.
 func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
+	var maxBytesError *http.MaxBytesError
+
+	fmt.Println("POST UPLOAD")
 	reqID := request_id.GetReqID(r.Context())
 
 	logger := i.Log.With(export_logger.RequestIDField(reqID))
@@ -151,33 +155,43 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if source.Status == models.RSuccess || source.Status == models.RFailed {
-		// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
-		w.WriteHeader(http.StatusGone)
-		Logerr(w.Write([]byte("this resource has already been processed")))
-		return
+		// 	// TODO: revisit this logic and response. Do we want to allow a re-write of an already zipped package?
+		// 	w.WriteHeader(http.StatusGone)
+		// 	Logerr(w.Write([]byte("this resource has already been processed")))
+		// 	return
 	}
 
+	rContentType := r.Header.Get("Content-Type")
+	logger.Infoln("HERE!")
+
+	logger.Infoln(rContentType)
+	logger.Infoln(r.TransferEncoding)
+	logger.Infoln("HERE!")
 	rContentLength := r.ContentLength / (1024 * 1024)
-	cfg := config.Get()
 
-	if rContentLength >= int64(cfg.MaxPayloadSize) {
-		w.WriteHeader(http.StatusRequestEntityTooLarge)
-		Logerr(fmt.Fprintf(w, "payload is too large, max size: %dMB", cfg.MaxPayloadSize))
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
+	logger.Infoln("MAX PAYLOAD SIZE: ", i.Cfg.MaxPayloadSize)
+	logger.Infoln("CONTENT LENGTH: ", rContentLength)
+	r.Body = http.MaxBytesReader(w, r.Body, int64(i.Cfg.MaxPayloadSize))
 
 	if err := i.Compressor.CreateObject(r.Context(), logger, i.DB, r.Body, params.Application, params.ResourceUUID, payload); err != nil {
+		if errors.As(err, &maxBytesError) {
+			// if strings.Contains(err.Error(), "request body too large") {
+			w.WriteHeader(http.StatusRequestEntityTooLarge)
+			Logerr(fmt.Fprintf(w, "payload is too large, max size: %dMB", i.Cfg.MaxPayloadSize))
+		}
+
 		Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
 	} else {
+		logger.Infof("ERROR: %+v", err)
 		Logerr(w.Write([]byte("payload delivered")))
 	}
 
 	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RSuccess, nil); err != nil {
+		// TODO: Check status after writing a header that it's to a big above
 		logger.Errorw("failed to set source status for successful export", "error", err)
 		InternalServerError(w, err)
 	}
 
 	i.Compressor.ProcessSources(i.DB, params.ExportUUID)
+	w.WriteHeader(http.StatusAccepted)
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
@@ -188,8 +189,8 @@ var _ = Context("Set up internal handler", func() {
 			Expect(rr.Code).To(Equal(http.StatusBadRequest))
 		})
 
-		It("disallows the user to upload a large payload", func() {
-			// We should be generating a roughly 10MB body later
+		It("disallows the user to upload a chunked large payload", func() {
+			// We should be using a roughly 15MB body later
 			cfg.MaxPayloadSize = 5
 			rr := httptest.NewRecorder()
 
@@ -200,21 +201,32 @@ var _ = Context("Set up internal handler", func() {
 
 			// grab the 'id' from the response
 			// Example: {"id":"288b57e9-e776-46e3-827d-9ed94fd36a6b","created":"2022-12-13T14:37:14.573655756-05:00","name":"testRequest","format":"json","status":"pending","sources":[{"id":"1663cd53-4b72-4c9d-98a7-8433595723df","application":"exampleApp","status":"pending","resource":"exampleResource","filters":null}]}
-			var exportResponse map[string]interface{}
+			var exportResponse map[string]any
 			err := json.Unmarshal(rr.Body.Bytes(), &exportResponse)
 			Expect(err).ShouldNot(HaveOccurred())
 			exportUUID := exportResponse["id"].(string)
-			sources := exportResponse["sources"].([]interface{})
-			source := sources[0].(map[string]interface{})
+			sources := exportResponse["sources"].([]any)
+			source := sources[0].(map[string]any)
 			resourceUUID := source["id"].(string)
 
 			rr = httptest.NewRecorder()
-			dummyBody := `{"data": "dummy data"}`
+			dummyFile, err := os.ReadFile("../example_export_upload_large")
+			fmt.Println(len(dummyFile))
+			Expect(err).ShouldNot(HaveOccurred())
 
-			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer([]byte(dummyBody)))
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(dummyFile))
+
+			// // Chunk it
+			// req.TransferEncoding = []string{"chunked"}
+			// req.ContentLength = 0
+
 			AddDebugUserIdentity(req)
-			MakeContentLengthTooLarge(req)
 			router.ServeHTTP(rr, req)
+
+			fmt.Println("**********************")
+			fmt.Printf(" rr: %+v\n", rr)
+			fmt.Printf(" rr result: %+v\n", rr.Result())
+			fmt.Println("**********************")
 			Expect(rr.Code).To(Equal(http.StatusRequestEntityTooLarge))
 		})
 	})

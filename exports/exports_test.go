@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -35,10 +34,6 @@ const (
 
 func AddDebugUserIdentity(req *http.Request) {
 	req.Header.Add("x-rh-identity", debugHeader)
-}
-
-func MakeContentLengthTooLarge(req *http.Request) {
-	req.ContentLength = math.MaxInt64
 }
 
 func generateExportRequestBody(name, format, expires, sources string) (exportRequest []byte) {

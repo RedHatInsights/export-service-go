@@ -294,7 +294,7 @@ func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body
 
 	result, err := c.Uploader.Upload(ctx, input)
 	if err != nil {
-		c.Log.Errorf("failed to uplodad tarfile `%s` to s3: %v", *key, err)
+		c.Log.Errorf("failed to upload tarfile `%s` to s3: %v", *key, err)
 
 		deleteInput := &s3.DeleteObjectInput{
 			Bucket: bucket,

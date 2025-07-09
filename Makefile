@@ -100,7 +100,7 @@ sample-request-internal-upload:
 
 sample-request-internal-upload-large:
 	dd if=/dev/zero of=example_export_upload_large bs=1M count=15
-	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_upload_large.json
+	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d example_export_upload_large
 	rm example_export_upload_large
 
 sample-request-internal-error:

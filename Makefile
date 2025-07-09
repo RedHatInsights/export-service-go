@@ -9,6 +9,10 @@ endif
 OCI_TOOL=$(shell command -v podman || command -v docker)
 DOCKER_COMPOSE = $(OCI_TOOL)-compose
 
+ifeq ($(UNAME_S),Darwin)
+	DOCKER_COMPOSE = $(OCI_TOOL) compose
+endif
+
 CONTAINER_TAG="quay.io/cloudservices/export-service-go"
 
 IDENTITY_HEADER="eyJpZGVudGl0eSI6IHsiYWNjb3VudF9udW1iZXIiOiAiYWNjb3VudDEyMyIsICJvcmdfaWQiOiAib3JnMTIzIiwgInR5cGUiOiAiVXNlciIsICJ1c2VyIjogeyJpc19vcmdfYWRtaW4iOiB0cnVlLCAidXNlcm5hbWUiOiAiZnJlZCJ9LCAiaW50ZXJuYWwiOiB7Im9yZ19pZCI6ICJvcmcxMjMifX19"
@@ -95,9 +99,9 @@ sample-request-internal-upload:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_upload.json
 
 sample-request-internal-upload-large:
-	go run generate_too_large_upload.go
+	dd if=/dev/zero of=example_export_upload_large bs=1M count=15
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_upload_large.json
-	rm example_export_upload_large.json
+	rm example_export_upload_large
 
 sample-request-internal-error:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/error -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_error.json

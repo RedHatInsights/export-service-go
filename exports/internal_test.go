@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
@@ -210,13 +209,12 @@ var _ = Context("Set up internal handler", func() {
 			resourceUUID := source["id"].(string)
 
 			rr = httptest.NewRecorder()
-			dummyFile, err := os.ReadFile("../example_export_upload_large")
-			fmt.Println(len(dummyFile))
 			Expect(err).ShouldNot(HaveOccurred())
 
-			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(dummyFile))
+			// 15M of bytes
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(make([]byte, 15*1024*1024)))
 
-			// // Chunk it
+			// Chunk it
 			// req.TransferEncoding = []string{"chunked"}
 			// req.ContentLength = 0
 

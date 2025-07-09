@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -423,7 +424,10 @@ func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
 	}
 }
 
-type MockStorageHandler struct{}
+type (
+	MockStorageHandler      struct{}
+	MockStorageHandlerLarge struct{ MockStorageHandler }
+)
 
 func (mc *MockStorageHandler) Compress(ctx context.Context, l *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error) {
 	fmt.Println("Ran mockStorageHandler.Compress")
@@ -480,4 +484,9 @@ func (mc *MockStorageHandler) ProcessSources(db models.DBInterface, uid uuid.UUI
 	}
 
 	fmt.Println("Ran mockStorageHandler.ProcessSources")
+}
+
+func (mc *MockStorageHandlerLarge) CreateObject(ctx context.Context, l *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
+	fmt.Println("Ran mockStorageHandler.CreateObject")
+	return &http.MaxBytesError{}
 }

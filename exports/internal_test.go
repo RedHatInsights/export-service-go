@@ -27,12 +27,19 @@ var _ = Context("Set up internal handler", func() {
 	log := logger.Get()
 
 	var internalHandler *exports.Internal
+	var internalHandlerLarge *exports.Internal
 	var router *chi.Mux
 
 	BeforeEach(func() {
 		internalHandler = &exports.Internal{
 			Cfg:        cfg,
 			Compressor: &es3.MockStorageHandler{},
+			DB:         &models.ExportDB{DB: testGormDB, Cfg: cfg},
+			Log:        log,
+		}
+		internalHandlerLarge = &exports.Internal{
+			Cfg:        cfg,
+			Compressor: &es3.MockStorageHandlerLarge{},
 			DB:         &models.ExportDB{DB: testGormDB, Cfg: cfg},
 			Log:        log,
 		}
@@ -56,6 +63,7 @@ var _ = Context("Set up internal handler", func() {
 
 		router.Route("/app/export/v1", func(sub chi.Router) {
 			sub.With(emiddleware.URLParamsCtx).Post("/upload/{exportUUID}/{application}/{resourceUUID}", internalHandler.PostUpload)
+			sub.With(emiddleware.URLParamsCtx).Post("/upload-large/{exportUUID}/{application}/{resourceUUID}", internalHandlerLarge.PostUpload)
 			sub.With(emiddleware.URLParamsCtx).Post("/error/{exportUUID}/{application}/{resourceUUID}", internalHandler.PostError)
 		})
 
@@ -212,7 +220,7 @@ var _ = Context("Set up internal handler", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// 15M of bytes
-			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(make([]byte, 15*1024*1024)))
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload-large/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(make([]byte, 15*1024*1024)))
 
 			// Chunk it
 			// req.TransferEncoding = []string{"chunked"}

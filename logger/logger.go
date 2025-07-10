@@ -120,3 +120,7 @@ func OrgIDField(orgID string) zap.Field {
 func ExportIDField(exportID string) zap.Field {
 	return zap.String("export_id", exportID)
 }
+
+func ApplicationNamesField(applicationNames []string) zap.Field {
+	return zap.Strings("application_names", applicationNames)
+}

@@ -100,7 +100,14 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger = logger.With(export_logger.ExportIDField(dbExport.ID.String()))
+	// Extract application names from sources for logging
+	applicationNames := make([]string, 0, len(apiExport.Sources))
+	for _, source := range apiExport.Sources {
+		applicationNames = append(applicationNames, source.Application)
+	}
+
+	logger = logger.With(export_logger.ExportIDField(dbExport.ID.String()), export_logger.ApplicationNamesField(applicationNames))
+	logger.Infow("export created successfully", "export_name", dbExport.Name)
 
 	w.WriteHeader(http.StatusAccepted)
 

@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -337,11 +336,6 @@ func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger
 	if uploadErr != nil {
 		failUploads.Inc()
 		logger.Errorf("error during upload: %v", uploadErr)
-		statusError := models.SourceError{Message: uploadErr.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
-		if err := payload.SetSourceStatus(db, resourceUUID, models.RFailed, &statusError); err != nil {
-			logger.Errorw("failed to set source status after failed upload", "error", err)
-			return uploadErr
-		}
 		return uploadErr
 	}
 
@@ -425,8 +419,7 @@ func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {
 }
 
 type (
-	MockStorageHandler      struct{}
-	MockStorageHandlerLarge struct{ MockStorageHandler }
+	MockStorageHandler struct{}
 )
 
 func (mc *MockStorageHandler) Compress(ctx context.Context, l *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error) {
@@ -446,6 +439,12 @@ func (mc *MockStorageHandler) Upload(ctx context.Context, l *zap.SugaredLogger, 
 
 func (mc *MockStorageHandler) CreateObject(ctx context.Context, l *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
 	fmt.Println("Ran mockStorageHandler.CreateObject")
+
+	_, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -484,9 +483,4 @@ func (mc *MockStorageHandler) ProcessSources(db models.DBInterface, uid uuid.UUI
 	}
 
 	fmt.Println("Ran mockStorageHandler.ProcessSources")
-}
-
-func (mc *MockStorageHandlerLarge) CreateObject(ctx context.Context, l *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error {
-	fmt.Println("Ran mockStorageHandler.CreateObject")
-	return &http.MaxBytesError{}
 }

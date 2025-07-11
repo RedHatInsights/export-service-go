@@ -27,19 +27,12 @@ var _ = Context("Set up internal handler", func() {
 	log := logger.Get()
 
 	var internalHandler *exports.Internal
-	var internalHandlerLarge *exports.Internal
 	var router *chi.Mux
 
 	BeforeEach(func() {
 		internalHandler = &exports.Internal{
 			Cfg:        cfg,
 			Compressor: &es3.MockStorageHandler{},
-			DB:         &models.ExportDB{DB: testGormDB, Cfg: cfg},
-			Log:        log,
-		}
-		internalHandlerLarge = &exports.Internal{
-			Cfg:        cfg,
-			Compressor: &es3.MockStorageHandlerLarge{},
 			DB:         &models.ExportDB{DB: testGormDB, Cfg: cfg},
 			Log:        log,
 		}
@@ -63,7 +56,6 @@ var _ = Context("Set up internal handler", func() {
 
 		router.Route("/app/export/v1", func(sub chi.Router) {
 			sub.With(emiddleware.URLParamsCtx).Post("/upload/{exportUUID}/{application}/{resourceUUID}", internalHandler.PostUpload)
-			sub.With(emiddleware.URLParamsCtx).Post("/upload-large/{exportUUID}/{application}/{resourceUUID}", internalHandlerLarge.PostUpload)
 			sub.With(emiddleware.URLParamsCtx).Post("/error/{exportUUID}/{application}/{resourceUUID}", internalHandler.PostError)
 		})
 
@@ -201,7 +193,7 @@ var _ = Context("Set up internal handler", func() {
 			cfg.MaxPayloadSize = 5
 			rr := httptest.NewRecorder()
 
-			req := createExportRequest("testRequest", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			req := createExportRequest("testRequestLarge", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
 			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 			Expect(rr.Code).To(Equal(http.StatusAccepted))
@@ -217,23 +209,32 @@ var _ = Context("Set up internal handler", func() {
 			resourceUUID := source["id"].(string)
 
 			rr = httptest.NewRecorder()
-			Expect(err).ShouldNot(HaveOccurred())
 
 			// 15M of bytes
-			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload-large/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(make([]byte, 15*1024*1024)))
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(make([]byte, 15*1024*1024)))
 
 			// Chunk it
-			// req.TransferEncoding = []string{"chunked"}
-			// req.ContentLength = 0
+			req.TransferEncoding = []string{"chunked"}
+			req.ContentLength = 0
 
 			AddDebugUserIdentity(req)
 			router.ServeHTTP(rr, req)
 
-			fmt.Println("**********************")
-			fmt.Printf(" rr: %+v\n", rr)
-			fmt.Printf(" rr result: %+v\n", rr.Result())
-			fmt.Println("**********************")
 			Expect(rr.Code).To(Equal(http.StatusRequestEntityTooLarge))
+
+			// check that the status of the export is now 'failed'
+			rr = httptest.NewRecorder()
+			req = httptest.NewRequest("GET", fmt.Sprintf("/api/export/v1/exports/%s/status", exportUUID), nil)
+			AddDebugUserIdentity(req)
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusOK))
+
+			var exportResponse2 map[string]any
+			err = json.Unmarshal(rr.Body.Bytes(), &exportResponse2)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			exportStatus := exportResponse2["status"].(string)
+			Expect(exportStatus).To(Equal("failed"))
 		})
 	})
 })

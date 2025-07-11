@@ -160,6 +160,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusAccepted)
 	r.Body = http.MaxBytesReader(w, r.Body, int64(i.Cfg.MaxPayloadSize))
 
 	if err := i.Compressor.CreateObject(r.Context(), logger, i.DB, r.Body, params.Application, params.ResourceUUID, payload); err != nil {
@@ -168,10 +169,19 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 			Logerr(fmt.Fprintf(w, "payload is too large, max size: %dMB", i.Cfg.MaxPayloadSize))
 		}
 
-		Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
-	} else {
-		Logerr(w.Write([]byte("payload delivered")))
+		Logerr(fmt.Fprintf(w, "payload failed to upload: %v", err))
+
+		statusError := models.SourceError{Message: err.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
+		if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RFailed, &statusError); err != nil {
+			logger.Errorw("failed to set source status after failed upload", "error", err)
+		}
+
+		i.Compressor.ProcessSources(i.DB, params.ExportUUID)
+
+		return
 	}
+
+	Logerr(w.Write([]byte("payload delivered")))
 
 	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RSuccess, nil); err != nil {
 		logger.Errorw("failed to set source status for successful export", "error", err)
@@ -179,5 +189,4 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	i.Compressor.ProcessSources(i.DB, params.ExportUUID)
-	w.WriteHeader(http.StatusAccepted)
 }

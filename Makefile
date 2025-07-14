@@ -86,9 +86,9 @@ sample-request-get-exports:
 	curl -X GET http://localhost:8000/api/export/v1/exports -H "x-rh-identity: ${IDENTITY_HEADER}" | jq
 
 # set the variables below based your info from the request above
-EXPORT_ID=5a252691-b241-4ef5-a0c4-4b64b96faf61
+EXPORT_ID=24ee9c15-ef37-4f06-83a0-bf9f6cf41f1f
 EXPORT_APPLICATION=exampleApplication
-EXPORT_RESOURCE=ee3453cb-eb84-4258-b5f4-228c0fc73719
+EXPORT_RESOURCE=fd973efa-9661-40ae-92ed-286172d2c169
 sample-request-export-status:
 	curl -X GET http://localhost:8000/api/export/v1/exports/$(EXPORT_ID)/status -H "x-rh-identity: ${IDENTITY_HEADER}" | jq
 
@@ -101,7 +101,6 @@ sample-request-internal-upload:
 sample-request-internal-upload-large:
 	dd if=/dev/zero of=example_export_upload_large bs=1M count=15
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/upload -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d example_export_upload_large
-	rm example_export_upload_large
 
 sample-request-internal-error:
 	curl -X POST http://localhost:10010/app/export/v1/${EXPORT_ID}/${EXPORT_APPLICATION}/${EXPORT_RESOURCE}/error -H "x-rh-exports-psk: testing-a-psk" -H "Content-Type: application/json" -d @example_export_error.json

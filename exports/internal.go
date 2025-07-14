@@ -160,7 +160,6 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
 	r.Body = http.MaxBytesReader(w, r.Body, int64(i.Cfg.MaxPayloadSize))
 
 	if err := i.Compressor.CreateObject(r.Context(), logger, i.DB, r.Body, params.Application, params.ResourceUUID, payload); err != nil {
@@ -181,6 +180,7 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusAccepted)
 	Logerr(w.Write([]byte("payload delivered")))
 
 	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RSuccess, nil); err != nil {

@@ -6,6 +6,7 @@ package exports
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -41,7 +42,6 @@ func (i *Internal) InternalRouter(r chi.Router) {
 // PostError receives a POST request from the export source which contains the
 // errors associated with creating the export for the given resource.
 func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
-
 	reqID := request_id.GetReqID(r.Context())
 
 	logger := i.Log.With(export_logger.RequestIDField(reqID))
@@ -117,6 +117,7 @@ func (i *Internal) PostError(w http.ResponseWriter, r *http.Request) {
 // PostUpload receives a POST request from the export source containing
 // the exported data. This data is uploaded to S3.
 func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
+	var maxBytesError *http.MaxBytesError
 
 	reqID := request_id.GetReqID(r.Context())
 
@@ -159,13 +160,28 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	r.Body = http.MaxBytesReader(w, r.Body, int64(i.Cfg.MaxPayloadSize))
 
 	if err := i.Compressor.CreateObject(r.Context(), logger, i.DB, r.Body, params.Application, params.ResourceUUID, payload); err != nil {
-		Logerr(w.Write([]byte(fmt.Sprintf("payload failed to upload: %v", err))))
-	} else {
-		Logerr(w.Write([]byte("payload delivered")))
+		if errors.As(err, &maxBytesError) {
+			w.WriteHeader(http.StatusRequestEntityTooLarge)
+			Logerr(fmt.Fprintf(w, "payload is too large, max size: %dMB", i.Cfg.MaxPayloadSize))
+		}
+
+		Logerr(fmt.Fprintf(w, "payload failed to upload: %v", err))
+
+		statusError := models.SourceError{Message: err.Error(), Code: 1} // TODO: determine a better approach to assigning an internal status code
+		if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RFailed, &statusError); err != nil {
+			logger.Errorw("failed to set source status after failed upload", "error", err)
+		}
+
+		i.Compressor.ProcessSources(i.DB, params.ExportUUID)
+
+		return
 	}
+
+	w.WriteHeader(http.StatusAccepted)
+	Logerr(w.Write([]byte("payload delivered")))
 
 	if err := payload.SetSourceStatus(i.DB, params.ResourceUUID, models.RSuccess, nil); err != nil {
 		logger.Errorw("failed to set source status for successful export", "error", err)

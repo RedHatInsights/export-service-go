@@ -1,13 +1,14 @@
 run:
   timeout: 5m
 
-linters-settings:
-  goimports:
-    # Put imports beginning with prefix after 3rd-party packages.
-    # It's a comma-separated list of prefixes.
-    local-prefixes: github.com/redhatinsights/export-service-go
-  errcheck:
-    ignore: ''
+linters:
+  settings:
+    goimports:
+      # Put imports beginning with prefix after 3rd-party packages.
+      # It's a comma-separated list of prefixes.
+      local-prefixes: github.com/redhatinsights/export-service-go
+    errcheck:
+      ignore: ''
 
 linters:
   disable-all: true

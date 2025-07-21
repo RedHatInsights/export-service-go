@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
 
@@ -15,12 +17,12 @@ linters:
     - goimports
     - gofumpt
 
-goimports:
-  # Put imports beginning with prefix after 3rd-party packages.
-  # It's a comma-separated list of prefixes.
-  local-prefixes: github.com/redhatinsights/export-service-go
-errcheck:
-  ignore: ''
+#goimports:
+#  # Put imports beginning with prefix after 3rd-party packages.
+#  # It's a comma-separated list of prefixes.
+#  local-prefixes: github.com/redhatinsights/export-service-go
+#errcheck:
+#  ignore: ''
 
 issues:
   max-issues-per-linter: 0

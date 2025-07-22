@@ -1,10 +1,11 @@
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
   disable-all: true
   enable:
-    ## enabled by default
     - errcheck
     - gosimple
     - govet
@@ -12,13 +13,14 @@ linters:
     - staticcheck
     - typecheck
     - unused
-    - goimports
-    - gofumpt
   settings:
     errcheck:
       ignore: ''
 
 formatters:
+  enable:
+    - goimports
+    - gofumpt
   settings:
     goimports:
       # Put imports beginning with prefix after 3rd-party packages.

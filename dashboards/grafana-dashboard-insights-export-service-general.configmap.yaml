@@ -33,23 +33,27 @@ data:
               }
             },
             "type": "dashboard"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "PDD8BE47D10408F45"
-            },
-            "enable": true,
-            "iconColor": "red",
-            "name": "crcs02ue1-prometheus"
           }
         ]
       },
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 156458,
-      "links": [],
+      "id": 886205,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "dashboard",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": true,
+          "title": "AWS RDS dashboard for Export Service",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.app-sre.devshift.net/d/AWSRDSdbi/aws-rds?var-datasource=PD4288CE6A02EB473&var-region=default&var-dbinstanceidentifier=export-service-prod"
+        }
+      ],
       "liveNow": false,
       "panels": [
         {
@@ -57,22 +61,24 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Availability `>95% success` (Any HTTP status other than 500–599 is considered successful.)",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "thresholds"
               },
               "mappings": [],
+              "max": 1,
+              "min": 0,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "red",
+                    "value": null
                   },
                   {
-                    "color": "red",
-                    "value": 80
+                    "color": "green",
+                    "value": 0.95
                   }
                 ]
               },
@@ -81,16 +87,15 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 5,
-            "w": 8,
+            "h": 10,
+            "w": 6,
             "x": 0,
             "y": 0
           },
-          "id": 12,
+          "id": 23,
           "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
+            "minVizHeight": 75,
+            "minVizWidth": 75,
             "orientation": "auto",
             "reduceOptions": {
               "calcs": [
@@ -99,127 +104,97 @@ data:
               "fields": "",
               "values": false
             },
-            "textMode": "auto"
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "editorMode": "code",
-              "expr": "1.00 - (sum(rate(api_3scale_gateway_api_status{exported_service=\"export\", status!~\"5xx\"}[5m]))or vector(0) / sum(rate(api_3scale_gateway_api_status{exported_service=\"export\"}[5m])) or vector(0))",
+              "editorMode": "builder",
+              "expr": "avg_over_time(service:sli:status_5xx:pctl5rate5m{exported_service=\"export\"}[30d])",
+              "includeNullMetadata": true,
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Availability SLO",
-          "type": "stat"
+          "title": "Error rate uptime [30d]",
+          "type": "gauge"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": " Latency - The proportion of sufficiently fast requests, as measured from the load balancer metrics. \"Sufficiently fast” is defined as < 400 ms and < 850 ms.",
           "fieldConfig": {
             "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.9
+                  }
+                ]
+              },
+              "unit": "percentunit"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 10,
-            "w": 8,
-            "x": 8,
+            "w": 6,
+            "x": 6,
             "y": 0
           },
-          "id": 14,
+          "id": 24,
           "options": {
-            "calculate": true,
-            "calculation": {
-              "xBuckets": {
-                "mode": "size"
-              }
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
             },
-            "cellGap": 1,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "min": 0,
-              "mode": "scheme",
-              "reverse": true,
-              "scale": "exponential",
-              "scheme": "Oranges",
-              "steps": 70
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": true
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "show": true,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "s"
-            }
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "sizing": "auto"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.9, rate(export_service_http_response_time_seconds_bucket{path=\"\"}[2d])) < 0.4",
+              "editorMode": "builder",
+              "expr": "avg_over_time(service:sli:latency_gt_2000:pctl10rate5m{exported_service=\"export\"}[30d])",
+              "includeNullMetadata": true,
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.95, rate(export_service_http_response_time_seconds_bucket{path=\"\"}[2d])) < 0.8",
-              "hide": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "B"
             }
           ],
-          "title": "Latency SLO",
-          "transformations": [
-            {
-              "id": "merge",
-              "options": {}
-            }
-          ],
-          "type": "heatmap"
+          "title": "Latency uptime [30d]",
+          "type": "gauge"
         },
         {
           "datasource": {
@@ -305,8 +280,8 @@ data:
           },
           "gridPos": {
             "h": 10,
-            "w": 8,
-            "x": 16,
+            "w": 12,
+            "x": 12,
             "y": 0
           },
           "id": 22,
@@ -340,91 +315,6 @@ data:
           ],
           "title": "Throughput SLO",
           "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The percentage of requests that result in an error or failure. Any HTTP status other than 500–599 is considered successful.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "semi-dark-red"
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Value"
-                },
-                "properties": [
-                  {
-                    "id": "mappings",
-                    "value": [
-                      {
-                        "options": {
-                          "NaN": {
-                            "color": "semi-dark-red",
-                            "index": 0,
-                            "text": "0%"
-                          }
-                        },
-                        "type": "value"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 8,
-            "x": 0,
-            "y": 5
-          },
-          "id": 18,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "(sum(rate(export_service_http_requests_total{container=\"export-service-service\", code=\"5.*\"}[5m])) or vector(0) / sum(rate(export_service_http_requests_total{container=\"export-service-service\"}[5m])) or vector(0)) * 100",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Error Rate SLO",
-          "transformations": [],
-          "type": "gauge"
         },
         {
           "datasource": {
@@ -566,23 +456,68 @@ data:
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "thresholds"
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
               },
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
-                  },
-                  {
                     "color": "red",
-                    "value": 80
+                    "value": null
                   }
                 ]
               }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failed S3 uploads"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 10,
@@ -592,20 +527,18 @@ data:
           },
           "id": 2,
           "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "textMode": "auto"
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -613,15 +546,15 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "builder",
-              "expr": "sum(increase(export_service_failed_s3_uploads[1m]))",
-              "legendFormat": "__auto",
+              "expr": "sum(increase(export_service_failed_s3_uploads[5m]))",
+              "includeNullMetadata": true,
+              "legendFormat": "Failed S3 uploads",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Export Fail Count",
-          "transformations": [],
-          "type": "stat"
+          "title": "Failed S3 uploads",
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -869,17 +802,16 @@ data:
         }
       ],
       "refresh": false,
-      "schemaVersion": 37,
-      "style": "dark",
+      "schemaVersion": 39,
       "tags": [],
       "templating": {
         "list": [
           {
             "allValue": "",
             "current": {
-              "selected": false,
-              "text": "crcs02ue1-prometheus",
-              "value": "crcs02ue1-prometheus"
+              "selected": true,
+              "text": "crcp01ue1-prometheus",
+              "value": "crcp01ue1-prometheus"
             },
             "hide": 0,
             "includeAll": false,
@@ -903,7 +835,7 @@ data:
       "timezone": "",
       "title": "ExportService Dashboard",
       "uid": "ir5blOCVk",
-      "version": 24,
+      "version": 3,
       "weekStart": ""
     }
 kind: ConfigMap

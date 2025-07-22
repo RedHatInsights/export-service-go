@@ -4,170 +4,170 @@ kind: Template
 metadata:
   name: ${APP_NAME}
 objects:
-- apiVersion: cloud.redhat.com/v1alpha1
-  kind: ClowdApp
-  metadata:
-    name: ${APP_NAME}
-  spec:
-    # The name of the ClowdEnvironment providing the services
-    envName: ${ENV_NAME}
-    testing:
-      iqePlugin: ${APP_NAME}
-    dependencies:
-      - rbac
-    deployments:
-    - name: service
-      minReplicas: ${{MIN_REPLICAS}}
-      webServices:
-        public:
-          enabled: True
-        private:
-          enabled: True
-      # Details about running pod
-      podSpec:
-        image: ${IMAGE}:${IMAGE_TAG}     
-        command:
-        - export-service
-        - api_server
-        livenessProbe:        
-          failureThreshold: 3
-          httpGet:
-            path: /healthz
-            port: 9000
-            scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 120
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /readyz
-            port: 9000
-            scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
-          successThreshold: 1
-          timeoutSeconds: 120
-        resources:
-          limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
-          requests:
-            cpu: ${CPU_REQUEST}
-            memory: ${MEMORY_REQUEST}
-        env:
-        - name: CLOWDER_ENABLED
-          value: ${CLOWDER_ENABLED}
-        - name: ENABLE_CLOUDWATCH_LOGGING
-          value: ${ENABLE_CLOUDWATCH_LOGGING}
-        - name: OPEN_API_FILE_PATH
-          value: ${OPEN_API_FILE_PATH}
-        - name: OPEN_API_PRIVATE_PATH
-          value: ${OPEN_API_PRIVATE_PATH}
-        - name: EXPORT_SERVICE_BUCKET
-          value: ${EXPORT_SERVICE_BUCKET}
-        - name: LOG_LEVEL
-          value: ${LOG_LEVEL}
-        - name: EXPORTS_PSKS
-          valueFrom:
-            secretKeyRef:
-              name: export-service-psks
-              key: psk-list
-        - name: EXPORT_ENABLE_APPS
-          value: ${EXPORT_ENABLE_APPS}
-        - name: AWS_UPLOADER_BUFFER_SIZE
-          value: ${AWS_UPLOADER_BUFFER_SIZE}
-        - name: AWS_DOWNLOADER_BUFFER_SIZE
-          value: ${AWS_DOWNLOADER_BUFFER_SIZE}
-        - name: PUBLIC_HTTP_SERVER_READ_TIMEOUT
-          value: ${PUBLIC_HTTP_SERVER_READ_TIMEOUT}
-        - name: PUBLIC_HTTP_SERVER_WRITE_TIMEOUT
-          value: ${PUBLIC_HTTP_SERVER_WRITE_TIMEOUT}
-        - name: PRIVATE_HTTP_SERVER_READ_TIMEOUT
-          value: ${PRIVATE_HTTP_SERVER_READ_TIMEOUT}
-        - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
-          value: ${PRIVATE_HTTP_SERVER_WRITE_TIMEOUT}
-        initContainers:
-        - args:
-          - export-service
-          - migrate_db
-          - upgrade
-          env:
-          - name: LOG_LEVEL
-            value: ${LOG_LEVEL}
-          - name: DB_SSLMODE
-            value: ${DB_SSLMODE}
-          image: ${IMAGE}:${IMAGE_TAG}
-          resources:
-            limits:
-              cpu: ${INIT_CONTAINERS_CPU_LIMIT}
-              memory: ${INIT_CONTAINERS_MEMORY_LIMIT}
-            requests:
-              cpu: ${INIT_CONTAINERS_CPU_REQUEST}
-              memory: ${INIT_CONTAINERS_MEMORY_REQUEST}
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdApp
+    metadata:
+      name: ${APP_NAME}
+    spec:
+      # The name of the ClowdEnvironment providing the services
+      envName: ${ENV_NAME}
+      testing:
+        iqePlugin: ${APP_NAME}
+      dependencies:
+        - rbac
+      deployments:
+        - name: service
+          minReplicas: ${{MIN_REPLICAS}}
+          webServices:
+            public:
+              enabled: True
+            private:
+              enabled: True
+          # Details about running pod
+          podSpec:
+            image: ${IMAGE}:${IMAGE_TAG}
+            command:
+              - export-service
+              - api_server
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /healthz
+                port: 9000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /readyz
+                port: 9000
+                scheme: HTTP
+              initialDelaySeconds: 35
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 120
+            resources:
+              limits:
+                cpu: ${{CPU_LIMIT}}
+                memory: ${MEMORY_LIMIT}
+              requests:
+                cpu: ${CPU_REQUEST}
+                memory: ${MEMORY_REQUEST}
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: ENABLE_CLOUDWATCH_LOGGING
+                value: ${ENABLE_CLOUDWATCH_LOGGING}
+              - name: OPEN_API_FILE_PATH
+                value: ${OPEN_API_FILE_PATH}
+              - name: OPEN_API_PRIVATE_PATH
+                value: ${OPEN_API_PRIVATE_PATH}
+              - name: EXPORT_SERVICE_BUCKET
+                value: ${EXPORT_SERVICE_BUCKET}
+              - name: LOG_LEVEL
+                value: ${LOG_LEVEL}
+              - name: EXPORTS_PSKS
+                valueFrom:
+                  secretKeyRef:
+                    name: export-service-psks
+                    key: psk-list
+              - name: EXPORT_ENABLE_APPS
+                value: ${EXPORT_ENABLE_APPS}
+              - name: MAX_PAYLOAD_SIZE
+                value: ${MAX_PAYLOAD_SIZE}
+              - name: AWS_UPLOADER_BUFFER_SIZE
+                value: ${AWS_UPLOADER_BUFFER_SIZE}
+              - name: AWS_DOWNLOADER_BUFFER_SIZE
+                value: ${AWS_DOWNLOADER_BUFFER_SIZE}
+              - name: PUBLIC_HTTP_SERVER_READ_TIMEOUT
+                value: ${PUBLIC_HTTP_SERVER_READ_TIMEOUT}
+              - name: PUBLIC_HTTP_SERVER_WRITE_TIMEOUT
+                value: ${PUBLIC_HTTP_SERVER_WRITE_TIMEOUT}
+              - name: PRIVATE_HTTP_SERVER_READ_TIMEOUT
+                value: ${PRIVATE_HTTP_SERVER_READ_TIMEOUT}
+              - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
+                value: ${PRIVATE_HTTP_SERVER_WRITE_TIMEOUT}
+            initContainers:
+              - args:
+                  - export-service
+                  - migrate_db
+                  - upgrade
+                env:
+                  - name: LOG_LEVEL
+                    value: ${LOG_LEVEL}
+                  - name: DB_SSLMODE
+                    value: ${DB_SSLMODE}
+                image: ${IMAGE}:${IMAGE_TAG}
+                resources:
+                  limits:
+                    cpu: ${INIT_CONTAINERS_CPU_LIMIT}
+                    memory: ${INIT_CONTAINERS_MEMORY_LIMIT}
+                  requests:
+                    cpu: ${INIT_CONTAINERS_CPU_REQUEST}
+                    memory: ${INIT_CONTAINERS_MEMORY_REQUEST}
 
-    database:
-      name: export-service
-      version: 16
-    objectStore:
-    - ${EXPORT_SERVICE_BUCKET}
-    kafkaTopics:
-    - replicas: 3
-      partitions: 64
-      topicName: platform.export.requests
+      database:
+        name: export-service
+        version: 16
+      objectStore:
+        - ${EXPORT_SERVICE_BUCKET}
+      kafkaTopics:
+        - replicas: 3
+          partitions: 64
+          topicName: platform.export.requests
 
-    jobs:
-    - name: cleaner
-      schedule: ${CLEANER_SCHEDULE}
-      restartPolicy: OnFailure
-      concurrencyPolicy: Replace
-      podSpec:
-        image: ${IMAGE}:${IMAGE_TAG}
-        command:
-        - export-service
-        - expired_export_cleaner
-        env:
-        - name: LOG_LEVEL
-          value: ${LOG_LEVEL}
-        - name: DB_SSLMODE
-          value: ${DB_SSLMODE}
-        resources:
-          limits:
-            cpu: ${CLEANER_JOB_CPU_LIMIT}
-            memory: ${CLEANER_JOB_MEMORY_LIMIT}
-          requests:
-            cpu: ${CLEANER_JOB_CPU_REQUEST}
-            memory: ${CLEANER_JOB_MEMORY_REQUEST}
+      jobs:
+        - name: cleaner
+          schedule: ${CLEANER_SCHEDULE}
+          restartPolicy: OnFailure
+          concurrencyPolicy: Replace
+          podSpec:
+            image: ${IMAGE}:${IMAGE_TAG}
+            command:
+              - export-service
+              - expired_export_cleaner
+            env:
+              - name: LOG_LEVEL
+                value: ${LOG_LEVEL}
+              - name: DB_SSLMODE
+                value: ${DB_SSLMODE}
+            resources:
+              limits:
+                cpu: ${CLEANER_JOB_CPU_LIMIT}
+                memory: ${CLEANER_JOB_MEMORY_LIMIT}
+              requests:
+                cpu: ${CLEANER_JOB_CPU_REQUEST}
+                memory: ${CLEANER_JOB_MEMORY_REQUEST}
 
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: export
-    labels:
-      app: export-service
-  spec:
-    ports:
-    - name: public
-      port: 8000
-      protocol: TCP
-      targetPort: 8000
-    selector:
-      pod: export-service-service
-    sessionAffinity: None
-    type: ClusterIP
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: export
+      labels:
+        app: export-service
+    spec:
+      ports:
+        - name: public
+          port: 8000
+          protocol: TCP
+          targetPort: 8000
+      selector:
+        pod: export-service-service
+      sessionAffinity: None
+      type: ClusterIP
 
-
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: export-service-psks
-    labels:
-      app: export-service
-  data:
-    psk-list: "dGVzdGluZy1hLXBzayx0ZXN0aW5nLWEtcHNrLTI="
-  type: Opaque
-
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: export-service-psks
+      labels:
+        app: export-service
+    data:
+      psk-list: "dGVzdGluZy1hLXBzayx0ZXN0aW5nLWEtcHNrLTI="
+    type: Opaque
 
 parameters:
   - name: APP_NAME
@@ -218,7 +218,7 @@ parameters:
     value: "1"
   - description: Image tag
     name: IMAGE_TAG
-    required: true    
+    required: true
   - description: Image name
     name: IMAGE
     value: quay.io/cloudservices/export-service
@@ -227,7 +227,7 @@ parameters:
     value: "true"
   - description: ClowdEnv Name
     name: ENV_NAME
-    requred: false    
+    requred: false
   - description: Determines if Cloud Watch logging is enabled
     name: ENABLE_CLOUDWATCH_LOGGING
     value: "false"
@@ -244,7 +244,9 @@ parameters:
   - name: LOG_LEVEL
     value: INFO
   - name: EXPORT_ENABLE_APPS
-    value: "{\"exampleApplication\":[\"exampleResource\",\"anotherExampleResource\"],\"urn:redhat:application:inventory\":[\"urn:redhat:application:inventory:export:systems\"],\"urn:redhat:application:notifications\":[\"urn:redhat:application:notifications:export:events\"]}"
+    value: '{"exampleApplication":["exampleResource","anotherExampleResource"],"urn:redhat:application:inventory":["urn:redhat:application:inventory:export:systems"],"urn:redhat:application:notifications":["urn:redhat:application:notifications:export:events"]}'
+  - name: MAX_PAYLOAD_SIZE
+    value: "500"
   - name: AWS_UPLOADER_BUFFER_SIZE
     value: "10485760"
   - name: AWS_DOWNLOADER_BUFFER_SIZE

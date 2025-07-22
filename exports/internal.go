@@ -160,7 +160,9 @@ func (i *Internal) PostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, int64(i.Cfg.MaxPayloadSize))
+	// Convert MaxPayloadSize from MB to bytes
+	maxPayloadSizeBytes := int64(i.Cfg.MaxPayloadSize) * 1024 * 1024
+	r.Body = http.MaxBytesReader(w, r.Body, maxPayloadSizeBytes)
 
 	if err := i.Compressor.CreateObject(r.Context(), logger, i.DB, r.Body, params.Application, params.ResourceUUID, payload); err != nil {
 		if errors.As(err, &maxBytesError) {

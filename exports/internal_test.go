@@ -188,6 +188,42 @@ var _ = Context("Set up internal handler", func() {
 			Expect(rr.Code).To(Equal(http.StatusBadRequest))
 		})
 
+		It("RHCLOUD-41340: should allow 10MB uploads when MaxPayloadSize is 500MB but currently fails due to unit bug", func() {
+			// RHCLOUD-41340: This test demonstrates the issue where:
+			// - MaxPayloadSize=500 should mean 500MB
+			// - But currently it's treated as 500 bytes
+			// - So a 10MB upload fails when it should succeed
+			cfg.MaxPayloadSize = 500 // Should be 500MB but treated as 500 bytes
+			rr := httptest.NewRecorder()
+
+			// Create export request using the configured test application
+			req := createExportRequest("testRequest10MB", "csv", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
+			AddDebugUserIdentity(req)
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusAccepted))
+
+			// Extract export and resource UUIDs
+			var exportResponse map[string]any
+			err := json.Unmarshal(rr.Body.Bytes(), &exportResponse)
+			Expect(err).ShouldNot(HaveOccurred())
+			exportUUID := exportResponse["id"].(string)
+			sources := exportResponse["sources"].([]any)
+			source := sources[0].(map[string]any)
+			resourceUUID := source["id"].(string)
+
+			rr = httptest.NewRecorder()
+
+			// Create 10MB payload (should be allowed with 500MB limit)
+			payload10MB := make([]byte, 10*1024*1024) // 10MB
+			req = httptest.NewRequest("POST", fmt.Sprintf("/app/export/v1/upload/%s/exampleApp/%s", exportUUID, resourceUUID), bytes.NewBuffer(payload10MB))
+
+			AddDebugUserIdentity(req)
+			router.ServeHTTP(rr, req)
+
+			// After the fix, this should succeed
+			Expect(rr.Code).To(Equal(http.StatusAccepted), "10MB should be allowed with 500MB limit")
+		})
+
 		It("disallows the user to upload a chunked large payload", func() {
 			// We should be using a roughly 15MB body later
 			cfg.MaxPayloadSize = 5

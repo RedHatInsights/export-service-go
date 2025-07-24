@@ -158,7 +158,6 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 	}
 
 	exports, count, err := e.DB.APIList(modelUser, &params, page.Offset, page.Limit, page.SortBy, page.Dir)
-
 	if err != nil {
 		logger.Errorw("error while retrieving list from database", "error", err)
 		InternalServerError(w, err)
@@ -220,7 +219,6 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
 func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
-
 	user := middleware.GetUserIdentity(r.Context())
 	reqID := request_id.GetReqID(r.Context())
 
@@ -327,8 +325,8 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 		}
 
 		if source.SourceError != nil {
-			newSource.Message = source.SourceError.Message
-			newSource.Code = source.SourceError.Code
+			newSource.Message = source.Message
+			newSource.Code = source.Code
 		}
 
 		apiPayload.Sources = append(apiPayload.Sources, newSource)

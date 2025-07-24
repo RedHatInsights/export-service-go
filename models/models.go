@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/redhatinsights/export-service-go/config"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/export-service-go/config"
 )
 
 type PayloadFormat string
@@ -199,10 +200,11 @@ func (ep *ExportPayload) GetAllSourcesStatus() (int, error) {
 	}
 	failedCount := 0
 	for _, source := range sources {
-		if source.Status == RPending {
+		switch source.Status {
+		case RPending:
 			// there are more sources in a pending state. there is nothing to zip yet.
 			return StatusPending, nil
-		} else if source.Status == RFailed {
+		case RFailed:
 			failedCount += 1
 		}
 	}

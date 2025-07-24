@@ -56,7 +56,6 @@ func (p *Producer) StartProducer(msgChan chan *kafka.Message) {
 
 			start := time.Now()
 			err := p.Produce(msg, deliveryChan)
-
 			if err != nil {
 				log.Errorw("failed to produce message", "error", err)
 				return

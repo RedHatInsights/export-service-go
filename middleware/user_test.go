@@ -9,8 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+
+	"github.com/redhatinsights/export-service-go/middleware"
 )
 
 var _ = Describe("Handler", func() {

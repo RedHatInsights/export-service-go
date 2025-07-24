@@ -13,11 +13,10 @@ import (
 	"github.com/redhatinsights/export-service-go/middleware"
 )
 
-var (
-	validExportConfig = &config.ExportConfig{
-		Psks: []string{"test-psk"},
-	}
-)
+var validExportConfig = &config.ExportConfig{
+	Psks: []string{"test-psk"},
+}
+
 var _ = Describe("Handler", func() {
 	DescribeTable("Test EnforcePSK function",
 		func(useHeader, useMultipleHeaders bool, header string, expectedStatus int) {

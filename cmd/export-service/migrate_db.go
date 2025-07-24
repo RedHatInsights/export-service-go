@@ -8,7 +8,6 @@ import (
 )
 
 func performDbMigration(cfg *config.ExportConfig, log *zap.SugaredLogger, direction string) error {
-
 	databaseConn, err := db.OpenPostgresDB(*cfg)
 	if err != nil {
 		log.Error("Unable to initialize database connection", "error", err)

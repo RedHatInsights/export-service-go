@@ -9,7 +9,6 @@ import (
 )
 
 func startExpiredExportCleaner(cfg *config.ExportConfig, log *zap.SugaredLogger) {
-
 	log.Info("Starting expired export cleaner")
 
 	dbConnection, err := db.OpenDB(*cfg)

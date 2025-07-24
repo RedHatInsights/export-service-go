@@ -1,33 +1,21 @@
 version: "2"
-
-run:
-  timeout: 5m
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - unused
-  settings:
-    errcheck:
-      ignore: ''
-
-formatters:
-  enable:
-    - goimports
-    - gofumpt
-  settings:
-    goimports:
-      # Put imports beginning with prefix after 3rd-party packages.
-      # It's a comma-separated list of prefixes.
-      local-prefixes: github.com/redhatinsights/export-service-go
-
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   fix: true
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/redhatinsights/export-service-go

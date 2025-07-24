@@ -285,7 +285,7 @@ func getRdsCaPath(cfg *clowder.AppConfig) (*string, error) {
 }
 
 func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {
-	var protocol string = "http"
+	protocol := "http"
 	if tlsEnabled {
 		protocol = "https"
 	}

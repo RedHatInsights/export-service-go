@@ -25,7 +25,6 @@ func OpenPostgresDB(cfg config.ExportConfig) (*sql.DB, error) {
 }
 
 func buildPostgresDSN(cfg config.ExportConfig) string {
-
 	dbcfg := cfg.DBConfig
 
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",

@@ -12,9 +12,7 @@ import (
 )
 
 var _ = Describe("Models", func() {
-	var (
-		exportPayload *m.ExportPayload
-	)
+	var exportPayload *m.ExportPayload
 
 	BeforeEach(func() {
 		exportPayload = &m.ExportPayload{

@@ -25,7 +25,6 @@ func (lw loggerWrapper) Printf(format string, v ...interface{}) {
 }
 
 func PerformDbMigration(databaseConn *sql.DB, log *zap.SugaredLogger, pathToMigrationFiles string, direction string) error {
-
 	log.Info("Starting Export Service DB migration")
 
 	driver, err := postgres.WithInstance(databaseConn, &postgres.Config{})
@@ -42,12 +41,13 @@ func PerformDbMigration(databaseConn *sql.DB, log *zap.SugaredLogger, pathToMigr
 
 	m.Log = loggerWrapper{log}
 
-	if direction == "up" {
+	switch direction {
+	case "up":
 		err = m.Up()
-	} else if direction == "down" {
+	case "down":
 		err = m.Steps(-1)
-	} else {
-		return errors.New("Invalid operation")
+	default:
+		return errors.New("invalid operation")
 	}
 
 	if errors.Is(err, migrate.ErrNoChange) {

@@ -27,7 +27,6 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 	// created and expires can be in either format above
 	if created != "" {
 		result.Created, err = parseDate(created)
-
 		if err != nil {
 			return models.QueryParams{}, fmt.Errorf("'%s' is not a valid date in ISO 8601", created)
 		}

@@ -11,9 +11,7 @@ import (
 )
 
 var _ = Describe("Db", func() {
-	var (
-		exportPayload *m.ExportPayload
-	)
+	var exportPayload *m.ExportPayload
 
 	BeforeEach(func() {
 		exportPayload = &m.ExportPayload{

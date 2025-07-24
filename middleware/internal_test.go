@@ -8,6 +8,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhatinsights/export-service-go/middleware"
 )
 

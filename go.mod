@@ -23,7 +23,7 @@ require (
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.11.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	gorm.io/datatypes v1.0.6
 	gorm.io/driver/postgres v1.3.4
 	gorm.io/gorm v1.23.4

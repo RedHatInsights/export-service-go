@@ -12,13 +12,12 @@ import (
 )
 
 func createRootCommand(cfg *config.ExportConfig, log *zap.SugaredLogger) *cobra.Command {
-
 	// rootCmd represents the base command when called without any subcommands
-	var rootCmd = &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use: "export-service",
 	}
 
-	var expiredExportCleanerCmd = &cobra.Command{
+	expiredExportCleanerCmd := &cobra.Command{
 		Use:   "expired_export_cleaner",
 		Short: "Run the expired export cleaner",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -28,7 +27,7 @@ func createRootCommand(cfg *config.ExportConfig, log *zap.SugaredLogger) *cobra.
 
 	rootCmd.AddCommand(expiredExportCleanerCmd)
 
-	var apiServerCmd = &cobra.Command{
+	apiServerCmd := &cobra.Command{
 		Use:   "api_server",
 		Short: "Run the api server",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -38,13 +37,13 @@ func createRootCommand(cfg *config.ExportConfig, log *zap.SugaredLogger) *cobra.
 
 	rootCmd.AddCommand(apiServerCmd)
 
-	var migrateDbCmd = &cobra.Command{
+	migrateDbCmd := &cobra.Command{
 		Use:   "migrate_db",
 		Short: "Run the db migration",
 	}
 
 	// upCmd represents the up command
-	var upCmd = &cobra.Command{
+	upCmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: "Upgrade to a later version",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -54,7 +53,7 @@ func createRootCommand(cfg *config.ExportConfig, log *zap.SugaredLogger) *cobra.
 	}
 
 	// downCmd represents the down command
-	var downCmd = &cobra.Command{
+	downCmd := &cobra.Command{
 		Use:   "downgrade",
 		Short: "Revert to a previous version",
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
+
 	"github.com/redhatinsights/export-service-go/config"
 	ekafka "github.com/redhatinsights/export-service-go/kafka"
 	"github.com/redhatinsights/export-service-go/models"
@@ -22,7 +23,7 @@ import (
 type RequestApplicationResources func(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload)
 
 func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestApplicationResources {
-	var kafkaConfig = config.Get().KafkaConfig
+	kafkaConfig := config.Get().KafkaConfig
 	// sendPayload converts the individual sources of a payload into
 	// kafka messages which are then sent to the producer through the
 	// `messagesChan`
@@ -39,7 +40,7 @@ func KafkaRequestApplicationResources(kafkaChan chan *kafka.Message) RequestAppl
 			for _, source := range sources {
 				var filters map[string]interface{}
 
-				if source.Filters != nil && len(source.Filters) > 0 {
+				if len(source.Filters) > 0 {
 					filters, err = ekafka.JsonToMap(source.Filters)
 					if err != nil {
 						log.Errorw("failed unmarshalling filters", "error", err)

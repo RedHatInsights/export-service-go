@@ -15,8 +15,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-	econfig "github.com/redhatinsights/export-service-go/config"
 	"go.uber.org/zap"
+
+	econfig "github.com/redhatinsights/export-service-go/config"
 
 	export_logger "github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/models"
@@ -63,7 +64,11 @@ func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, p
 	}
 
 	// Delete the contents of the temp directory when this function returns
-	defer os.RemoveAll(tempDirName)
+	defer func() {
+		if err := os.RemoveAll(tempDirName); err != nil {
+			logger.Errorf("warning: failed to remove temporary directory %s: %v", tempDirName, err)
+		}
+	}()
 
 	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, logger, c.Downloader, c.Bucket, prefix, tempDirName)
 	if err != nil {
@@ -163,7 +168,11 @@ func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta
 	var buf bytes.Buffer
 	zipWriter := zip.NewWriter(&buf)
 
-	defer zipWriter.Close()
+	defer func() {
+		if err := zipWriter.Close(); err != nil {
+			log.Errorf("warning: failed to write files to zip: %v", err)
+		}
+	}()
 
 	for _, f := range files {
 
@@ -267,9 +276,9 @@ func (c *Compressor) Compress(ctx context.Context, logger *zap.SugaredLogger, m 
 	}
 
 	meta := ExportMeta{
-		ExportBy:    m.User.Username,
+		ExportBy:    m.Username,
 		ExportDate:  m.CreatedAt.UTC().Format(formatDateTime),
-		ExportOrgID: m.User.OrganizationID,
+		ExportOrgID: m.OrganizationID,
 		HelpString:  helpString,
 	}
 

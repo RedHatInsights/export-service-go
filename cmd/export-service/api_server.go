@@ -31,6 +31,7 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"golang.org/x/time/rate"
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -174,6 +175,8 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		"exportableApplications", cfg.ExportableApplications,
 		"aws_uploader_buffer_size", cfg.StorageConfig.AwsUploaderBufferSize,
 		"aws_downloader_buffer_size", cfg.StorageConfig.AwsDownloaderBufferSize,
+		"rate_limit_rate", cfg.RateLimitConfig.Rate,
+		"rate_limit_burst", cfg.RateLimitConfig.Burst,
 	)
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)
@@ -207,12 +210,14 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		}),
 	}
 
+	rateLimiter := rate.NewLimiter(rate.Limit(cfg.RateLimitConfig.Rate), cfg.RateLimitConfig.Burst)
 	external := exports.Export{
 		Bucket:              cfg.StorageConfig.Bucket,
 		StorageHandler:      &storageHandler,
 		DB:                  &models.ExportDB{DB: DB, Cfg: cfg},
 		RequestAppResources: kafkaRequestAppResources,
 		Log:                 log,
+		RateLimiter:         rateLimiter,
 	}
 	wsrv := createPublicServer(cfg, external)
 

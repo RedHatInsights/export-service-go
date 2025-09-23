@@ -21,6 +21,7 @@ import (
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"golang.org/x/time/rate"
 )
 
 // Export holds any dependencies necessary for the external api endpoints
@@ -30,6 +31,7 @@ type Export struct {
 	DB                  models.DBInterface
 	Log                 *zap.SugaredLogger
 	RequestAppResources RequestApplicationResources
+	RateLimiter         *rate.Limiter
 }
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
@@ -61,13 +63,21 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	logger := e.Log.With(export_logger.RequestIDField(reqID), export_logger.OrgIDField(user.OrganizationID))
 
+	err := e.RateLimiter.Wait(r.Context())
+	if err != nil {
+		logger.Errorw("Rate limit reached", "error", err)
+		InternalServerError(w, err)
+		return
+	}
+
 	var apiExport ExportPayload
-	err := json.NewDecoder(r.Body).Decode(&apiExport)
+	err = json.NewDecoder(r.Body).Decode(&apiExport)
 	if err != nil {
 		logger.Errorw("error while parsing params", "error", err)
 		BadRequestError(w, err.Error())
 		return
 	}
+
 
 	if len(apiExport.Sources) == 0 {
 		logger.Errorw("no sources provided", "error", err)
@@ -148,6 +158,13 @@ func (e *Export) ListExports(w http.ResponseWriter, r *http.Request) {
 
 	logger := e.Log.With(export_logger.RequestIDField(reqID), export_logger.OrgIDField(user.OrganizationID))
 
+	err := e.RateLimiter.Wait(r.Context())
+	if err != nil {
+		logger.Errorw("Rate limit reached", "error", err)
+		InternalServerError(w, err)
+		return
+	}
+
 	q := r.URL.Query()
 
 	params, err := initQuery(q)
@@ -188,6 +205,13 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 
 	export := e.getExportWithUser(w, r, logger)
 	if export == nil {
+		return
+	}
+
+	err := e.RateLimiter.Wait(r.Context())
+	if err != nil {
+		logger.Errorw("Rate limit reached", "error", err)
+		InternalServerError(w, err)
 		return
 	}
 
@@ -233,6 +257,13 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 
 	logger := e.Log.With(export_logger.RequestIDField(reqID), export_logger.ExportIDField(uid), export_logger.OrgIDField(user.OrganizationID))
 
+	err = e.RateLimiter.Wait(r.Context())
+	if err != nil {
+		logger.Errorw("Rate limit reached", "error", err)
+		InternalServerError(w, err)
+		return
+	}
+
 	modelUser := mapUsertoModelUser(user)
 
 	if err := e.DB.Delete(exportUUID, modelUser); err != nil {
@@ -254,6 +285,13 @@ func (e *Export) GetExportStatus(w http.ResponseWriter, r *http.Request) {
 	reqID := request_id.GetReqID(r.Context())
 
 	logger := e.Log.With(export_logger.RequestIDField(reqID), export_logger.OrgIDField(user.OrganizationID))
+
+	err := e.RateLimiter.Wait(r.Context())
+	if err != nil {
+		logger.Errorw("Rate limit reached", "error", err)
+		InternalServerError(w, err)
+		return
+	}
 
 	export := e.getExportWithUser(w, r, logger)
 	if export == nil {

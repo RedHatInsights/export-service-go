@@ -14,6 +14,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
+	"github.com/labstack/gommon/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
@@ -22,6 +23,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 
 	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -137,7 +139,10 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 
 // Handler function that responds with Hello World
 func helloWorld(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello world")
+	_, err := fmt.Fprint(w, "Hello world")
+	if err != nil {
+		log.Panic("failed to respond with Hello world", "error", err)
+	}
 }
 
 // statusOK returns a simple 200 status code

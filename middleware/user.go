@@ -35,9 +35,8 @@ func EnforceUserIdentity(next http.Handler) http.Handler {
 		id := identity.Get(r.Context())
 
 		username, err := getUsernameFromIdentityHeader(id)
-
 		if err != nil {
-			BadRequestError(w, fmt.Errorf("Invalid identity header: %w", err))
+			BadRequestError(w, fmt.Errorf("invalid identity header: %w", err))
 			return
 		}
 
@@ -59,7 +58,6 @@ func GetUserIdentity(ctx context.Context) User {
 }
 
 func getUsernameFromIdentityHeader(id identity.XRHID) (string, error) {
-
 	identityType := strings.ToLower(id.Identity.Type)
 
 	if identityType == userType {
@@ -68,14 +66,14 @@ func getUsernameFromIdentityHeader(id identity.XRHID) (string, error) {
 
 	if identityType == serviceAccountType {
 		if id.Identity.ServiceAccount == nil {
-			return "", fmt.Errorf("Missing ServiceAccount data.")
+			return "", fmt.Errorf("missing ServiceAccount data")
 		}
 		return verifyUsername(id.Identity.ServiceAccount.Username)
 	}
 
 	if identityType == certIdType {
 		if id.Identity.System == nil {
-			return "", fmt.Errorf("Missing cert data.")
+			return "", fmt.Errorf("missing cert data")
 		}
 		return verifyUsername(id.Identity.System.CommonName)
 	}
@@ -86,7 +84,7 @@ func getUsernameFromIdentityHeader(id identity.XRHID) (string, error) {
 func verifyUsername(username string) (string, error) {
 	// The security model is currently based on the username...so verify we are getting a valid username
 	if len(username) == 0 {
-		return "", fmt.Errorf("Missing username data.")
+		return "", fmt.Errorf("missing username data")
 	}
 
 	return username, nil

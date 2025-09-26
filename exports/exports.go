@@ -31,7 +31,7 @@ type Export struct {
 	DB                  models.DBInterface
 	Log                 *zap.SugaredLogger
 	RequestAppResources RequestApplicationResources
-	RateLimiter         *rate.Limiter
+	RateLimiter         rate.Limiter
 }
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.
@@ -77,7 +77,6 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 		BadRequestError(w, err.Error())
 		return
 	}
-
 
 	if len(apiExport.Sources) == 0 {
 		logger.Errorw("no sources provided", "error", err)

@@ -31,7 +31,7 @@ type Export struct {
 	DB                  models.DBInterface
 	Log                 *zap.SugaredLogger
 	RequestAppResources RequestApplicationResources
-	RateLimiter         rate.Limiter
+	RateLimiter         *rate.Limiter
 }
 
 // ExportRouter is a router for all of the external routes for the /exports endpoint.

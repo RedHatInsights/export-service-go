@@ -90,6 +90,10 @@ objects:
                 value: ${PRIVATE_HTTP_SERVER_READ_TIMEOUT}
               - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
                 value: ${PRIVATE_HTTP_SERVER_WRITE_TIMEOUT}
+              - name: RATE_LIMIT_RATE
+                value: ${RATE_LIMIT_RATE}
+              - name: RATE_LIMIT_BURST
+                value: ${RATE_LIMIT_BURST}
             initContainers:
               - args:
                   - export-service
@@ -259,3 +263,7 @@ parameters:
     value: "5s"
   - name: PRIVATE_HTTP_SERVER_WRITE_TIMEOUT
     value: "10s"
+  - name: RATE_LIMIT_RATE
+    value: "100"
+  - name: RATE_LIMIT_BURST
+    value: "60"

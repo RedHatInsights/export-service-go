@@ -25,6 +25,7 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -590,6 +591,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 	var router *chi.Mux
 	config := config.Get()
 	log := logger.Get()
+	rateLimiter := rate.NewLimiter(rate.Limit(config.RateLimitConfig.Rate), config.RateLimitConfig.Burst)
 
 	fmt.Println("STARTING TEST")
 
@@ -599,6 +601,7 @@ func setupTest(requestAppResources exports.RequestApplicationResources) chi.Rout
 		DB:                  &models.ExportDB{DB: testGormDB, Cfg: config},
 		RequestAppResources: requestAppResources,
 		Log:                 log,
+		RateLimiter:         rateLimiter,
 	}
 
 	router = chi.NewRouter()

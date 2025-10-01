@@ -20,11 +20,13 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"golang.org/x/time/rate"
 )
 
 var _ = Context("Set up internal handler", func() {
 	cfg := config.Get()
 	log := logger.Get()
+	rateLimiter := rate.NewLimiter(rate.Limit(cfg.RateLimitConfig.Rate), cfg.RateLimitConfig.Burst)
 
 	var internalHandler *exports.Internal
 	var router *chi.Mux
@@ -46,6 +48,7 @@ var _ = Context("Set up internal handler", func() {
 			DB:                  &models.ExportDB{DB: testGormDB, Cfg: cfg},
 			RequestAppResources: mockKafkaCall,
 			Log:                 log,
+			RateLimiter:         rateLimiter,
 		}
 
 		router = chi.NewRouter()

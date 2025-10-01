@@ -25,6 +25,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.11.0
 	go.uber.org/zap v1.26.0
+	golang.org/x/time v0.5.0
 	gorm.io/datatypes v1.0.6
 	gorm.io/driver/postgres v1.3.4
 	gorm.io/gorm v1.23.4

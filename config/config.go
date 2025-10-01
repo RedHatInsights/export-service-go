@@ -33,6 +33,7 @@ type ExportConfig struct {
 	DBConfig                      dbConfig
 	StorageConfig                 storageConfig
 	KafkaConfig                   kafkaConfig
+	RateLimitConfig               rateLimitConfig
 	OpenAPIPrivatePath            string
 	OpenAPIPublicPath             string
 	Psks                          []string
@@ -92,6 +93,11 @@ type storageConfig struct {
 	AwsDownloaderBufferSize int64
 }
 
+type rateLimitConfig struct {
+	Rate  int
+	Burst int
+}
+
 var (
 	config *ExportConfig
 	doOnce sync.Once
@@ -141,6 +147,10 @@ func Get() *ExportConfig {
 
 		options.SetDefault("AWS_UPLOADER_BUFFER_SIZE", 10*1024*1024)
 		options.SetDefault("AWS_DOWNLOADER_BUFFER_SIZE", 10*1024*1024)
+
+		// Rate limit defaults
+		options.SetDefault("RATE_LIMIT_RATE", 100)
+		options.SetDefault("RATE_LIMIT_BURST", 60)
 
 		options.AutomaticEnv()
 
@@ -198,6 +208,11 @@ func Get() *ExportConfig {
 			EventType:        options.GetString("KAFKA_EVENT_TYPE"),
 			EventDataSchema:  options.GetString("KAFKA_EVENT_DATASCHEMA"),
 			EventSchema:      options.GetString("KAFKA_EVENT_SCHEMA"),
+		}
+
+		config.RateLimitConfig = rateLimitConfig{
+			Rate:  options.GetInt("RATE_LIMIT_RATE"),
+			Burst: options.GetInt("RATE_LIMIT_BURST"),
 		}
 
 		if clowder.IsClowderEnabled() {

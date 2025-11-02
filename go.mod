@@ -19,7 +19,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.37.0
 	github.com/prometheus/client_golang v1.12.1
-	github.com/redhatinsights/app-common-go v1.6.8
+	github.com/redhatinsights/app-common-go v1.6.9
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/spf13/cobra v1.1.3

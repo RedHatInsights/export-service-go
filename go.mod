@@ -1,6 +1,6 @@
 module github.com/redhatinsights/export-service-go
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/RedHatInsights/event-schemas-go v1.0.6

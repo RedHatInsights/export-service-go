@@ -100,9 +100,9 @@ type rateLimitConfig struct {
 }
 
 type oidcConfig struct {
-	Enabled     bool
-	IssuerURL   string
-	ClientID    string
+	Enabled   bool
+	IssuerURL string
+	ClientID  string
 }
 
 var (

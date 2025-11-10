@@ -17,8 +17,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/redhatinsights/export-service-go/middleware"
 	"golang.org/x/oauth2"
+
+	"github.com/redhatinsights/export-service-go/middleware"
 )
 
 var _ = Describe("OIDC Factory Methods", func() {
@@ -105,7 +106,7 @@ var _ = Describe("OIDC Factory Methods", func() {
 				mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == "/token" && r.Method == "POST" {
 						w.Header().Set("Content-Type", "application/json")
-						json.NewEncoder(w).Encode(map[string]interface{}{
+						_ = json.NewEncoder(w).Encode(map[string]interface{}{
 							"access_token": "test-access-token",
 							"token_type":   "Bearer",
 							"expires_in":   3600,

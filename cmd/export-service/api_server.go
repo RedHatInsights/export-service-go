@@ -24,6 +24,8 @@ import (
 
 	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 
+	"golang.org/x/time/rate"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -33,7 +35,6 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
-	"golang.org/x/time/rate"
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {

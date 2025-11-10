@@ -37,7 +37,7 @@ import (
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http.Server {
+func createPublicServer(cfg *config.ExportConfig, external exports.Export, oidcVerifier emiddleware.Verifier) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -57,10 +57,10 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
-		r.Use(
-			identity.EnforceIdentity,        // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity, // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
-		)
+		// EnforceIdentity extracts x-rh-identity header (always needed as fallback)
+		r.Use(identity.EnforceIdentity)
+		// EnforceAuthentication handles both OIDC (if enabled) and x-rh-identity
+		r.Use(emiddleware.EnforceAuthentication(oidcVerifier))
 
 		// add external routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
@@ -182,7 +182,30 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		"aws_downloader_buffer_size", cfg.StorageConfig.AwsDownloaderBufferSize,
 		"rate_limit_rate", cfg.RateLimitConfig.Rate,
 		"rate_limit_burst", cfg.RateLimitConfig.Burst,
+		"oidc_enabled", cfg.OIDCConfig.Enabled,
+		"oidc_issuer_url", cfg.OIDCConfig.IssuerURL,
 	)
+
+	// Initialize OIDC verifier if enabled
+	var oidcVerifier emiddleware.Verifier
+	if cfg.OIDCConfig.Enabled {
+		log.Info("OIDC authentication is enabled, initializing OIDC verifier...")
+		var err error
+		oidcVerifier, err = emiddleware.NewOIDCVerifier(
+			context.Background(),
+			cfg.OIDCConfig.IssuerURL,
+			cfg.OIDCConfig.ClientID,
+		)
+		if err != nil {
+			log.Panicw("failed to initialize OIDC verifier", "error", err)
+		}
+		log.Infow("OIDC verifier initialized successfully",
+			"issuer", cfg.OIDCConfig.IssuerURL,
+			"client_id", cfg.OIDCConfig.ClientID,
+		)
+	} else {
+		log.Info("OIDC authentication is disabled")
+	}
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)
 
@@ -224,7 +247,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Log:                 log,
 		RateLimiter:         rateLimiter,
 	}
-	wsrv := createPublicServer(cfg, external)
+	wsrv := createPublicServer(cfg, external, oidcVerifier)
 
 	internal := exports.Internal{
 		Cfg:        cfg,

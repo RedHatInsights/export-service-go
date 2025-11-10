@@ -94,6 +94,12 @@ objects:
                 value: ${RATE_LIMIT_RATE}
               - name: RATE_LIMIT_BURST
                 value: ${RATE_LIMIT_BURST}
+              - name: OIDC_ENABLED
+                value: ${OIDC_ENABLED}
+              - name: OIDC_ISSUER_URL
+                value: ${OIDC_ISSUER_URL}
+              - name: OIDC_CLIENT_ID
+                value: ${OIDC_CLIENT_ID}
             initContainers:
               - args:
                   - export-service
@@ -267,3 +273,12 @@ parameters:
     value: "100"
   - name: RATE_LIMIT_BURST
     value: "60"
+  - name: OIDC_ENABLED
+    description: Enable OIDC authentication
+    value: "false"
+  - name: OIDC_ISSUER_URL
+    description: OIDC provider issuer URL)
+    value: "https://console.redhat.com"
+  - name: OIDC_CLIENT_ID
+    description: OIDC client ID
+    value: ""

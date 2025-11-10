@@ -1,6 +1,6 @@
 module github.com/redhatinsights/export-service-go
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/RedHatInsights/event-schemas-go v1.0.6
@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.72
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 	github.com/confluentinc/confluent-kafka-go v1.9.1
+	github.com/coreos/go-oidc/v3 v3.16.0
 	github.com/fergusstrange/embedded-postgres v1.19.0
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-openapi/runtime v0.23.3
@@ -25,6 +26,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.11.0
 	go.uber.org/zap v1.26.0
+	golang.org/x/oauth2 v0.28.0
 	golang.org/x/time v0.5.0
 	gorm.io/datatypes v1.0.6
 	gorm.io/driver/postgres v1.3.4
@@ -47,6 +49,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/analysis v0.21.2 // indirect
 	github.com/go-openapi/errors v0.20.2 // indirect

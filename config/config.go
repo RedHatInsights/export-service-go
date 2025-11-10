@@ -34,6 +34,7 @@ type ExportConfig struct {
 	StorageConfig                 storageConfig
 	KafkaConfig                   kafkaConfig
 	RateLimitConfig               rateLimitConfig
+	OIDCConfig                    oidcConfig
 	OpenAPIPrivatePath            string
 	OpenAPIPublicPath             string
 	Psks                          []string
@@ -98,6 +99,12 @@ type rateLimitConfig struct {
 	Burst int
 }
 
+type oidcConfig struct {
+	Enabled     bool
+	IssuerURL   string
+	ClientID    string
+}
+
 var (
 	config *ExportConfig
 	doOnce sync.Once
@@ -151,6 +158,11 @@ func Get() *ExportConfig {
 		// Rate limit defaults
 		options.SetDefault("RATE_LIMIT_RATE", 100)
 		options.SetDefault("RATE_LIMIT_BURST", 60)
+
+		// OIDC defaults
+		options.SetDefault("OIDC_ENABLED", false)
+		options.SetDefault("OIDC_ISSUER_URL", "")
+		options.SetDefault("OIDC_CLIENT_ID", "")
 
 		options.AutomaticEnv()
 
@@ -213,6 +225,12 @@ func Get() *ExportConfig {
 		config.RateLimitConfig = rateLimitConfig{
 			Rate:  options.GetInt("RATE_LIMIT_RATE"),
 			Burst: options.GetInt("RATE_LIMIT_BURST"),
+		}
+
+		config.OIDCConfig = oidcConfig{
+			Enabled:   options.GetBool("OIDC_ENABLED"),
+			IssuerURL: options.GetString("OIDC_ISSUER_URL"),
+			ClientID:  options.GetString("OIDC_CLIENT_ID"),
 		}
 
 		if clowder.IsClowderEnabled() {

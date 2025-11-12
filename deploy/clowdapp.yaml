@@ -100,6 +100,10 @@ objects:
                 value: ${OIDC_ISSUER_URL}
               - name: OIDC_CLIENT_ID
                 value: ${OIDC_CLIENT_ID}
+              - name: OIDC_PROVIDER_TIMEOUT
+                value: ${OIDC_PROVIDER_TIMEOUT}
+              - name: OIDC_JWKS_CACHE_DURATION
+                value: ${OIDC_JWKS_CACHE_DURATION}
             initContainers:
               - args:
                   - export-service
@@ -274,11 +278,17 @@ parameters:
   - name: RATE_LIMIT_BURST
     value: "60"
   - name: OIDC_ENABLED
-    description: Enable OIDC authentication
+    description: Enable OIDC authentication for private server
     value: "false"
   - name: OIDC_ISSUER_URL
-    description: OIDC provider issuer URL)
-    value: "https://console.redhat.com"
+    description: OIDC provider issuer URL (e.g., https://sso.redhat.com/auth/realms/redhat-external)
+    value: ""
   - name: OIDC_CLIENT_ID
     description: OIDC client ID
     value: ""
+  - name: OIDC_PROVIDER_TIMEOUT
+    description: Timeout for OIDC provider initialization (e.g., 10s)
+    value: "10s"
+  - name: OIDC_JWKS_CACHE_DURATION
+    description: Duration to cache JWKS keys before refresh (e.g., 5m)
+    value: "5m"

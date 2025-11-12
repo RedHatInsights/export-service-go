@@ -3,10 +3,13 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+
+	"github.com/redhatinsights/export-service-go/metrics"
 )
 
 // TokenProvider retrieves OAuth2 tokens for service-to-service authentication.
@@ -50,16 +53,32 @@ func NewClientCredentialsTokenProvider(tokenURL, clientID, clientSecret string, 
 	return &tokenSource{config: config}, nil
 }
 
-func NewOIDCVerifier(ctx context.Context, issuerURL, clientID string) (Verifier, error) {
+// NewOIDCVerifier creates a new OIDC verifier with timeout and metrics support.
+// The timeout parameter specifies how long to wait for the OIDC provider discovery.
+// If timeout is 0, a default timeout of 10 seconds is used.
+func NewOIDCVerifier(ctx context.Context, issuerURL, clientID string, timeout time.Duration) (Verifier, error) {
 	if issuerURL == "" {
 		return nil, fmt.Errorf("issuer URL cannot be empty")
 	}
 	if clientID == "" {
 		return nil, fmt.Errorf("client ID cannot be empty")
 	}
+	if timeout == 0 {
+		timeout = 10 * time.Second
+	}
 
-	provider, err := oidc.NewProvider(ctx, issuerURL)
+	// Create a context with timeout for provider initialization
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Track initialization time and failures with metrics
+	start := time.Now()
+	provider, err := oidc.NewProvider(ctxWithTimeout, issuerURL)
+	duration := time.Since(start).Seconds()
+	metrics.ObserveOIDCProviderInit(duration)
+
 	if err != nil {
+		metrics.IncrementOIDCProviderInitFailures()
 		return nil, fmt.Errorf("failed to create OIDC provider: %w", err)
 	}
 
@@ -82,13 +101,25 @@ func (t *tokenSource) Token(ctx context.Context) (*oauth2.Token, error) {
 }
 
 // Verify validates an ID token and returns the verified token with claims.
+// Verification time and failures are tracked with metrics.
 func (v *oidcVerifier) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
 	if rawIDToken == "" {
+		metrics.IncrementOIDCVerificationFailures("empty_token")
 		return nil, fmt.Errorf("token cannot be empty")
 	}
 
+	start := time.Now()
 	token, err := v.verifier.Verify(ctx, rawIDToken)
+	duration := time.Since(start).Seconds()
+	metrics.ObserveOIDCVerification(duration)
+
 	if err != nil {
+		// Categorize failure reasons for better observability
+		reason := "verification_failed"
+		if ctx.Err() == context.DeadlineExceeded {
+			reason = "timeout"
+		}
+		metrics.IncrementOIDCVerificationFailures(reason)
 		return nil, fmt.Errorf("token verification failed: %w", err)
 	}
 	return token, nil

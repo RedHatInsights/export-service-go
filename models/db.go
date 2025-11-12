@@ -66,7 +66,7 @@ func (edb *ExportDB) Get(exportUUID uuid.UUID) (result *ExportPayload, err error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return result, ErrRecordNotFound
 	}
-	return
+	return result, err
 }
 
 func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *ExportPayload, err error) {
@@ -78,7 +78,7 @@ func (edb *ExportDB) GetWithUser(exportUUID uuid.UUID, user User) (result *Expor
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return result, ErrRecordNotFound
 	}
-	return
+	return result, err
 }
 
 func (edb *ExportDB) APIList(user User, params *QueryParams, offset, limit int, sort, dir string) (result []*APIExport, count int64, err error) {
@@ -122,14 +122,14 @@ func (edb *ExportDB) APIList(user User, params *QueryParams, offset, limit int, 
 
 	err = db.Find(&result).Error
 
-	return
+	return result, count, err
 }
 
 func (edb *ExportDB) List(user User) (result []*ExportPayload, err error) {
 	err = (edb.DB.Model(&ExportPayload{}).
 		Where(&ExportPayload{User: user}).
 		Find(&result).Error)
-	return
+	return result, err
 }
 
 func (edb *ExportDB) Updates(m *ExportPayload, values interface{}) error {

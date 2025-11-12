@@ -19,13 +19,14 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
+	"golang.org/x/time/rate"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"
 	"github.com/redhatinsights/export-service-go/logger"
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
-	"golang.org/x/time/rate"
 )
 
 const (

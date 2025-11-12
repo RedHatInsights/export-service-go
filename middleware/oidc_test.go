@@ -156,6 +156,7 @@ var _ = Describe("OIDC Factory Methods", func() {
 					context.Background(),
 					"",
 					"test-client-id",
+					0, // use default timeout
 				)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("issuer URL cannot be empty"))
@@ -167,6 +168,7 @@ var _ = Describe("OIDC Factory Methods", func() {
 					context.Background(),
 					"https://example.com",
 					"",
+					0, // use default timeout
 				)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("client ID cannot be empty"))
@@ -174,13 +176,11 @@ var _ = Describe("OIDC Factory Methods", func() {
 			})
 
 			It("should return error for invalid issuer URL", func() {
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-				defer cancel()
-
 				verifier, err := middleware.NewOIDCVerifier(
-					ctx,
+					context.Background(),
 					"https://invalid-oidc-provider-that-does-not-exist.example",
 					"test-client-id",
+					2*time.Second,
 				)
 				Expect(err).To(HaveOccurred())
 				Expect(verifier).To(BeNil())

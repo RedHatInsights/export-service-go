@@ -100,9 +100,11 @@ type rateLimitConfig struct {
 }
 
 type oidcConfig struct {
-	Enabled   bool
-	IssuerURL string
-	ClientID  string
+	Enabled           bool
+	IssuerURL         string
+	ClientID          string
+	ProviderTimeout   time.Duration // Timeout for OIDC provider initialization
+	JWKSCacheDuration time.Duration // How long to cache JWKS keys before refresh
 }
 
 var (
@@ -163,6 +165,8 @@ func Get() *ExportConfig {
 		options.SetDefault("OIDC_ENABLED", false)
 		options.SetDefault("OIDC_ISSUER_URL", "")
 		options.SetDefault("OIDC_CLIENT_ID", "")
+		options.SetDefault("OIDC_PROVIDER_TIMEOUT", 10*time.Second)
+		options.SetDefault("OIDC_JWKS_CACHE_DURATION", 5*time.Minute)
 
 		options.AutomaticEnv()
 
@@ -228,9 +232,11 @@ func Get() *ExportConfig {
 		}
 
 		config.OIDCConfig = oidcConfig{
-			Enabled:   options.GetBool("OIDC_ENABLED"),
-			IssuerURL: options.GetString("OIDC_ISSUER_URL"),
-			ClientID:  options.GetString("OIDC_CLIENT_ID"),
+			Enabled:           options.GetBool("OIDC_ENABLED"),
+			IssuerURL:         options.GetString("OIDC_ISSUER_URL"),
+			ClientID:          options.GetString("OIDC_CLIENT_ID"),
+			ProviderTimeout:   options.GetDuration("OIDC_PROVIDER_TIMEOUT"),
+			JWKSCacheDuration: options.GetDuration("OIDC_JWKS_CACHE_DURATION"),
 		}
 
 		if clowder.IsClowderEnabled() {

@@ -14,6 +14,7 @@ IQE_FILTER_EXPRESSION=""
 IQE_CJI_TIMEOUT="30m"
 IQE_ENV="clowder_smoke"
 IQE_ENV_VARS="DYNACONF_USER_PROVIDER__rbac_enabled=false"
+EXTRA_DEPLOY_ARGS="--set-parameter export-service/MAX_PAYLOAD_SIZE=20"
 
 # Install bonfire repo/initialize
 CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd

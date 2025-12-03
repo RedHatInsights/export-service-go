@@ -24,6 +24,8 @@ import (
 
 	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 
+	"golang.org/x/time/rate"
+
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
 	"github.com/redhatinsights/export-service-go/exports"
@@ -33,7 +35,6 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
-	"golang.org/x/time/rate"
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
@@ -57,10 +58,9 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
-		r.Use(
-			identity.EnforceIdentity,        // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity, // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
-		)
+		// Public API uses only x-rh-identity header authentication
+		r.Use(identity.EnforceIdentity)
+		r.Use(emiddleware.EnforceAuthentication())
 
 		// add external routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
@@ -84,7 +84,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	return &server
 }
 
-func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *http.Server {
+func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal, oidcVerifier emiddleware.Verifier) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -100,7 +100,8 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 	router.Get("/", statusOK)
 
 	router.Route("/app/export/v1", func(r chi.Router) {
-		r.Use(emiddleware.EnforcePSK)
+		// Private API supports both PSK and OIDC authentication during transition
+		r.Use(emiddleware.EnforcePrivateAuth(oidcVerifier, cfg.Psks))
 		// add internal routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
 		r.Route("/", internal.InternalRouter)
@@ -182,7 +183,36 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		"aws_downloader_buffer_size", cfg.StorageConfig.AwsDownloaderBufferSize,
 		"rate_limit_rate", cfg.RateLimitConfig.Rate,
 		"rate_limit_burst", cfg.RateLimitConfig.Burst,
+		"oidc_enabled", cfg.OIDCConfig.Enabled,
+		"oidc_issuer_url", cfg.OIDCConfig.IssuerURL,
 	)
+
+	// Initialize OIDC verifier if enabled (for private server authentication)
+	var oidcVerifier emiddleware.Verifier
+	if cfg.OIDCConfig.Enabled {
+		log.Infow("OIDC authentication is enabled for private server, initializing OIDC verifier...",
+			"issuer", cfg.OIDCConfig.IssuerURL,
+			"client_id", cfg.OIDCConfig.ClientID,
+			"timeout", cfg.OIDCConfig.ProviderTimeout,
+			"jwks_cache_duration", cfg.OIDCConfig.JWKSCacheDuration,
+		)
+		var err error
+		oidcVerifier, err = emiddleware.NewOIDCVerifier(
+			context.Background(),
+			cfg.OIDCConfig.IssuerURL,
+			cfg.OIDCConfig.ClientID,
+			cfg.OIDCConfig.ProviderTimeout,
+		)
+		if err != nil {
+			log.Panicw("failed to initialize OIDC verifier", "error", err)
+		}
+		log.Infow("OIDC verifier initialized successfully for private server",
+			"issuer", cfg.OIDCConfig.IssuerURL,
+			"client_id", cfg.OIDCConfig.ClientID,
+		)
+	} else {
+		log.Info("OIDC authentication is disabled, private server will use PSK only")
+	}
 
 	kafkaProducerMessagesChan := make(chan *kafka.Message) // TODO: determine an appropriate buffer (if one is actually necessary)
 
@@ -232,7 +262,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		DB:         &models.ExportDB{DB: DB, Cfg: cfg},
 		Log:        log,
 	}
-	psrv := createPrivateServer(cfg, internal)
+	psrv := createPrivateServer(cfg, internal, oidcVerifier)
 	msrv := createMetricsServer(cfg)
 
 	idleConnsClosed := make(chan struct{})

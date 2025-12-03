@@ -39,7 +39,7 @@ func initQuery(q url.Values) (result models.QueryParams, err error) {
 		}
 	}
 
-	return
+	return result, err
 }
 
 func parseDate(str string) (result time.Time, err error) {
@@ -51,5 +51,5 @@ func parseDate(str string) (result time.Time, err error) {
 
 	result, err = time.Parse(format, str)
 
-	return
+	return result, err
 }

@@ -16,12 +16,13 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 
+	"golang.org/x/time/rate"
+
 	"github.com/redhatinsights/export-service-go/config"
 	export_logger "github.com/redhatinsights/export-service-go/logger"
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
-	"golang.org/x/time/rate"
 )
 
 // Export holds any dependencies necessary for the external api endpoints

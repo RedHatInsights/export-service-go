@@ -1,0 +1,126 @@
+package middleware
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
+
+	"github.com/redhatinsights/export-service-go/metrics"
+)
+
+// TokenProvider retrieves OAuth2 tokens for service-to-service authentication.
+type TokenProvider interface {
+	Token(ctx context.Context) (*oauth2.Token, error)
+}
+
+// Verifier verifies ID tokens from an OIDC provider.
+type Verifier interface {
+	Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error)
+}
+
+// tokenSource implements TokenProvider using OAuth2 client credentials flow.
+type tokenSource struct {
+	config *clientcredentials.Config
+}
+
+// oidcVerifier implements Verifier using an OIDC ID token verifier.
+type oidcVerifier struct {
+	verifier *oidc.IDTokenVerifier
+}
+
+func NewClientCredentialsTokenProvider(tokenURL, clientID, clientSecret string, scopes []string) (TokenProvider, error) {
+	if tokenURL == "" {
+		return nil, fmt.Errorf("token URL cannot be empty")
+	}
+	if clientID == "" {
+		return nil, fmt.Errorf("client ID cannot be empty")
+	}
+	if clientSecret == "" {
+		return nil, fmt.Errorf("client secret cannot be empty")
+	}
+
+	config := &clientcredentials.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		TokenURL:     tokenURL,
+		Scopes:       scopes,
+	}
+
+	return &tokenSource{config: config}, nil
+}
+
+// NewOIDCVerifier creates a new OIDC verifier with timeout and metrics support.
+// The timeout parameter specifies how long to wait for the OIDC provider discovery.
+// If timeout is 0, a default timeout of 10 seconds is used.
+func NewOIDCVerifier(ctx context.Context, issuerURL, clientID string, timeout time.Duration) (Verifier, error) {
+	if issuerURL == "" {
+		return nil, fmt.Errorf("issuer URL cannot be empty")
+	}
+	if clientID == "" {
+		return nil, fmt.Errorf("client ID cannot be empty")
+	}
+	if timeout == 0 {
+		timeout = 10 * time.Second
+	}
+
+	// Create a context with timeout for provider initialization
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Track initialization time and failures with metrics
+	start := time.Now()
+	provider, err := oidc.NewProvider(ctxWithTimeout, issuerURL)
+	duration := time.Since(start).Seconds()
+	metrics.ObserveOIDCProviderInit(duration)
+
+	if err != nil {
+		metrics.IncrementOIDCProviderInitFailures()
+		return nil, fmt.Errorf("failed to create OIDC provider: %w", err)
+	}
+
+	verifier := provider.Verifier(&oidc.Config{
+		ClientID: clientID,
+	})
+
+	return &oidcVerifier{verifier: verifier}, nil
+}
+
+// Token retrieves an OAuth2 access token using the client credentials flow.
+// The token is cached and automatically refreshed when expired.
+func (t *tokenSource) Token(ctx context.Context) (*oauth2.Token, error) {
+	tokenSource := t.config.TokenSource(ctx)
+	token, err := tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain access token: %w", err)
+	}
+	return token, nil
+}
+
+// Verify validates an ID token and returns the verified token with claims.
+// Verification time and failures are tracked with metrics.
+func (v *oidcVerifier) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
+	if rawIDToken == "" {
+		metrics.IncrementOIDCVerificationFailures("empty_token")
+		return nil, fmt.Errorf("token cannot be empty")
+	}
+
+	start := time.Now()
+	token, err := v.verifier.Verify(ctx, rawIDToken)
+	duration := time.Since(start).Seconds()
+	metrics.ObserveOIDCVerification(duration)
+
+	if err != nil {
+		// Categorize failure reasons for better observability
+		reason := "verification_failed"
+		if ctx.Err() == context.DeadlineExceeded {
+			reason = "timeout"
+		}
+		metrics.IncrementOIDCVerificationFailures(reason)
+		return nil, fmt.Errorf("token verification failed: %w", err)
+	}
+	return token, nil
+}

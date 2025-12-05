@@ -18,8 +18,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
-	github.com/onsi/ginkgo/v2 v2.23.3
-	github.com/onsi/gomega v1.37.0
+	github.com/onsi/ginkgo/v2 v2.27.2
+	github.com/onsi/gomega v1.38.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redhatinsights/app-common-go v1.6.9
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
@@ -35,6 +35,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/PuerkitoBio/purell v1.2.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -126,6 +127,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect

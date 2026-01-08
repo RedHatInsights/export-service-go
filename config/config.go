@@ -88,6 +88,7 @@ type storageConfig struct {
 	Endpoint                string
 	AccessKey               string
 	SecretKey               string
+	Region                  string
 	UseSSL                  bool
 	AwsUploaderBufferSize   int64
 	AwsDownloaderBufferSize int64
@@ -194,6 +195,7 @@ func Get() *ExportConfig {
 			Endpoint:                buildBaseHttpUrl(options.GetBool("MINIO_SSL"), options.GetString("MINIO_HOST"), options.GetInt("MINIO_PORT")),
 			AccessKey:               options.GetString("AWS_ACCESS_KEY"),
 			SecretKey:               options.GetString("AWS_SECRET_ACCESS_KEY"),
+			Region:                  options.GetString("AWS_REGION"),
 			UseSSL:                  options.GetBool("MINIO_SSL"),
 			AwsUploaderBufferSize:   options.GetInt64("AWS_UPLOADER_BUFFER_SIZE"),
 			AwsDownloaderBufferSize: options.GetInt64("AWS_DOWNLOADER_BUFFER_SIZE"),
@@ -279,6 +281,10 @@ func Get() *ExportConfig {
 			config.StorageConfig.AccessKey = *bucket.AccessKey
 			config.StorageConfig.SecretKey = *bucket.SecretKey
 			config.StorageConfig.UseSSL = cfg.ObjectStore.Tls
+			if bucket.Region != nil {
+				// Region being a nil likely happens in ephemeral where we use minio
+				config.StorageConfig.Region = *bucket.Region
+			}
 		}
 	})
 

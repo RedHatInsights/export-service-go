@@ -10,14 +10,12 @@ import (
 	econfig "github.com/redhatinsights/export-service-go/config"
 )
 
-const defaultRegion = "us-east-1"
-
 func NewS3Client(cfg econfig.ExportConfig, log *zap.SugaredLogger) *s3.Client {
 	scfg := cfg.StorageConfig
 
 	// Create AWS config with credentials
 	awsCfg := aws.Config{
-		Region: defaultRegion,
+		Region: scfg.Region,
 		Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			return aws.Credentials{
 				AccessKeyID:     scfg.AccessKey,

@@ -280,8 +280,11 @@ func Get() *ExportConfig {
 			config.StorageConfig.Endpoint = buildBaseHttpUrl(cfg.ObjectStore.Tls, cfg.ObjectStore.Hostname, cfg.ObjectStore.Port)
 			config.StorageConfig.AccessKey = *bucket.AccessKey
 			config.StorageConfig.SecretKey = *bucket.SecretKey
-			config.StorageConfig.Region = *bucket.Region
 			config.StorageConfig.UseSSL = cfg.ObjectStore.Tls
+			if bucket.Region != nil {
+				// Region being a nil likely happens in ephemeral where we use minio
+				config.StorageConfig.Region = *bucket.Region
+			}
 		}
 	})
 

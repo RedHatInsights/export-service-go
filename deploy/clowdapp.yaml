@@ -13,8 +13,6 @@ objects:
       envName: ${ENV_NAME}
       testing:
         iqePlugin: ${APP_NAME}
-      dependencies:
-        - rbac
       deployments:
         - name: service
           minReplicas: ${{MIN_REPLICAS}}

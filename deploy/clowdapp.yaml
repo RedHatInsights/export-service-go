@@ -74,6 +74,7 @@ objects:
                   secretKeyRef:
                     name: export-service-psks
                     key: psk-list
+                    optional: true
               - name: EXPORT_ENABLE_APPS
                 value: ${EXPORT_ENABLE_APPS}
               - name: MAX_PAYLOAD_SIZE

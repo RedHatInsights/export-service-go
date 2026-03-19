@@ -102,6 +102,8 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 	router.Route("/app/export/v1", func(r chi.Router) {
 		if !cfg.DisableServiceToServicePSKAuth {
 			r.Use(emiddleware.EnforcePSK)
+		} else {
+		    log.info("Processing service to service HTTP request with PSK auth disabled")
 		}
 		// add internal routes
 		r.Get("/ping", helloWorld) // Hello World endpoint

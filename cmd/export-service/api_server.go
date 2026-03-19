@@ -100,7 +100,9 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 	router.Get("/", statusOK)
 
 	router.Route("/app/export/v1", func(r chi.Router) {
-		r.Use(emiddleware.EnforcePSK)
+		if cfg.CRCCluster {
+			r.Use(emiddleware.EnforcePSK)
+		}
 		// add internal routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
 		r.Route("/", internal.InternalRouter)

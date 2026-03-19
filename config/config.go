@@ -36,6 +36,7 @@ type ExportConfig struct {
 	RateLimitConfig               rateLimitConfig
 	OpenAPIPrivatePath            string
 	OpenAPIPublicPath             string
+	CRCCluster                    bool
 	Psks                          []string
 	ExportExpiryDays              int
 	ExportableApplications        map[string]map[string]bool
@@ -123,6 +124,7 @@ func Get() *ExportConfig {
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
 		options.SetDefault("EXPORT_ENABLE_APPS", "{\"exampleApp\":[\"exampleResource\", \"anotherExampleResource\"]}")
 		options.SetDefault("MAX_PAYLOAD_SIZE", 500)
+		options.SetDefault("CRC_CLUSTER", true)
 
 		// DB defaults
 		options.SetDefault("PGSQL_USER", "postgres")
@@ -175,6 +177,7 @@ func Get() *ExportConfig {
 			ExportExpiryDays:              options.GetInt("EXPORT_EXPIRY_DAYS"),
 			ExportableApplications:        convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
 			MaxPayloadSize:                options.GetInt("MAX_PAYLOAD_SIZE"),
+			CRCCluster:                    options.GetBool("CRC_CLUSTER"),
 		}
 
 		config.DBConfig = dbConfig{

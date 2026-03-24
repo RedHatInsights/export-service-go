@@ -97,6 +97,8 @@ objects:
                 value: ${RATE_LIMIT_RATE}
               - name: RATE_LIMIT_BURST
                 value: ${RATE_LIMIT_BURST}
+              - name: DISABLE_SERVICE_TO_SERVICE_PSK_AUTH
+                value: ${DISABLE_SERVICE_TO_SERVICE_PSK_AUTH}
             initContainers:
               - args:
                   - export-service
@@ -272,3 +274,5 @@ parameters:
     value: "100"
   - name: RATE_LIMIT_BURST
     value: "60"
+  - name: DISABLE_SERVICE_TO_SERVICE_PSK_AUTH
+    value: "false"

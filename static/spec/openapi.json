@@ -415,8 +415,7 @@
             "type": "object",
             "required": [
               "id",
-              "status",
-              "expires_at"
+              "status"
             ],
             "properties": {
               "id": {

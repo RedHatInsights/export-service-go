@@ -99,7 +99,7 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 
 	router.Get("/", statusOK)
 
-	router.Route("/app/export/v1", func(r chi.Router) {
+	internalRoutes := func(r chi.Router) {
 		if !cfg.DisableServiceToServicePSKAuth {
 			r.Use(emiddleware.EnforcePSK)
 		} else {
@@ -108,7 +108,14 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 		// add internal routes
 		r.Get("/ping", helloWorld) // Hello World endpoint
 		r.Route("/", internal.InternalRouter)
-	})
+	}
+
+	router.Route("/app/export/v1", internalRoutes)
+
+	if cfg.DisableServiceToServicePSKAuth {
+		log.Info("registering standardized internal API path /internal/export/v1")
+		router.Route("/internal/export/v1", internalRoutes)
+	}
 
 	return &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.PrivatePort),

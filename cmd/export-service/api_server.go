@@ -99,16 +99,22 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 
 	router.Get("/", statusOK)
 
-	router.Route("/app/export/v1", func(r chi.Router) {
-		if !cfg.DisableServiceToServicePSKAuth {
-			r.Use(emiddleware.EnforcePSK)
-		} else {
-			log.Info("PSK auth disabled for service-to-service requests")
+	internalRoutes := func(basePath string) func(r chi.Router) {
+		return func(r chi.Router) {
+			r.Use(metrics.InternalUseTracker(basePath))
+			if !cfg.DisableServiceToServicePSKAuth {
+				r.Use(emiddleware.EnforcePSK)
+			} else {
+				log.Info("PSK auth disabled for service-to-service requests")
+			}
+			// add internal routes
+			r.Get("/ping", helloWorld) // Hello World endpoint
+			r.Route("/", internal.InternalRouter)
 		}
-		// add internal routes
-		r.Get("/ping", helloWorld) // Hello World endpoint
-		r.Route("/", internal.InternalRouter)
-	})
+	}
+
+	router.Route("/app/export/v1", internalRoutes("/app/export/v1"))
+	router.Route("/internal/export/v1", internalRoutes("/internal/export/v1"))
 
 	return &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.PrivatePort),

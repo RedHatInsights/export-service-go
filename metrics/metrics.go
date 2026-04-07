@@ -52,7 +52,25 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+var internalAPIReqs = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "export_service_internal_api_requests_total",
+		Help: "How many internal API requests processed, partitioned by base path.",
+	},
+	[]string{"base_path"},
+)
+
+func InternalUseTracker(basePath string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			internalAPIReqs.WithLabelValues(basePath).Inc()
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func init() {
 	prometheus.MustRegister(httpReqs)
 	prometheus.MustRegister(httpDuration)
+	prometheus.MustRegister(internalAPIReqs)
 }

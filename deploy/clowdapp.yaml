@@ -99,6 +99,8 @@ objects:
                 value: ${RATE_LIMIT_BURST}
               - name: DISABLE_SERVICE_TO_SERVICE_PSK_AUTH
                 value: ${DISABLE_SERVICE_TO_SERVICE_PSK_AUTH}
+              - name: TEST_NAME_PLEASE_CLOWDER_RECONCILE
+                value: TEST_VALUE_PLEASE_CLOWDER_RECONCILE
             initContainers:
               - args:
                   - export-service

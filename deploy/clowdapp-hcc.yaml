@@ -128,6 +128,29 @@ objects:
           partitions: 64
           topicName: platform.export.requests
 
+      jobs:
+        - name: cleaner
+          schedule: ${CLEANER_SCHEDULE}
+          restartPolicy: OnFailure
+          concurrencyPolicy: Replace
+          podSpec:
+            image: ${IMAGE}:${IMAGE_TAG}
+            command:
+              - export-service
+              - expired_export_cleaner
+            env:
+              - name: LOG_LEVEL
+                value: ${LOG_LEVEL}
+              - name: DB_SSLMODE
+                value: ${DB_SSLMODE}
+            resources:
+              limits:
+                cpu: ${CLEANER_JOB_CPU_LIMIT}
+                memory: ${CLEANER_JOB_MEMORY_LIMIT}
+              requests:
+                cpu: ${CLEANER_JOB_CPU_REQUEST}
+                memory: ${CLEANER_JOB_MEMORY_REQUEST}
+
   - apiVersion: v1
     kind: Service
     metadata:
@@ -187,6 +210,19 @@ parameters:
     name: INIT_CONTAINERS_MEMORY_REQUEST
     value: 128Mi
 
+  - description: CPU limit of the cleaner job
+    name: CLEANER_JOB_CPU_LIMIT
+    value: 200m
+  - description: CPU requested by the cleaner job
+    name: CLEANER_JOB_CPU_REQUEST
+    value: 100m
+  - description: Memory limit of the cleaner job
+    name: CLEANER_JOB_MEMORY_LIMIT
+    value: 128Mi
+  - description: Memory requested by the cleaner job
+    name: CLEANER_JOB_MEMORY_REQUEST
+    value: 64Mi
+
   - name: MIN_REPLICAS
     value: "1"
   - description: Image tag
@@ -210,6 +246,8 @@ parameters:
     value: /var/tmp/openapi.json
   - name: EXPORT_SERVICE_BUCKET
     value: exports-bucket
+  - name: CLEANER_SCHEDULE
+    value: "0 1 * * *"
   - name: EXPORTS_PSKS
     value: testing-a-psk
   - name: LOG_LEVEL

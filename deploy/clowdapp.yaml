@@ -99,8 +99,7 @@ objects:
                 value: ${RATE_LIMIT_BURST}
               - name: DISABLE_SERVICE_TO_SERVICE_PSK_AUTH
                 value: ${DISABLE_SERVICE_TO_SERVICE_PSK_AUTH}
-              - name: TEST_NAME_PLEASE_CLOWDER_RECONCILE
-                value: TEST_VALUE_PLEASE_CLOWDER_RECONCILE
+
             initContainers:
               - args:
                   - export-service
@@ -133,6 +132,7 @@ objects:
       jobs:
         - name: cleaner
           schedule: ${CLEANER_SCHEDULE}
+          suspend: ${{CLEANER_SUSPEND}}
           restartPolicy: OnFailure
           concurrencyPolicy: Replace
           podSpec:
@@ -250,6 +250,9 @@ parameters:
     value: exports-bucket
   - name: CLEANER_SCHEDULE
     value: "0 1 * * *"
+  - description: Suspend the cleaner CronJob
+    name: CLEANER_SUSPEND
+    value: "false"
   - name: EXPORTS_PSKS
     value: testing-a-psk
   - name: LOG_LEVEL

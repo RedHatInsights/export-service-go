@@ -1,9 +1,9 @@
 ################################
 # STEP 1 build executable binary
 ################################
-FROM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
+FROM registry.access.redhat.com/hi/go:latest-fips-builder AS builder
 
-USER root
+USER 0
 
 WORKDIR /workspace
 # Cache deps before copying source so that we do not need to re-download for every build
@@ -35,9 +35,7 @@ RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-servic
 ############################
 # STEP 2 build a small image
 ############################
-FROM registry.access.redhat.com/ubi9-minimal:latest
-
-RUN microdnf update -y
+FROM registry.access.redhat.com/hi/go:latest-fips
 
 COPY --from=builder /workspace/export-service /usr/bin
 COPY --from=builder /workspace/db/migrations /db/migrations/

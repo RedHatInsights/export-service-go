@@ -37,6 +37,8 @@ RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-servic
 ############################
 FROM registry.access.redhat.com/hi/go:latest-fips
 
+WORKDIR /
+
 COPY --from=builder /workspace/export-service /usr/bin
 COPY --from=builder /workspace/db/migrations /db/migrations/
 COPY --from=builder /workspace/static/spec/openapi.json /var/tmp/openapi.json

@@ -5,14 +5,15 @@ SPDX-License-Identifier: Apache-2.0
 package logger
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	cloudwatch "github.com/RedHatInsights/cloudwatch-v2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	middleware "github.com/go-chi/chi/v5/middleware"
-	lc "github.com/redhatinsights/platform-go-middlewares/v2/logging/cloudwatch"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -55,13 +56,18 @@ func Get() *zap.SugaredLogger {
 
 		// configure cloudwatch
 		if cfg.Logging != nil && cfg.Logging.Region != "" {
-			cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
-			awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
-			batchLogWriter, err := lc.NewBatchWriterWithDuration(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
-			if err != nil {
-				tmpLogger.Info(err.Error())
+			awsCfg := aws.Config{
+				Region: cfg.Logging.Region,
+				Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+					return aws.Credentials{
+						AccessKeyID:     cfg.Logging.AccessKeyID,
+						SecretAccessKey: cfg.Logging.SecretAccessKey,
+					}, nil
+				}),
 			}
-			hook := zapcore.AddSync(batchLogWriter)
+			cwClient := cloudwatchlogs.NewFromConfig(awsCfg)
+			cwWriter := cloudwatch.NewWriter(cfg.Logging.LogGroup, cfg.Hostname, cwClient)
+			hook := zapcore.AddSync(cwWriter)
 			core = zapcore.NewTee(
 				zapcore.NewCore(consoleEncoder, consoleOutput, fn),
 				zapcore.NewCore(consoleEncoder, hook, fn),

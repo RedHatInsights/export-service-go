@@ -22,7 +22,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 
-	s3_manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/db"
@@ -217,11 +217,8 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Log:    log,
 		Client: *s3Client,
 		Cfg:    *cfg,
-		Uploader: s3_manager.NewUploader(s3Client, func(u *s3_manager.Uploader) {
-			u.PartSize = cfg.StorageConfig.AwsUploaderBufferSize
-		}),
-		Downloader: s3_manager.NewDownloader(s3Client, func(d *s3_manager.Downloader) {
-			d.PartSize = cfg.StorageConfig.AwsDownloaderBufferSize
+		TMClient: transfermanager.New(s3Client, func(o *transfermanager.Options) {
+			o.PartSizeBytes = cfg.StorageConfig.AwsUploaderBufferSize
 		}),
 	}
 

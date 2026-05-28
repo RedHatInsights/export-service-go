@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,8 +30,7 @@ type Compressor struct {
 	Log        *zap.SugaredLogger
 	Client     s3.Client
 	Cfg        econfig.ExportConfig
-	Uploader   *manager.Uploader
-	Downloader *manager.Downloader
+	TMClient   *transfermanager.Client
 }
 
 // S3ListObjectsAPI defines the interface for the ListObjectsV2 function.
@@ -46,7 +45,7 @@ type S3ListObjectsAPI interface {
 type StorageHandler interface {
 	Compress(ctx context.Context, logger *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error)
 	Download(ctx context.Context, logger *zap.SugaredLogger, w io.WriterAt, bucket, key *string) (n int64, err error)
-	Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error)
+	Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*transfermanager.UploadObjectOutput, error)
 	CreateObject(ctx context.Context, logger *zap.SugaredLogger, db models.DBInterface, body io.Reader, application string, resourceUUID uuid.UUID, payload *models.ExportPayload) error
 	GetObject(ctx context.Context, logger *zap.SugaredLogger, key string) (io.ReadCloser, error)
 	ProcessSources(db models.DBInterface, uid uuid.UUID)
@@ -70,7 +69,7 @@ func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, p
 		}
 	}()
 
-	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, logger, c.Downloader, c.Bucket, prefix, tempDirName)
+	downloadedFiles, err := downloadFilesFromS3(ctx, c.Cfg, logger, c.TMClient, c.Bucket, prefix, tempDirName)
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,7 @@ type s3FileData struct {
 	basename string
 }
 
-func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap.SugaredLogger, downloader *manager.Downloader, bucket string, prefix string, tempDir string) ([]s3FileData, error) {
+func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap.SugaredLogger, tmClient *transfermanager.Client, bucket string, prefix string, tempDir string) ([]s3FileData, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket: &bucket,
 		Prefix: &prefix,
@@ -134,9 +133,9 @@ func downloadFilesFromS3(ctx context.Context, cfg econfig.ExportConfig, log *zap
 			return nil, fmt.Errorf("failed to create temp file: %w", err)
 		}
 
-		input := &s3.GetObjectInput{Bucket: &bucket, Key: obj.Key}
+		input := &transfermanager.DownloadObjectInput{Bucket: &bucket, Key: obj.Key, WriterAt: f}
 
-		if _, err := downloader.Download(ctx, f, input); err != nil {
+		if _, err := tmClient.DownloadObject(ctx, input); err != nil {
 			return nil, fmt.Errorf("failed to download to file: %w", err)
 		}
 
@@ -287,21 +286,28 @@ func (c *Compressor) Compress(ctx context.Context, logger *zap.SugaredLogger, m 
 }
 
 func (c *Compressor) Download(ctx context.Context, logger *zap.SugaredLogger, w io.WriterAt, bucket, key *string) (n int64, err error) {
-	input := &s3.GetObjectInput{Bucket: bucket, Key: key}
+	input := &transfermanager.DownloadObjectInput{Bucket: bucket, Key: key, WriterAt: w}
 
-	return c.Downloader.Download(ctx, w, input)
+	out, err := c.TMClient.DownloadObject(ctx, input)
+	if err != nil {
+		return 0, err
+	}
+	if out.ContentLength != nil {
+		return *out.ContentLength, nil
+	}
+	return 0, nil
 }
 
-func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
+func (c *Compressor) Upload(ctx context.Context, logger *zap.SugaredLogger, body io.Reader, bucket, key *string) (*transfermanager.UploadObjectOutput, error) {
 	s3client := NewS3Client(c.Cfg, c.Log)
 
-	input := &s3.PutObjectInput{
+	input := &transfermanager.UploadObjectInput{
 		Bucket: bucket,
 		Key:    key,
 		Body:   body,
 	}
 
-	result, err := c.Uploader.Upload(ctx, input)
+	result, err := c.TMClient.UploadObject(ctx, input)
 	if err != nil {
 		c.Log.Errorf("failed to upload tarfile `%s` to s3: %v", *key, err)
 
@@ -441,7 +447,7 @@ func (mc *MockStorageHandler) Download(ctx context.Context, l *zap.SugaredLogger
 	return 0, nil
 }
 
-func (mc *MockStorageHandler) Upload(ctx context.Context, l *zap.SugaredLogger, body io.Reader, bucket, key *string) (*manager.UploadOutput, error) {
+func (mc *MockStorageHandler) Upload(ctx context.Context, l *zap.SugaredLogger, body io.Reader, bucket, key *string) (*transfermanager.UploadObjectOutput, error) {
 	fmt.Println("Ran mockStorageHandler.Upload")
 	return nil, nil
 }

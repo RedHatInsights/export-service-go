@@ -66,7 +66,11 @@ func Get() *zap.SugaredLogger {
 				}),
 			}
 			cwClient := cloudwatchlogs.NewFromConfig(awsCfg)
-			cwWriter := cloudwatch.NewWriter(cfg.Logging.LogGroup, cfg.Hostname, cwClient)
+			cwGroup := cloudwatch.NewGroup(cfg.Logging.LogGroup, cwClient)
+			cwWriter, err := cwGroup.Create(cfg.Hostname)
+			if err != nil {
+				tmpLogger.Error(err.Error())
+			}
 			hook := zapcore.AddSync(cwWriter)
 			core = zapcore.NewTee(
 				zapcore.NewCore(consoleEncoder, consoleOutput, fn),

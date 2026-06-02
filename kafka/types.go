@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	cloudEventSchema "github.com/RedHatInsights/event-schemas-go/apps/exportservice/v1"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/google/uuid"
 )
 

@@ -22,6 +22,6 @@ jobs:
           --coverprofile=cover.profile --race --trace \
           --json-report=report.json --timeout=5m
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v7
         with:
           files: cover.profile

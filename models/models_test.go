@@ -166,14 +166,14 @@ var _ = Describe("Models", func() {
 			createdSource := createdExport.Sources[0]
 			createdSourceID := createdSource.ID
 
-			sourceStatusUpdateErr := exportPayload.SetSourceStatus(exportDB, createdSourceID, m.RSuccess, nil)
+			sourceStatusUpdateErr := exportPayload.SetSourceStatus(exportDB, createdSourceID, m.RComplete, nil)
 			Expect(sourceStatusUpdateErr).To(BeNil())
 
 			updatedSource := m.Source{}
 			result := testGormDB.First(&updatedSource, createdSourceID)
 			Expect(result.Error).To(BeNil())
 
-			Expect(updatedSource.Status).To(Equal(m.RSuccess))
+			Expect(updatedSource.Status).To(Equal(m.RComplete))
 		})
 
 		It("should set a status for source and include source error", func() {
@@ -217,9 +217,9 @@ var _ = Describe("Models", func() {
 		},
 		Entry("should return StatusComplete when sources are all complete as success",
 			[]m.Source{
-				{Status: m.RSuccess},
-				{Status: m.RSuccess},
-				{Status: m.RSuccess},
+				{Status: m.RComplete},
+				{Status: m.RComplete},
+				{Status: m.RComplete},
 			},
 			m.StatusComplete,
 			nil,
@@ -227,7 +227,7 @@ var _ = Describe("Models", func() {
 		Entry("should return StatusPending when sources are still pending",
 			[]m.Source{
 				{Status: m.RPending},
-				{Status: m.RSuccess},
+				{Status: m.RComplete},
 				{Status: m.RPending},
 			},
 			m.StatusPending,
@@ -244,8 +244,8 @@ var _ = Describe("Models", func() {
 		),
 		Entry("should return StatusPartial when sources are all complete, some sources are a failure",
 			[]m.Source{
-				{Status: m.RSuccess},
-				{Status: m.RSuccess},
+				{Status: m.RComplete},
+				{Status: m.RComplete},
 				{Status: m.RFailed},
 			},
 			m.StatusPartial,

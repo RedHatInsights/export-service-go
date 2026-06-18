@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
@@ -580,6 +581,84 @@ var _ = Describe("The public API", func() {
 		Entry("with invalid application", "Test Export Request", "json", "", `{"application":"wrongexampleApp", "resource":"exampleResource"}`, "Payload does not match Configured Exports", http.StatusNotAcceptable),
 		Entry("with invalid resource", "Test Export Request", "json", "", `{"application":"exampleApp", "resource":"wrongexampleResource"}`, "Payload does not match Configured Exports", http.StatusNotAcceptable),
 	)
+})
+
+var _ = Describe("DBExportToAPI", func() {
+	It("normalizes legacy 'success' source status to 'complete'", func() {
+		payload := models.ExportPayload{
+			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+			CreatedAt: time.Now(),
+			Name:      "test-export",
+			Format:    models.JSON,
+			Status:    models.Complete,
+			Sources: []models.Source{
+				{
+					ID:          uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+					Application: "test-app",
+					Status:      models.ResourceStatus("success"),
+					Resource:    "test-resource",
+				},
+			},
+		}
+
+		apiExport := exports.DBExportToAPI(payload)
+
+		Expect(apiExport.Sources).To(HaveLen(1))
+		Expect(apiExport.Sources[0].Status).To(Equal("complete"))
+	})
+
+	It("passes through 'complete' source status unchanged", func() {
+		payload := models.ExportPayload{
+			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+			CreatedAt: time.Now(),
+			Name:      "test-export",
+			Format:    models.JSON,
+			Status:    models.Complete,
+			Sources: []models.Source{
+				{
+					ID:          uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+					Application: "test-app",
+					Status:      models.RComplete,
+					Resource:    "test-resource",
+				},
+			},
+		}
+
+		apiExport := exports.DBExportToAPI(payload)
+
+		Expect(apiExport.Sources).To(HaveLen(1))
+		Expect(apiExport.Sources[0].Status).To(Equal("complete"))
+	})
+
+	It("passes through other source statuses unchanged", func() {
+		payload := models.ExportPayload{
+			ID:        uuid.MustParse("00000000-0000-0000-0000-000000000005"),
+			CreatedAt: time.Now(),
+			Name:      "test-export",
+			Format:    models.JSON,
+			Status:    models.Pending,
+			Sources: []models.Source{
+				{
+					ID:          uuid.MustParse("00000000-0000-0000-0000-000000000006"),
+					Application: "test-app",
+					Status:      models.RPending,
+					Resource:    "test-resource",
+				},
+				{
+					ID:          uuid.MustParse("00000000-0000-0000-0000-000000000007"),
+					Application: "test-app",
+					Status:      models.RFailed,
+					Resource:    "test-resource-2",
+				},
+			},
+		}
+
+		apiExport := exports.DBExportToAPI(payload)
+
+		Expect(apiExport.Sources).To(HaveLen(2))
+		Expect(apiExport.Sources[0].Status).To(Equal("pending"))
+		Expect(apiExport.Sources[1].Status).To(Equal("failed"))
+	})
 })
 
 func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {

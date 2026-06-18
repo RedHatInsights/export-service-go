@@ -357,7 +357,7 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 		// Old records may still have "success" in the DB; new writes use "complete".
 		sourceStatus := string(source.Status)
 		if sourceStatus == "success" {
-			sourceStatus = string(models.RSuccess)
+			sourceStatus = string(models.RComplete)
 		}
 
 		newSource := Source{

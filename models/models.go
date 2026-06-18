@@ -37,7 +37,7 @@ type ResourceStatus string
 
 const (
 	RPending ResourceStatus = "pending"
-	RSuccess ResourceStatus = "complete"
+	RComplete ResourceStatus = "complete"
 	RFailed  ResourceStatus = "failed"
 )
 

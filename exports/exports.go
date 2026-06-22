@@ -353,10 +353,17 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 		Status:      string(payload.Status),
 	}
 	for _, source := range payload.Sources {
+		// Normalize legacy "success" status to spec-compliant "complete".
+		// Old records may still have "success" in the DB; new writes use "complete".
+		sourceStatus := string(source.Status)
+		if sourceStatus == "success" {
+			sourceStatus = string(models.RComplete)
+		}
+
 		newSource := Source{
 			ID:          source.ID,
 			Application: source.Application,
-			Status:      string(source.Status),
+			Status:      sourceStatus,
 			Resource:    source.Resource,
 			Filters:     source.Filters,
 		}

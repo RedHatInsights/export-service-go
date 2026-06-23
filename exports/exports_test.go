@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -661,6 +663,41 @@ var _ = Describe("DBExportToAPI", func() {
 	})
 })
 
+var _ = Describe("OpenAPI spec validation", func() {
+	It("POST /exports spec response code matches handler", func() {
+		specBytes, err := os.ReadFile("../static/spec/openapi.json")
+		Expect(err).ToNot(HaveOccurred())
+
+		var spec map[string]interface{}
+		err = json.Unmarshal(specBytes, &spec)
+		Expect(err).ToNot(HaveOccurred())
+
+		paths := spec["paths"].(map[string]interface{})
+		exportsPath := paths["/exports"].(map[string]interface{})
+		postOp := exportsPath["post"].(map[string]interface{})
+		responses := postOp["responses"].(map[string]interface{})
+
+		router := setupTest(mockRequestApplicationResources)
+		req := createExportRequest("Spec Test", "json", "", `{"application":"exampleApp", "resource":"exampleResource"}`)
+		AddDebugUserIdentity(req)
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		statusStr := strconv.Itoa(rr.Code)
+		_, exists := responses[statusStr]
+		Expect(exists).To(BeTrue(),
+			fmt.Sprintf("handler returned %d but OpenAPI spec does not define a '%s' response for POST /exports (spec defines: %v)",
+				rr.Code, statusStr, keysOf(responses)))
+	})
+})
+
+func keysOf(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
 func mockRequestApplicationResources(ctx context.Context, log *zap.SugaredLogger, identity string, payload models.ExportPayload) {
 	// fmt.Println("MOCKED !!  KAFKA SENT: TRUE ")
 }

@@ -51,8 +51,8 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-openapi/analysis v0.24.1 // indirect
 	github.com/go-openapi/errors v0.22.4 // indirect
-	github.com/go-openapi/jsonpointer v0.22.3 // indirect
-	github.com/go-openapi/jsonreference v0.21.3 // indirect
+	github.com/go-openapi/jsonpointer v1.0.0 // indirect
+	github.com/go-openapi/jsonreference v1.0.0 // indirect
 	github.com/go-openapi/loads v0.23.2 // indirect
 	github.com/go-openapi/spec v0.22.1 // indirect
 	github.com/go-openapi/strfmt v0.25.0 // indirect

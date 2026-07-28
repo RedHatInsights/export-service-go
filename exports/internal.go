@@ -23,10 +23,11 @@ import (
 
 // Internal contains the configuration and
 type Internal struct {
-	Cfg        *config.ExportConfig
-	Compressor s3.StorageHandler
-	DB         models.DBInterface
-	Log        *zap.SugaredLogger
+	Cfg           *config.ExportConfig
+	Compressor    s3.StorageHandler
+	DB            models.DBInterface
+	Log           *zap.SugaredLogger
+	PSKMiddleware func(http.Handler) http.Handler
 }
 
 // InternalRouter is a router for all of the internal routes which require exportuuid,
@@ -34,6 +35,9 @@ type Internal struct {
 func (i *Internal) InternalRouter(r chi.Router) {
 	r.Route("/{exportUUID}/{application}/{resourceUUID}", func(sub chi.Router) {
 		sub.Use(middleware.URLParamsCtx)
+		if i.PSKMiddleware != nil {
+			sub.Use(i.PSKMiddleware)
+		}
 		sub.Post("/upload", i.PostUpload)
 		sub.Post("/error", i.PostError)
 	})

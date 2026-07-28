@@ -170,16 +170,6 @@ objects:
       sessionAffinity: None
       type: ClusterIP
 
-  - apiVersion: v1
-    kind: Secret
-    metadata:
-      name: export-service-psks
-      labels:
-        app: export-service
-    data:
-      psk-list: "dGVzdGluZy1hLXBzayx0ZXN0aW5nLWEtcHNrLTI="
-    type: Opaque
-
 parameters:
   - name: APP_NAME
     description: Application common name
@@ -253,8 +243,6 @@ parameters:
   - description: Suspend the cleaner CronJob
     name: CLEANER_SUSPEND
     value: "false"
-  - name: EXPORTS_PSKS
-    value: testing-a-psk
   - name: LOG_LEVEL
     value: INFO
   - name: EXPORT_ENABLE_APPS

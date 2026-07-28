@@ -102,13 +102,12 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 	internalRoutes := func(basePath string) func(r chi.Router) {
 		return func(r chi.Router) {
 			r.Use(metrics.InternalUseTracker(basePath))
-			if !cfg.DisableServiceToServicePSKAuth {
+			if !cfg.DisableServiceToServicePSKAuth && len(cfg.PskMap) == 0 && len(cfg.Psks) > 0 {
 				r.Use(emiddleware.EnforcePSK)
-			} else {
+			} else if cfg.DisableServiceToServicePSKAuth {
 				log.Info("PSK auth disabled for service-to-service requests")
 			}
-			// add internal routes
-			r.Get("/ping", helloWorld) // Hello World endpoint
+			r.Get("/ping", helloWorld)
 			r.Route("/", internal.InternalRouter)
 		}
 	}
@@ -233,11 +232,17 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	}
 	wsrv := createPublicServer(cfg, external)
 
+	var pskMiddleware func(http.Handler) http.Handler
+	if !cfg.DisableServiceToServicePSKAuth && len(cfg.PskMap) > 0 {
+		pskMiddleware = emiddleware.EnforceAppBoundPSK(cfg.PskMap)
+	}
+
 	internal := exports.Internal{
-		Cfg:        cfg,
-		Compressor: &storageHandler,
-		DB:         &models.ExportDB{DB: DB, Cfg: cfg},
-		Log:        log,
+		Cfg:           cfg,
+		Compressor:    &storageHandler,
+		DB:            &models.ExportDB{DB: DB, Cfg: cfg},
+		Log:           log,
+		PSKMiddleware: pskMiddleware,
 	}
 	psrv := createPrivateServer(cfg, internal)
 	msrv := createMetricsServer(cfg)

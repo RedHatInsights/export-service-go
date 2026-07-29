@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -38,6 +39,7 @@ type ExportConfig struct {
 	OpenAPIPublicPath             string
 	DisableServiceToServicePSKAuth bool
 	Psks                          []string
+	PskMap                        map[string]string
 	ExportExpiryDays              int
 	ExportableApplications        map[string]map[string]bool
 	MaxPayloadSize                int
@@ -120,7 +122,7 @@ func Get() *ExportConfig {
 		options.SetDefault("DEBUG", false)
 		options.SetDefault("OPEN_API_FILE_PATH", "./static/spec/openapi.json")
 		options.SetDefault("OPEN_API_PRIVATE_PATH", "./static/spec/private.json")
-		options.SetDefault("PSKS", strings.Split(os.Getenv("EXPORTS_PSKS"), ","))
+		// PSK values are parsed from EXPORTS_PSKS env var by parsePSKs()
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
 		options.SetDefault("EXPORT_ENABLE_APPS", "{\"exampleApp\":[\"exampleResource\", \"anotherExampleResource\"]}")
 		options.SetDefault("MAX_PAYLOAD_SIZE", 500)
@@ -160,6 +162,8 @@ func Get() *ExportConfig {
 		kubenv := viper.New()
 		kubenv.AutomaticEnv()
 
+		psks, pskMap := parsePSKs(os.Getenv("EXPORTS_PSKS"))
+
 		config = &ExportConfig{
 			Hostname:                      kubenv.GetString("Hostname"),
 			PublicPort:                    options.GetInt("PUBLIC_PORT"),
@@ -173,7 +177,8 @@ func Get() *ExportConfig {
 			LogLevel:                      options.GetString("LOG_LEVEL"),
 			OpenAPIPublicPath:             options.GetString("OPEN_API_FILE_PATH"),
 			OpenAPIPrivatePath:            options.GetString("OPEN_API_PRIVATE_PATH"),
-			Psks:                          options.GetStringSlice("PSKS"),
+			Psks:                          psks,
+			PskMap:                        pskMap,
 			ExportExpiryDays:              options.GetInt("EXPORT_EXPIRY_DAYS"),
 			ExportableApplications:        convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
 			MaxPayloadSize:                options.GetInt("MAX_PAYLOAD_SIZE"),
@@ -315,6 +320,34 @@ func buildBaseHttpUrl(tlsEnabled bool, hostname string, port int) string {
 	}
 
 	return fmt.Sprintf("%s://%s:%d", protocol, hostname, port)
+}
+
+// parsePSKs parses the EXPORTS_PSKS value into either a flat list or an
+// application-bound map. JSON objects (e.g. {"app":"psk"}) populate pskMap;
+// comma-separated values populate the flat psks slice.
+func parsePSKs(raw string) (psks []string, pskMap map[string]string) {
+	pskMap = make(map[string]string)
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, pskMap
+	}
+
+	if strings.HasPrefix(raw, "{") {
+		if err := json.Unmarshal([]byte(raw), &pskMap); err != nil {
+			fmt.Printf("WARNING: EXPORTS_PSKS looks like JSON but failed to parse: %v — falling back to flat list\n", err)
+		} else if len(pskMap) > 0 {
+			return nil, pskMap
+		}
+	}
+
+	parts := strings.Split(raw, ",")
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			psks = append(psks, p)
+		}
+	}
+	return psks, make(map[string]string)
 }
 
 func convertExportableAppsFromConfigToInternal(config map[string][]string) map[string]map[string]bool {

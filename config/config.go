@@ -122,8 +122,7 @@ func Get() *ExportConfig {
 		options.SetDefault("DEBUG", false)
 		options.SetDefault("OPEN_API_FILE_PATH", "./static/spec/openapi.json")
 		options.SetDefault("OPEN_API_PRIVATE_PATH", "./static/spec/private.json")
-		options.SetDefault("PSKS", []string{})
-		options.SetDefault("PSK_MAP", map[string]string{})
+		// PSK values are parsed from EXPORTS_PSKS env var by parsePSKs()
 		options.SetDefault("EXPORT_EXPIRY_DAYS", 7)
 		options.SetDefault("EXPORT_ENABLE_APPS", "{\"exampleApp\":[\"exampleResource\", \"anotherExampleResource\"]}")
 		options.SetDefault("MAX_PAYLOAD_SIZE", 500)
@@ -334,7 +333,9 @@ func parsePSKs(raw string) (psks []string, pskMap map[string]string) {
 	}
 
 	if strings.HasPrefix(raw, "{") {
-		if err := json.Unmarshal([]byte(raw), &pskMap); err == nil && len(pskMap) > 0 {
+		if err := json.Unmarshal([]byte(raw), &pskMap); err != nil {
+			fmt.Printf("WARNING: EXPORTS_PSKS looks like JSON but failed to parse: %v — falling back to flat list\n", err)
+		} else if len(pskMap) > 0 {
 			return nil, pskMap
 		}
 	}

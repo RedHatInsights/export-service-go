@@ -102,10 +102,14 @@ func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *h
 	internalRoutes := func(basePath string) func(r chi.Router) {
 		return func(r chi.Router) {
 			r.Use(metrics.InternalUseTracker(basePath))
-			if !cfg.DisableServiceToServicePSKAuth && len(cfg.PskMap) == 0 && len(cfg.Psks) > 0 {
-				r.Use(emiddleware.EnforcePSK)
-			} else if cfg.DisableServiceToServicePSKAuth {
+			if cfg.DisableServiceToServicePSKAuth {
 				log.Info("PSK auth disabled for service-to-service requests")
+			} else if len(cfg.PskMap) > 0 {
+				log.Info("using application-bound PSK auth")
+			} else if len(cfg.Psks) > 0 {
+				r.Use(emiddleware.EnforcePSK)
+			} else {
+				log.Warn("PSK auth enabled but no PSKs configured — internal API will reject all requests")
 			}
 			r.Get("/ping", helloWorld)
 			r.Route("/", internal.InternalRouter)

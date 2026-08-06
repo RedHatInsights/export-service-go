@@ -5,9 +5,9 @@ SPDX-License-Identifier: Apache-2.0
 package exports
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -229,15 +229,25 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	baseName := filepath.Base(export.S3Key)
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
-	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(out); err != nil {
-		logger.Errorf("failed to read body: %w", err)
+
+	// Stream the S3 object directly to the HTTP response instead of
+	// buffering the entire object in memory (CWE-770 / FIND-004).
+	// LimitReader caps the download as defense-in-depth against
+	// unexpectedly large objects (MaxPayloadSize MB × number of sources).
+	cfg := config.Get()
+	numSources := len(export.Sources)
+	if numSources == 0 {
+		numSources = 1
 	}
-	err = out.Close()
-	if err != nil {
-		logger.Errorf("failed to close body: %w", err)
+	maxBytes := int64(cfg.MaxPayloadSize) * int64(numSources) * 1024 * 1024
+	limitedReader := io.LimitReader(out, maxBytes)
+
+	if _, err := io.Copy(w, limitedReader); err != nil {
+		logger.Errorf("failed to stream S3 object to client: %v", err)
 	}
-	Logerr(w.Write(buf.Bytes()))
+	if err := out.Close(); err != nil {
+		logger.Errorf("failed to close S3 object body: %v", err)
+	}
 }
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.

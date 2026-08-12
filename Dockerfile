@@ -29,6 +29,7 @@ COPY exports exports
 COPY kafka kafka
 COPY models models
 COPY middleware middleware
+COPY securitylog securitylog
 
 # Build the binary
 RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-service/*.go

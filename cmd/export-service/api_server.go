@@ -33,6 +33,7 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"github.com/redhatinsights/export-service-go/securitylog"
 	"golang.org/x/time/rate"
 )
 
@@ -58,8 +59,9 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
 		r.Use(
-			identity.EnforceIdentity,        // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity, // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+			securitylog.AuthFailureMiddleware(logger.Log), // Log auth failures for mutating methods (EOI-7)
+			identity.EnforceIdentity,                      // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+			emiddleware.EnforceUserIdentity,                // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
 		)
 
 		// add external routes
@@ -178,6 +180,8 @@ func servePrivateOpenAPISpec(cfg *config.ExportConfig) http.HandlerFunc {
 }
 
 func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
+	securitylog.LogStartup(log)
+
 	log.Infow("configuration values",
 		"hostname", cfg.Hostname,
 		"publicport", cfg.PublicPort,
@@ -256,18 +260,30 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
+
+		shutdownFailed := false
 		if err := wsrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
+			shutdownFailed = true
 		}
 		log.Info("public server shutdown")
 		if err := psrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
+			shutdownFailed = true
 		}
 		log.Info("private server shutdown")
 		if err := msrv.Shutdown(context.Background()); err != nil {
 			log.Errorw("http server shutdown failed", "error", err)
+			shutdownFailed = true
 		}
 		log.Info("metrics server shutdown")
+
+		if shutdownFailed {
+			securitylog.LogShutdown(log, "failure", "one or more servers failed to shut down cleanly")
+		} else {
+			securitylog.LogShutdown(log, "success", "")
+		}
+
 		close(idleConnsClosed)
 	}()
 
@@ -280,6 +296,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 
 	go func() {
 		if err := wsrv.ListenAndServe(); err != http.ErrServerClosed {
+			securitylog.LogShutdown(log, "failure", fmt.Sprintf("public server stopped unexpectedly: %v", err))
 			log.Panicw("public server stopped unexpectedly", "error", err)
 		}
 	}()
@@ -287,6 +304,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 
 	go func() {
 		if err := psrv.ListenAndServe(); err != http.ErrServerClosed {
+			securitylog.LogShutdown(log, "failure", fmt.Sprintf("private server stopped unexpectedly: %v", err))
 			log.Panicw("private server stopped unexpectedly", "error", err)
 		}
 	}()

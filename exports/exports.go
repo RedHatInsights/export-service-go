@@ -21,6 +21,7 @@ import (
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"github.com/redhatinsights/export-service-go/securitylog"
 	"golang.org/x/time/rate"
 )
 
@@ -117,6 +118,14 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	logger = logger.With(export_logger.ExportIDField(dbExport.ID.String()), export_logger.ApplicationNamesField(applicationNames))
 	logger.Infow("export created successfully", "export_name", dbExport.Name)
+
+	securitylog.Log(logger, securitylog.Event{
+		Action:       "CREATE",
+		ResourceType: "export",
+		ResourceID:   dbExport.ID.String(),
+		Outcome:      "success",
+		Principal:    principalFromUser(user),
+	})
 
 	w.WriteHeader(http.StatusAccepted)
 
@@ -226,6 +235,14 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	securitylog.Log(logger, securitylog.Event{
+		Action:       "READ",
+		ResourceType: "export",
+		ResourceID:   export.ID.String(),
+		Outcome:      "success",
+		Principal:    principalFromUser(user),
+	})
+
 	baseName := filepath.Base(export.S3Key)
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
@@ -266,6 +283,14 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 	if err := e.DB.Delete(exportUUID, modelUser); err != nil {
 		switch err {
 		case models.ErrRecordNotFound:
+			securitylog.Log(logger, securitylog.Event{
+				Action:       "DELETE",
+				ResourceType: "export",
+				ResourceID:   exportUUID.String(),
+				Outcome:      "failure",
+				Principal:    principalFromUser(user),
+				Reason:       "not found",
+			})
 			NotFoundError(w, fmt.Sprintf("record '%s' not found", exportUUID))
 			return
 		default:
@@ -274,6 +299,14 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	securitylog.Log(logger, securitylog.Event{
+		Action:       "DELETE",
+		ResourceType: "export",
+		ResourceID:   exportUUID.String(),
+		Outcome:      "success",
+		Principal:    principalFromUser(user),
+	})
 }
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.
@@ -377,6 +410,15 @@ func DBExportToAPI(payload models.ExportPayload) ExportPayload {
 	}
 
 	return apiPayload
+}
+
+// principalFromUser converts a middleware.User to a securitylog.Principal.
+func principalFromUser(user middleware.User) securitylog.Principal {
+	return securitylog.Principal{
+		UserID: user.Username,
+		OrgID:  user.OrganizationID,
+		Type:   "user",
+	}
 }
 
 func APIExportToDBExport(apiPayload ExportPayload) (*models.ExportPayload, error) {

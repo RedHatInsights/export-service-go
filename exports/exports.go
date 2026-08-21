@@ -233,14 +233,8 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	// Stream the S3 object directly to the HTTP response instead of
 	// buffering the entire object in memory (CWE-770 / FIND-004).
 	// LimitReader caps the download as defense-in-depth against
-	// unexpectedly large objects (MaxPayloadSize MB × number of sources).
-	cfg := config.Get()
-	numSources := len(export.Sources)
-	if numSources == 0 {
-		numSources = 1
-	}
-	maxBytes := int64(cfg.MaxPayloadSize) * int64(numSources) * 1024 * 1024
-	limitedReader := io.LimitReader(out, maxBytes)
+	// unexpectedly large objects.
+	limitedReader := io.LimitReader(out, maxExportDownloadBytes(len(export.Sources)))
 
 	if _, err := io.Copy(w, limitedReader); err != nil {
 		logger.Errorf("failed to stream S3 object to client: %v", err)
@@ -341,6 +335,17 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request, logge
 	}
 
 	return export
+}
+
+// maxExportDownloadBytes returns the maximum number of bytes allowed for an
+// export download. The cap is MaxPayloadSize (in MB) multiplied by the number
+// of sources in the export. A floor of 1 source is applied so that exports
+// with no sources still get a reasonable limit.
+func maxExportDownloadBytes(numSources int) int64 {
+	if numSources == 0 {
+		numSources = 1
+	}
+	return int64(config.Get().MaxPayloadSize) * int64(numSources) * 1024 * 1024
 }
 
 func DBExportToAPI(payload models.ExportPayload) ExportPayload {

@@ -2,7 +2,6 @@ package s3
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -81,18 +80,24 @@ func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, p
 
 	meta.FileMeta = fileMetadata
 
-	zippedBuffer, err := writeFilesToZip(logger, downloadedFiles, meta)
+	// Write zip entries directly to a temp file instead of buffering
+	// the entire archive in memory (CWE-770 / FIND-004).
+	tempZipFile, err := os.CreateTemp(tempDirName, filename)
 	if err != nil {
+		return fmt.Errorf("failed to create temp zip file: %w", err)
+	}
+
+	if err := writeFilesToZip(logger, tempZipFile, downloadedFiles, meta); err != nil {
 		return err
 	}
 
-	tempExportFile, err := writeBufferToTempFile(logger, zippedBuffer, filename, tempDirName)
-	if err != nil {
-		return err
+	// Seek to beginning so the upload reads from the start of the file
+	if _, err := tempZipFile.Seek(0, 0); err != nil {
+		return fmt.Errorf("failed to seek to beginning of zip file: %w", err)
 	}
 
 	logger.Infof("shipping %s to s3", filename)
-	if _, err := c.Upload(ctx, logger, tempExportFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+	if _, err := c.Upload(ctx, logger, tempZipFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
 		return fmt.Errorf("failed to upload zip file `%s` to s3: %w", s3key, err)
 	}
 
@@ -163,9 +168,8 @@ func buildFileMetadata(files []s3FileData, sources []models.Source) ([]ExportFil
 	return fileMeta, nil
 }
 
-func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-	zipWriter := zip.NewWriter(&buf)
+func writeFilesToZip(log *zap.SugaredLogger, w io.Writer, files []s3FileData, meta ExportMeta) error {
+	zipWriter := zip.NewWriter(w)
 
 	defer func() {
 		if err := zipWriter.Close(); err != nil {
@@ -177,23 +181,23 @@ func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta
 
 		fi, err := f.file.Stat()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get file info: %w", err)
+			return fmt.Errorf("failed to get file info: %w", err)
 		}
 
 		header, err := zip.FileInfoHeader(fi)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create file header: %w", err)
+			return fmt.Errorf("failed to create file header: %w", err)
 		}
 		header.Name = f.basename
 		header.Method = zip.Deflate // DEFLATE compressed
 
 		var zippedFile io.Writer
 		if zippedFile, err = zipWriter.CreateHeader(header); err != nil {
-			return nil, fmt.Errorf("failed to write header: %w", err)
+			return fmt.Errorf("failed to write header: %w", err)
 		}
 
 		if _, err := io.Copy(zippedFile, f.file); err != nil {
-			return nil, fmt.Errorf("failed to copy data into zip file: %w", err)
+			return fmt.Errorf("failed to copy data into zip file: %w", err)
 		}
 
 		log.Infof("added file %s to payload", f.basename)
@@ -201,31 +205,12 @@ func writeFilesToZip(log *zap.SugaredLogger, files []s3FileData, meta ExportMeta
 	}
 
 	if err := addMetadataFilesToZip(&meta, zipWriter); err != nil {
-		return nil, err
+		return err
 	}
 
-	return &buf, nil
+	return nil
 }
 
-func writeBufferToTempFile(log *zap.SugaredLogger, buf *bytes.Buffer, filename string, tempDir string) (*os.File, error) {
-	f, err := os.CreateTemp(tempDir, filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file: %w", err)
-	}
-
-	if _, err := io.Copy(f, buf); err != nil {
-		return nil, fmt.Errorf("failed to copy buffer into file: %w", err)
-	}
-
-	log.Infof("saving temp file %s", filename)
-
-	// seek to the beginning of the file so that we can reuse the file handler for upload
-	if _, err := f.Seek(0, 0); err != nil {
-		return nil, fmt.Errorf("failed to seek to beginning of file: %w", err)
-	}
-
-	return f, nil
-}
 
 func addMetadataFilesToZip(meta *ExportMeta, zipWriter *zip.Writer) error {
 	metaJSON, err := BuildMeta(meta)

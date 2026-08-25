@@ -33,11 +33,12 @@ import (
 	emiddleware "github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"github.com/redhatinsights/export-service-go/securitylog"
 	"golang.org/x/time/rate"
 )
 
 // func serveWeb(cfg *config.ExportConfig, consumers []services.ConsumerService) *http.Server {
-func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http.Server {
+func createPublicServer(cfg *config.ExportConfig, external exports.Export, log *zap.SugaredLogger) *http.Server {
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -58,8 +59,9 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export) *http
 	router.Route("/api/export/v1", func(r chi.Router) {
 		// add authentication middleware
 		r.Use(
-			identity.EnforceIdentity,        // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity, // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+			securitylog.AuthFailureMiddleware(log), // SEC-MON-REQ-1 EOI-7: detect 401/403 on mutating methods
+			identity.EnforceIdentity,               // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
+			emiddleware.EnforceUserIdentity,         // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
 		)
 
 		// add external routes
@@ -234,7 +236,7 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		Log:                 log,
 		RateLimiter:         rateLimiter,
 	}
-	wsrv := createPublicServer(cfg, external)
+	wsrv := createPublicServer(cfg, external, log)
 
 	var pskMiddleware func(http.Handler) http.Handler
 	if !cfg.DisableServiceToServicePSKAuth && len(cfg.PskMap) > 0 {
@@ -271,6 +273,9 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 		close(idleConnsClosed)
 	}()
 
+	// SEC-MON-REQ-1 EOI-5: log service startup
+	securitylog.LogStartup(log, "success")
+
 	go func() {
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Errorw("metrics server stopped", "error", err)
@@ -280,6 +285,8 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 
 	go func() {
 		if err := wsrv.ListenAndServe(); err != http.ErrServerClosed {
+			// SEC-MON-REQ-1 EOI-5: log unexpected shutdown
+			securitylog.LogShutdown(log, "failure", err.Error())
 			log.Panicw("public server stopped unexpectedly", "error", err)
 		}
 	}()
@@ -293,6 +300,9 @@ func startApiServer(cfg *config.ExportConfig, log *zap.SugaredLogger) {
 	log.Infof("private server started on %s", psrv.Addr)
 
 	<-idleConnsClosed
+
+	// SEC-MON-REQ-1 EOI-5: log graceful shutdown
+	securitylog.LogShutdown(log, "success", "")
 
 	close(kafkaProducerMessagesChan)
 

@@ -21,6 +21,7 @@ import (
 	"github.com/redhatinsights/export-service-go/middleware"
 	"github.com/redhatinsights/export-service-go/models"
 	es3 "github.com/redhatinsights/export-service-go/s3"
+	"github.com/redhatinsights/export-service-go/securitylog"
 	"golang.org/x/time/rate"
 )
 
@@ -52,6 +53,15 @@ func mapUsertoModelUser(user middleware.User) models.User {
 		Username:       user.Username,
 	}
 	return modelUser
+}
+
+// userPrincipal converts a middleware.User to a securitylog.Principal.
+func userPrincipal(user middleware.User) securitylog.Principal {
+	return securitylog.Principal{
+		UserID: user.Username,
+		OrgID:  user.OrganizationID,
+		Type:   "user",
+	}
 }
 
 // PostExport handles POST requests to the /exports endpoint.
@@ -117,6 +127,9 @@ func (e *Export) PostExport(w http.ResponseWriter, r *http.Request) {
 
 	logger = logger.With(export_logger.ExportIDField(dbExport.ID.String()), export_logger.ApplicationNamesField(applicationNames))
 	logger.Infow("export created successfully", "export_name", dbExport.Name)
+
+	// SEC-MON-REQ-1 EOI-1: log export creation
+	securitylog.Log(logger, "CREATE", "export", dbExport.ID.String(), "success", userPrincipal(user))
 
 	w.WriteHeader(http.StatusAccepted)
 
@@ -226,6 +239,9 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SEC-MON-REQ-1 EOI-1: log export download
+	securitylog.Log(logger, "READ", "export", export.ID.String(), "success", userPrincipal(user))
+
 	baseName := filepath.Base(export.S3Key)
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
@@ -278,6 +294,9 @@ func (e *Export) DeleteExport(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// SEC-MON-REQ-1 EOI-1: log export deletion
+	securitylog.Log(logger, "DELETE", "export", uid, "success", userPrincipal(user))
 }
 
 // GetExportStatus handles GET requests to the /exports/{exportUUID}/status endpoint.

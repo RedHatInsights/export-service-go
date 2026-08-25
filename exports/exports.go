@@ -5,9 +5,9 @@ SPDX-License-Identifier: Apache-2.0
 package exports
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -229,15 +229,19 @@ func (e *Export) GetExport(w http.ResponseWriter, r *http.Request) {
 	baseName := filepath.Base(export.S3Key)
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", baseName))
 	w.WriteHeader(http.StatusOK)
-	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(out); err != nil {
-		logger.Errorf("failed to read body: %w", err)
+
+	// Stream the S3 object directly to the HTTP response instead of
+	// buffering the entire object in memory (CWE-770 / FIND-004).
+	// LimitReader caps the download as defense-in-depth against
+	// unexpectedly large objects.
+	limitedReader := io.LimitReader(out, maxExportDownloadBytes(len(export.Sources)))
+
+	if _, err := io.Copy(w, limitedReader); err != nil {
+		logger.Errorf("failed to stream S3 object to client: %v", err)
 	}
-	err = out.Close()
-	if err != nil {
-		logger.Errorf("failed to close body: %w", err)
+	if err := out.Close(); err != nil {
+		logger.Errorf("failed to close S3 object body: %v", err)
 	}
-	Logerr(w.Write(buf.Bytes()))
 }
 
 // DeleteExport handles DELETE requests to the /exports/{exportUUID} endpoint.
@@ -331,6 +335,17 @@ func (e *Export) getExportWithUser(w http.ResponseWriter, r *http.Request, logge
 	}
 
 	return export
+}
+
+// maxExportDownloadBytes returns the maximum number of bytes allowed for an
+// export download. The cap is MaxPayloadSize (in MB) multiplied by the number
+// of sources in the export. A floor of 1 source is applied so that exports
+// with no sources still get a reasonable limit.
+func maxExportDownloadBytes(numSources int) int64 {
+	if numSources == 0 {
+		numSources = 1
+	}
+	return int64(config.Get().MaxPayloadSize) * int64(numSources) * 1024 * 1024
 }
 
 func DBExportToAPI(payload models.ExportPayload) ExportPayload {

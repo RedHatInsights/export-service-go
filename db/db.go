@@ -16,12 +16,41 @@ import (
 
 func OpenDB(cfg config.ExportConfig) (*gorm.DB, error) {
 	dsn := buildPostgresDSN(cfg)
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	gdb, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB, err := gdb.DB()
+	if err != nil {
+		return nil, err
+	}
+	applyConnPoolLimits(sqlDB, cfg)
+
+	return gdb, nil
 }
 
 func OpenPostgresDB(cfg config.ExportConfig) (*sql.DB, error) {
 	dsn := buildPostgresDSN(cfg)
-	return sql.Open("postgres", dsn)
+
+	sqlDB, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+	applyConnPoolLimits(sqlDB, cfg)
+
+	return sqlDB, nil
+}
+
+// Based on GORM's docs, the pool has to be configured in the underlying *sql.DB object
+func applyConnPoolLimits(sqlDB *sql.DB, cfg config.ExportConfig) {
+	dbcfg := cfg.DBConfig
+
+	sqlDB.SetMaxOpenConns(dbcfg.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(dbcfg.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(dbcfg.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(dbcfg.ConnMaxIdleTime)
 }
 
 func buildPostgresDSN(cfg config.ExportConfig) string {
@@ -37,6 +66,14 @@ func buildPostgresDSN(cfg config.ExportConfig) string {
 
 	if dbcfg.SSLCfg.RdsCa != nil && *dbcfg.SSLCfg.RdsCa != "" {
 		dsn += fmt.Sprintf("&sslrootcert=%s", *dbcfg.SSLCfg.RdsCa)
+	}
+
+	if dbcfg.ConnectTimeout > 0 {
+		dsn += fmt.Sprintf("&connect_timeout=%d", int(dbcfg.ConnectTimeout.Seconds()))
+	}
+
+	if dbcfg.StatementTimeout > 0 {
+		dsn += fmt.Sprintf("&statement_timeout=%d", dbcfg.StatementTimeout.Milliseconds())
 	}
 
 	return dsn

@@ -20,38 +20,44 @@ const ExportTopic string = "platform.export.requests"
 
 // ExportConfig represents the runtime configuration
 type ExportConfig struct {
-	Hostname                      string
-	PublicPort                    int
-	PublicHttpServerReadTimeout   time.Duration
-	PublicHttpServerWriteTimeout  time.Duration
-	PrivateHttpServerReadTimeout  time.Duration
-	PrivateHttpServerWriteTimeout time.Duration
-	MetricsPort                   int
-	PrivatePort                   int
-	Logging                       *loggingConfig
-	LogLevel                      string
-	Debug                         bool
-	DBConfig                      dbConfig
-	StorageConfig                 storageConfig
-	KafkaConfig                   kafkaConfig
-	RateLimitConfig               rateLimitConfig
-	OpenAPIPrivatePath            string
-	OpenAPIPublicPath             string
+	Hostname                       string
+	PublicPort                     int
+	PublicHttpServerReadTimeout    time.Duration
+	PublicHttpServerWriteTimeout   time.Duration
+	PrivateHttpServerReadTimeout   time.Duration
+	PrivateHttpServerWriteTimeout  time.Duration
+	MetricsPort                    int
+	PrivatePort                    int
+	Logging                        *loggingConfig
+	LogLevel                       string
+	Debug                          bool
+	DBConfig                       dbConfig
+	StorageConfig                  storageConfig
+	KafkaConfig                    kafkaConfig
+	RateLimitConfig                rateLimitConfig
+	OpenAPIPrivatePath             string
+	OpenAPIPublicPath              string
 	DisableServiceToServicePSKAuth bool
-	Psks                          []string
-	PskMap                        map[string]string
-	ExportExpiryDays              int
-	ExportableApplications        map[string]map[string]bool
-	MaxPayloadSize                int
+	Psks                           []string
+	PskMap                         map[string]string
+	ExportExpiryDays               int
+	ExportableApplications         map[string]map[string]bool
+	MaxPayloadSize                 int
 }
 
 type dbConfig struct {
-	User     string
-	Password string
-	Hostname string
-	Port     string
-	Name     string
-	SSLCfg   dbSSLConfig
+	User             string
+	Password         string
+	Hostname         string
+	Port             string
+	Name             string
+	SSLCfg           dbSSLConfig
+	ConnectTimeout   time.Duration
+	StatementTimeout time.Duration
+	MaxOpenConns     int
+	MaxIdleConns     int
+	ConnMaxLifetime  time.Duration
+	ConnMaxIdleTime  time.Duration
 }
 
 type dbSSLConfig struct {
@@ -134,6 +140,12 @@ func Get() *ExportConfig {
 		options.SetDefault("PGSQL_HOSTNAME", "localhost")
 		options.SetDefault("PGSQL_PORT", "15433")
 		options.SetDefault("PGSQL_DATABASE", "postgres")
+		options.SetDefault("PGSQL_CONNECT_TIMEOUT", 5*time.Second)
+		options.SetDefault("PGSQL_STATEMENT_TIMEOUT", 30*time.Second)
+		options.SetDefault("PGSQL_MAX_OPEN_CONNS", 20)
+		options.SetDefault("PGSQL_MAX_IDLE_CONNS", 5)
+		options.SetDefault("PGSQL_CONN_MAX_LIFETIME", 30*time.Minute)
+		options.SetDefault("PGSQL_CONN_MAX_IDLE_TIME", 5*time.Minute)
 
 		// Minio defaults
 		options.SetDefault("MINIO_HOST", "localhost")
@@ -165,23 +177,23 @@ func Get() *ExportConfig {
 		psks, pskMap := parsePSKs(os.Getenv("EXPORTS_PSKS"))
 
 		config = &ExportConfig{
-			Hostname:                      kubenv.GetString("Hostname"),
-			PublicPort:                    options.GetInt("PUBLIC_PORT"),
-			MetricsPort:                   options.GetInt("METRICS_PORT"),
-			PrivatePort:                   options.GetInt("PRIVATE_PORT"),
-			PublicHttpServerReadTimeout:   options.GetDuration("PUBLIC_HTTP_SERVER_READ_TIMEOUT"),
-			PublicHttpServerWriteTimeout:  options.GetDuration("PUBLIC_HTTP_SERVER_WRITE_TIMEOUT"),
-			PrivateHttpServerReadTimeout:  options.GetDuration("PRIVATE_HTTP_SERVER_READ_TIMEOUT"),
-			PrivateHttpServerWriteTimeout: options.GetDuration("PRIVATE_HTTP_SERVER_WRITE_TIMEOUT"),
-			Debug:                         options.GetBool("DEBUG"),
-			LogLevel:                      options.GetString("LOG_LEVEL"),
-			OpenAPIPublicPath:             options.GetString("OPEN_API_FILE_PATH"),
-			OpenAPIPrivatePath:            options.GetString("OPEN_API_PRIVATE_PATH"),
-			Psks:                          psks,
-			PskMap:                        pskMap,
-			ExportExpiryDays:              options.GetInt("EXPORT_EXPIRY_DAYS"),
-			ExportableApplications:        convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
-			MaxPayloadSize:                options.GetInt("MAX_PAYLOAD_SIZE"),
+			Hostname:                       kubenv.GetString("Hostname"),
+			PublicPort:                     options.GetInt("PUBLIC_PORT"),
+			MetricsPort:                    options.GetInt("METRICS_PORT"),
+			PrivatePort:                    options.GetInt("PRIVATE_PORT"),
+			PublicHttpServerReadTimeout:    options.GetDuration("PUBLIC_HTTP_SERVER_READ_TIMEOUT"),
+			PublicHttpServerWriteTimeout:   options.GetDuration("PUBLIC_HTTP_SERVER_WRITE_TIMEOUT"),
+			PrivateHttpServerReadTimeout:   options.GetDuration("PRIVATE_HTTP_SERVER_READ_TIMEOUT"),
+			PrivateHttpServerWriteTimeout:  options.GetDuration("PRIVATE_HTTP_SERVER_WRITE_TIMEOUT"),
+			Debug:                          options.GetBool("DEBUG"),
+			LogLevel:                       options.GetString("LOG_LEVEL"),
+			OpenAPIPublicPath:              options.GetString("OPEN_API_FILE_PATH"),
+			OpenAPIPrivatePath:             options.GetString("OPEN_API_PRIVATE_PATH"),
+			Psks:                           psks,
+			PskMap:                         pskMap,
+			ExportExpiryDays:               options.GetInt("EXPORT_EXPIRY_DAYS"),
+			ExportableApplications:         convertExportableAppsFromConfigToInternal(options.GetStringMapStringSlice("EXPORT_ENABLE_APPS")),
+			MaxPayloadSize:                 options.GetInt("MAX_PAYLOAD_SIZE"),
 			DisableServiceToServicePSKAuth: options.GetBool("DISABLE_SERVICE_TO_SERVICE_PSK_AUTH"),
 		}
 
@@ -194,6 +206,12 @@ func Get() *ExportConfig {
 			SSLCfg: dbSSLConfig{
 				SSLMode: "disable",
 			},
+			ConnectTimeout:   options.GetDuration("PGSQL_CONNECT_TIMEOUT"),
+			StatementTimeout: options.GetDuration("PGSQL_STATEMENT_TIMEOUT"),
+			MaxOpenConns:     options.GetInt("PGSQL_MAX_OPEN_CONNS"),
+			MaxIdleConns:     options.GetInt("PGSQL_MAX_IDLE_CONNS"),
+			ConnMaxLifetime:  options.GetDuration("PGSQL_CONN_MAX_LIFETIME"),
+			ConnMaxIdleTime:  options.GetDuration("PGSQL_CONN_MAX_IDLE_TIME"),
 		}
 
 		config.Logging = &loggingConfig{}

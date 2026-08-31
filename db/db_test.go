@@ -59,7 +59,11 @@ func TestApplyConnPoolLimits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sql.Open failed: %v", err)
 	}
-	defer sqlDB.Close()
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("sqlDB.Close() failed: %v", err)
+		}
+	}()
 
 	applyConnPoolLimits(sqlDB, cfg)
 

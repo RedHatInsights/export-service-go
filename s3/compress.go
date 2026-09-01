@@ -3,6 +3,7 @@ package s3
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -360,13 +361,25 @@ func (c *Compressor) GetObject(ctx context.Context, logger *zap.SugaredLogger, k
 }
 
 func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
-	t, filename, s3key, err := c.Compress(context.TODO(), logger, payload)
+	ctx, cancel := context.WithTimeout(context.Background(), c.Cfg.StorageConfig.CompressTimeout)
+	defer cancel()
+
+	t, filename, s3key, err := c.Compress(ctx, logger, payload)
 	if err != nil {
-		logger.Errorw("failed to compress payload", "error", err)
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Errorw("compress payload timed out",
+				"error", err,
+				"timeout", c.Cfg.StorageConfig.CompressTimeout.String(),
+				"export_id", payload.ID.String(),
+				"org_id", payload.OrganizationID,
+			)
+		} else {
+			logger.Errorw("failed to compress payload", "error", err)
+		}
 		if err := payload.SetStatusFailed(db); err != nil {
 			logger.Errorw("failed to set status failed", "error", err)
-			return
 		}
+		return
 	}
 
 	logger.Infof("done uploading %s", filename)

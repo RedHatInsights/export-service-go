@@ -19,8 +19,8 @@ func TestDBConfigTimeoutsAndPool(t *testing.T) {
 	}
 
 	// Env vars left unset should fall back to their defaults.
-	if cfg.DBConfig.StatementTimeout != 30*time.Second {
-		t.Errorf("StatementTimeout = %v, want default 30s", cfg.DBConfig.StatementTimeout)
+	if cfg.DBConfig.StatementTimeout != 5*time.Second {
+		t.Errorf("StatementTimeout = %v, want default 5s", cfg.DBConfig.StatementTimeout)
 	}
 	if cfg.DBConfig.MaxIdleConns != 5 {
 		t.Errorf("MaxIdleConns = %d, want default 5", cfg.DBConfig.MaxIdleConns)

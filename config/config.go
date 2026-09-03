@@ -141,7 +141,7 @@ func Get() *ExportConfig {
 		options.SetDefault("PGSQL_PORT", "15433")
 		options.SetDefault("PGSQL_DATABASE", "postgres")
 		options.SetDefault("PGSQL_CONNECT_TIMEOUT", 5*time.Second)
-		options.SetDefault("PGSQL_STATEMENT_TIMEOUT", 30*time.Second)
+		options.SetDefault("PGSQL_STATEMENT_TIMEOUT", 5*time.Second)
 		options.SetDefault("PGSQL_MAX_OPEN_CONNS", 20)
 		options.SetDefault("PGSQL_MAX_IDLE_CONNS", 5)
 		options.SetDefault("PGSQL_CONN_MAX_LIFETIME", 30*time.Minute)

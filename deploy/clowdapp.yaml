@@ -269,3 +269,15 @@ parameters:
     value: "60"
   - name: DISABLE_SERVICE_TO_SERVICE_PSK_AUTH
     value: "false"
+  - name: PGSQL_CONNECT_TIMEOUT
+    value: "5s"
+  - name: PGSQL_STATEMENT_TIMEOUT
+    value: "5s"
+  - name: PGSQL_MAX_OPEN_CONNS
+    value: "20"
+  - name: PGSQL_MAX_IDLE_CONNS
+    value: "5"
+  - name: PGSQL_CONN_MAX_LIFETIME
+    value: "30m"
+  - name: PGSQL_CONN_MAX_IDLE_TIME
+    value: "5m"

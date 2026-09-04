@@ -2,7 +2,36 @@ package config
 
 import (
 	"testing"
+	"time"
 )
+
+func TestDBConfigTimeoutsAndPool(t *testing.T) {
+	t.Setenv("PGSQL_CONNECT_TIMEOUT", "2s")
+	t.Setenv("PGSQL_MAX_OPEN_CONNS", "42")
+
+	cfg := Get()
+
+	if cfg.DBConfig.ConnectTimeout != 2*time.Second {
+		t.Errorf("ConnectTimeout = %v, want 2s", cfg.DBConfig.ConnectTimeout)
+	}
+	if cfg.DBConfig.MaxOpenConns != 42 {
+		t.Errorf("MaxOpenConns = %d, want 42", cfg.DBConfig.MaxOpenConns)
+	}
+
+	// Env vars left unset should fall back to their defaults.
+	if cfg.DBConfig.StatementTimeout != 5*time.Second {
+		t.Errorf("StatementTimeout = %v, want default 5s", cfg.DBConfig.StatementTimeout)
+	}
+	if cfg.DBConfig.MaxIdleConns != 5 {
+		t.Errorf("MaxIdleConns = %d, want default 5", cfg.DBConfig.MaxIdleConns)
+	}
+	if cfg.DBConfig.ConnMaxLifetime != 30*time.Minute {
+		t.Errorf("ConnMaxLifetime = %v, want default 30m", cfg.DBConfig.ConnMaxLifetime)
+	}
+	if cfg.DBConfig.ConnMaxIdleTime != 5*time.Minute {
+		t.Errorf("ConnMaxIdleTime = %v, want default 5m", cfg.DBConfig.ConnMaxIdleTime)
+	}
+}
 
 func TestParsePSKs(t *testing.T) {
 	tests := []struct {

@@ -360,16 +360,27 @@ func (c *Compressor) GetObject(ctx context.Context, logger *zap.SugaredLogger, k
 	return s3Object.Body, err
 }
 
-func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Cfg.StorageConfig.CompressTimeout)
+// compressFn is the signature of a function that compresses an export payload.
+type compressFn func(ctx context.Context, logger *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error)
+
+// compressAndSetStatus runs compressFn and updates the payload status accordingly.
+// Extracted from compressPayload for testability — allows injecting a mock compress function.
+func compressAndSetStatus(
+	compress compressFn,
+	compressTimeout time.Duration,
+	logger *zap.SugaredLogger,
+	db models.DBInterface,
+	payload *models.ExportPayload,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), compressTimeout)
 	defer cancel()
 
-	t, filename, s3key, err := c.Compress(ctx, logger, payload)
+	t, filename, s3key, err := compress(ctx, logger, payload)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			logger.Errorw("compress payload timed out",
 				"error", err,
-				"timeout", c.Cfg.StorageConfig.CompressTimeout.String(),
+				"timeout", compressTimeout.String(),
 				"export_id", payload.ID.String(),
 				"org_id", payload.OrganizationID,
 			)
@@ -400,6 +411,10 @@ func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInte
 		logger.Errorw("failed updating model status", "error", err)
 		return
 	}
+}
+
+func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
+	compressAndSetStatus(c.Compress, c.Cfg.StorageConfig.CompressTimeout, logger, db, payload)
 }
 
 func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {

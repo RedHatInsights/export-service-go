@@ -14,7 +14,6 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
-	"github.com/labstack/gommon/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
@@ -61,7 +60,7 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export, log *
 		r.Use(
 			securitylog.AuthFailureMiddleware(log), // SEC-MON-REQ-1 EOI-7: detect 401/403 on mutating methods
 			identity.EnforceIdentity,               // EnforceIdentity extracts the X-Rh-Identity header and places the contents into the request context.
-			emiddleware.EnforceUserIdentity,         // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
+			emiddleware.EnforceUserIdentity,        // EnforceUserIdentity extracts account_number, org_id, and username from the X-Rh-Identity context.
 		)
 
 		// add external routes
@@ -87,6 +86,9 @@ func createPublicServer(cfg *config.ExportConfig, external exports.Export, log *
 }
 
 func createPrivateServer(cfg *config.ExportConfig, internal exports.Internal) *http.Server {
+	// Use the shared service logger for private-server configuration messages.
+	log := logger.Get()
+
 	// Initialize router
 	router := chi.NewRouter()
 
@@ -156,7 +158,7 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 func helloWorld(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprint(w, "Hello world")
 	if err != nil {
-		log.Panic("failed to respond with Hello world", "error", err)
+		panic(fmt.Errorf("failed to respond with Hello world: %w", err))
 	}
 }
 

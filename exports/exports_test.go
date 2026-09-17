@@ -19,8 +19,8 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 
 	"github.com/redhatinsights/export-service-go/config"
 	"github.com/redhatinsights/export-service-go/exports"

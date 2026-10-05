@@ -1,7 +1,7 @@
 ################################
 # STEP 1 build executable binary
 ################################
-FROM registry.access.redhat.com/hi/go:latest-fips-builder@sha256:15cb02600d0a89680220414e5b4f0af05c05d16a9944e81ed73e8eb36a78a438 AS builder
+FROM registry.access.redhat.com/hi/go:latest-fips-builder@sha256:a64bb6c8c68f75653e33b353b8a3957e588f784ad716979275f493c771e053f3 AS builder
 
 USER 0
 
@@ -36,7 +36,7 @@ RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-servic
 ############################
 # STEP 2 build a small image
 ############################
-FROM registry.access.redhat.com/hi/go:latest-fips@sha256:b07ece598fee6abe619c265e9baf6fb3e9b2b51e403f9d35b80d52f235ced91a
+FROM registry.access.redhat.com/hi/go:latest-fips@sha256:cb6493590eb940e62dd5d2e006e507562ce23897f53060119114426071139302
 
 WORKDIR /
 

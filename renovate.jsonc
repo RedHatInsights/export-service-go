@@ -37,6 +37,22 @@
       "automerge": true,
       "groupName": "GitHub Actions"
     },
+    {
+      // Pinned to @main, so every update is digest-only; named here to bypass
+      // the digest-stays-manual rule above.
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"],
+      "matchDepNames": ["konflux-ci/renovate-config-validator-action"],
+      "automerge": true
+    },
+    {
+      // Tracked by two managers: the pre-commit hook rev and golangci-lint-action's version: input.
+      "matchManagers": ["pre-commit", "github-actions"],
+      "matchDepNames": ["golangci/golangci-lint"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true,
+      "groupName": "golangci-lint"
+    },
 
     {
       // The Konflux PR build builds and tests the image. A digest update rebuilds the same

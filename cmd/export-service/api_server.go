@@ -13,7 +13,7 @@ import (
 
 	chi "github.com/go-chi/chi/v5"
 	middleware "github.com/go-chi/chi/v5/middleware"
-	redoc "github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/runtime/server-middleware/docui"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
@@ -148,10 +148,8 @@ func createMetricsServer(cfg *config.ExportConfig) *http.Server {
 }
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
-	opt := redoc.RedocOpts{
-		SpecURL: "/api/export/v1/openapi.json",
-	}
-	return redoc.Redoc(opt, handler)
+	opt := docui.WithSpecURL("/api/export/v1/openapi.json")
+	return docui.Redoc(handler, opt)
 }
 
 // Handler function that responds with Hello World

@@ -1,9 +1,16 @@
 package config
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
+
+// resetConfig resets the singleton so Get() can be called again with different env vars.
+func resetConfig() {
+	config = nil
+	doOnce = sync.Once{}
+}
 
 func TestDBConfigTimeoutsAndPool(t *testing.T) {
 	t.Setenv("PGSQL_CONNECT_TIMEOUT", "2s")
@@ -30,6 +37,62 @@ func TestDBConfigTimeoutsAndPool(t *testing.T) {
 	}
 	if cfg.DBConfig.ConnMaxIdleTime != 5*time.Minute {
 		t.Errorf("ConnMaxIdleTime = %v, want default 5m", cfg.DBConfig.ConnMaxIdleTime)
+	}
+}
+
+func TestTimeoutDefaults(t *testing.T) {
+	resetConfig()
+	t.Cleanup(resetConfig)
+
+	cfg := Get()
+
+	if cfg.StorageConfig.UploadTimeout != 600*time.Second {
+		t.Errorf("UploadTimeout = %v, want %v", cfg.StorageConfig.UploadTimeout, 600*time.Second)
+	}
+	if cfg.StorageConfig.CompressTimeout != 900*time.Second {
+		t.Errorf("CompressTimeout = %v, want %v", cfg.StorageConfig.CompressTimeout, 900*time.Second)
+	}
+}
+
+func TestTimeoutCustomValues(t *testing.T) {
+	resetConfig()
+	t.Cleanup(resetConfig)
+
+	tests := []struct {
+		name         string
+		envValue     string
+		wantDuration time.Duration
+		envKey       string
+		getField     func(*ExportConfig) time.Duration
+	}{
+		{
+			name:         "compress timeout 5m",
+			envKey:       "S3_COMPRESS_TIMEOUT",
+			envValue:     "5m",
+			wantDuration: 5 * time.Minute,
+			getField:     func(c *ExportConfig) time.Duration { return c.StorageConfig.CompressTimeout },
+		},
+		{
+			name:         "upload timeout 1h30m",
+			envKey:       "S3_UPLOAD_TIMEOUT",
+			envValue:     "1h30m",
+			wantDuration: 90 * time.Minute,
+			getField:     func(c *ExportConfig) time.Duration { return c.StorageConfig.UploadTimeout },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetConfig()
+
+			t.Setenv(tt.envKey, tt.envValue)
+
+			cfg := Get()
+			got := tt.getField(cfg)
+			if got != tt.wantDuration {
+				t.Errorf("%s = %v, want %v", tt.envKey, got, tt.wantDuration)
+			}
+		})
 	}
 }
 

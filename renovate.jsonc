@@ -1,15 +1,10 @@
-// Set up with the MintMaker Automerge plugin v0.12.0: https://github.com/gwenneg/mintmaker-automerge
+// Set up with the MintMaker Automerge plugin v1.0.0: https://github.com/gwenneg/mintmaker-automerge
 // Overrides MintMaker's global config: https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  // GitHub auto-merge never completes when a bypass actor meets the approval rule.
-  // Renovate merges instead, on the first run where GitHub allows it.
-  "platformAutomerge": false,
-  "ignoreTests": false,
-  // Throughput: no rebase or CI rerun after a merge, so each run merges two PRs, not one.
-  // Risk: those two are never tested together. Label a PR keep-updated to rebase it.
-  "rebaseWhen": "conflicted",
-  "keepUpdatedLabel": "keep-updated",
+  // GitHub merges each PR as soon as its required checks pass, once the Konflux app is
+  // exempt from the approval rule.
+  "platformAutomerge": true,
   "extends": [
     // Keep even when every action is pinned: it pins the next one added.
     "helpers:pinGitHubActionDigests"
@@ -38,6 +33,7 @@
       "groupName": "GitHub Actions"
     },
     {
+      // Repository rule, not written by the plugin:
       // Pinned to @main, so every update is digest-only; named here to bypass
       // the digest-stays-manual rule above.
       "matchManagers": ["github-actions"],
@@ -46,6 +42,7 @@
       "automerge": true
     },
     {
+      // Repository rule, not written by the plugin:
       // Tracked by two managers: the pre-commit hook rev and golangci-lint-action's version: input.
       "matchManagers": ["pre-commit", "github-actions"],
       "matchDepNames": ["golangci/golangci-lint"],
@@ -73,6 +70,14 @@
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true,
       "groupName": "Go modules"
+    },
+    {
+      // The toolchain is every developer's compiler, not just CI's.
+      // No group: a member that never automerges would hold the whole group.
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["toolchain"],
+      "automerge": false,
+      "groupName": null
     }
   ]
 }

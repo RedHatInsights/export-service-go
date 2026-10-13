@@ -72,6 +72,31 @@
       "groupName": "Go modules"
     },
     {
+      // Repository rule, not written by the plugin:
+      // go-genproto is machine-generated from Google's API definitions with no release
+      // process, so it never gets tagged: every update is a digest bump (never patch/minor
+      // above). Grouped because both packages come from the same repo and always move
+      // together on the same upstream commit.
+      "matchManagers": ["gomod"],
+      "matchDepNames": [
+        "google.golang.org/genproto/googleapis/api",
+        "google.golang.org/genproto/googleapis/rpc"
+      ],
+      "matchUpdateTypes": ["digest"],
+      "automerge": true,
+      "groupName": "google.golang.org/genproto"
+    },
+    {
+      // Repository rule, not written by the plugin:
+      // google/pprof has no tags or releases either, so it's digest-only like genproto
+      // above. It's also only pulled in indirectly (go.mod marks it "// indirect"; `go mod
+      // why` confirms this module doesn't need it directly) — nothing we import runs its code.
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["github.com/google/pprof"],
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    },
+    {
       // The toolchain is every developer's compiler, not just CI's.
       // No group: a member that never automerges would hold the whole group.
       "matchManagers": ["gomod"],

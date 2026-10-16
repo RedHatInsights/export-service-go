@@ -101,6 +101,8 @@ type storageConfig struct {
 	UseSSL                  bool
 	AwsUploaderBufferSize   int64
 	AwsDownloaderBufferSize int64
+	UploadTimeout           time.Duration
+	CompressTimeout         time.Duration
 }
 
 type rateLimitConfig struct {
@@ -165,6 +167,10 @@ func Get() *ExportConfig {
 		options.SetDefault("AWS_UPLOADER_BUFFER_SIZE", 10*1024*1024)
 		options.SetDefault("AWS_DOWNLOADER_BUFFER_SIZE", 10*1024*1024)
 
+		// S3 operation timeout defaults
+		options.SetDefault("S3_UPLOAD_TIMEOUT", 600*time.Second)
+		options.SetDefault("S3_COMPRESS_TIMEOUT", 900*time.Second)
+
 		// Rate limit defaults
 		options.SetDefault("RATE_LIMIT_RATE", 100)
 		options.SetDefault("RATE_LIMIT_BURST", 60)
@@ -225,6 +231,8 @@ func Get() *ExportConfig {
 			UseSSL:                  options.GetBool("MINIO_SSL"),
 			AwsUploaderBufferSize:   options.GetInt64("AWS_UPLOADER_BUFFER_SIZE"),
 			AwsDownloaderBufferSize: options.GetInt64("AWS_DOWNLOADER_BUFFER_SIZE"),
+			UploadTimeout:           options.GetDuration("S3_UPLOAD_TIMEOUT"),
+			CompressTimeout:         options.GetDuration("S3_COMPRESS_TIMEOUT"),
 		}
 
 		config.KafkaConfig = kafkaConfig{

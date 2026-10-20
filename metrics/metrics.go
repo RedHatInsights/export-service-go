@@ -1,0 +1,76 @@
+/*
+Copyright 2022 Red Hat Inc.
+SPDX-License-Identifier: Apache-2.0
+*/
+package metrics
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var httpReqs = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "export_service_http_requests_total",
+		Help: "How many HTTP requests processed, partitioned by status code and http method.",
+	},
+	[]string{"code", "method"},
+)
+
+var httpDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	Name: "export_service_http_response_time_seconds",
+	Help: "Duration of HTTP requests.",
+}, []string{"method"})
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func NewResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{w, http.StatusOK}
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func PrometheusMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		timer := prometheus.NewTimer(httpDuration.WithLabelValues(r.Method))
+		rw := NewResponseWriter(w)
+		next.ServeHTTP(rw, r)
+
+		statusCode := rw.statusCode
+
+		httpReqs.WithLabelValues(strconv.Itoa(statusCode), r.Method).Inc()
+
+		timer.ObserveDuration()
+	})
+}
+
+var internalAPIReqs = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "export_service_internal_api_requests_total",
+		Help: "How many internal API requests processed, partitioned by base path.",
+	},
+	[]string{"base_path"},
+)
+
+func InternalUseTracker(basePath string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			internalAPIReqs.WithLabelValues(basePath).Inc()
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func init() {
+	prometheus.MustRegister(httpReqs)
+	prometheus.MustRegister(httpDuration)
+	prometheus.MustRegister(internalAPIReqs)
+}

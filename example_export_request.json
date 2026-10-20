@@ -1,0 +1,25 @@
+{
+    "name": "Example Export Request",
+    "format": "json",
+    "expires_at": "2022-01-01T00:00:00Z",
+    "sources": [
+        {
+            "application": "exampleApplication",
+            "resource": "exampleResource",
+            "filters": {
+                "startDate": "2022-01-01T00:00:00Z",
+                "endDate": "2022-03-01T00:00:00Z",
+                "productId": "RHEL"
+            }
+        },
+        {
+            "application": "exampleApplication",
+            "resource": "anotherExampleResource",
+            "filters": {
+                "startDate": "2022-02-01T00:00:00Z",
+                "endDate": "2022-04-01T00:00:00Z",
+                "productId": "Ansible"
+            }
+        }
+    ]
+}

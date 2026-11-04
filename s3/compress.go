@@ -98,7 +98,19 @@ func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, p
 	}
 
 	logger.Infof("shipping %s to s3", filename)
-	if _, err := c.Upload(ctx, logger, tempZipFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+
+	uploadTimeout := c.Cfg.StorageConfig.UploadTimeout
+	uploadCtx, uploadCancel := context.WithTimeout(ctx, uploadTimeout)
+	defer uploadCancel()
+
+	if _, err := c.Upload(uploadCtx, logger, tempZipFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Errorw("zip upload timed out",
+				"error", err,
+				"timeout", uploadTimeout.String(),
+				"s3key", s3key,
+			)
+		}
 		return fmt.Errorf("failed to upload zip file `%s` to s3: %w", s3key, err)
 	}
 

@@ -332,11 +332,24 @@ func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger
 		return err
 	}
 
-	_, uploadErr := c.Upload(ctx, logger, body, &c.Bucket, &filename)
+	uploadTimeout := c.Cfg.StorageConfig.UploadTimeout
+	uploadCtx, cancel := context.WithTimeout(ctx, uploadTimeout)
+	defer cancel()
+
+	_, uploadErr := c.Upload(uploadCtx, logger, body, &c.Bucket, &filename)
 	totalUploads.Inc()
 	if uploadErr != nil {
 		failUploads.Inc()
-		logger.Errorf("error during upload: %v", uploadErr)
+		if errors.Is(uploadErr, context.DeadlineExceeded) {
+			logger.Errorw("upload timed out",
+				"error", uploadErr,
+				"timeout", uploadTimeout.String(),
+				"export_id", payload.ID.String(),
+				"org_id", payload.OrganizationID,
+			)
+		} else {
+			logger.Errorf("error during upload: %v", uploadErr)
+		}
 		return uploadErr
 	}
 

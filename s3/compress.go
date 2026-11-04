@@ -3,6 +3,7 @@ package s3
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -97,7 +98,19 @@ func (c *Compressor) zipExport(ctx context.Context, logger *zap.SugaredLogger, p
 	}
 
 	logger.Infof("shipping %s to s3", filename)
-	if _, err := c.Upload(ctx, logger, tempZipFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+
+	uploadTimeout := c.Cfg.StorageConfig.UploadTimeout
+	uploadCtx, uploadCancel := context.WithTimeout(ctx, uploadTimeout)
+	defer uploadCancel()
+
+	if _, err := c.Upload(uploadCtx, logger, tempZipFile, &c.Cfg.StorageConfig.Bucket, &s3key); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Errorw("zip upload timed out",
+				"error", err,
+				"timeout", uploadTimeout.String(),
+				"s3key", s3key,
+			)
+		}
 		return fmt.Errorf("failed to upload zip file `%s` to s3: %w", s3key, err)
 	}
 
@@ -331,11 +344,24 @@ func (c *Compressor) CreateObject(ctx context.Context, logger *zap.SugaredLogger
 		return err
 	}
 
-	_, uploadErr := c.Upload(ctx, logger, body, &c.Bucket, &filename)
+	uploadTimeout := c.Cfg.StorageConfig.UploadTimeout
+	uploadCtx, cancel := context.WithTimeout(ctx, uploadTimeout)
+	defer cancel()
+
+	_, uploadErr := c.Upload(uploadCtx, logger, body, &c.Bucket, &filename)
 	totalUploads.Inc()
 	if uploadErr != nil {
 		failUploads.Inc()
-		logger.Errorf("error during upload: %v", uploadErr)
+		if errors.Is(uploadErr, context.DeadlineExceeded) {
+			logger.Errorw("upload timed out",
+				"error", uploadErr,
+				"timeout", uploadTimeout.String(),
+				"export_id", payload.ID.String(),
+				"org_id", payload.OrganizationID,
+			)
+		} else {
+			logger.Errorf("error during upload: %v", uploadErr)
+		}
 		return uploadErr
 	}
 
@@ -359,14 +385,37 @@ func (c *Compressor) GetObject(ctx context.Context, logger *zap.SugaredLogger, k
 	return s3Object.Body, err
 }
 
-func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
-	t, filename, s3key, err := c.Compress(context.TODO(), logger, payload)
+// compressFn is the signature of a function that compresses an export payload.
+type compressFn func(ctx context.Context, logger *zap.SugaredLogger, m *models.ExportPayload) (time.Time, string, string, error)
+
+// compressAndSetStatus runs compressFn and updates the payload status accordingly.
+// Extracted from compressPayload for testability — allows injecting a mock compress function.
+func compressAndSetStatus(
+	compress compressFn,
+	compressTimeout time.Duration,
+	logger *zap.SugaredLogger,
+	db models.DBInterface,
+	payload *models.ExportPayload,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), compressTimeout)
+	defer cancel()
+
+	t, filename, s3key, err := compress(ctx, logger, payload)
 	if err != nil {
-		logger.Errorw("failed to compress payload", "error", err)
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Errorw("compress payload timed out",
+				"error", err,
+				"timeout", compressTimeout.String(),
+				"export_id", payload.ID.String(),
+				"org_id", payload.OrganizationID,
+			)
+		} else {
+			logger.Errorw("failed to compress payload", "error", err)
+		}
 		if err := payload.SetStatusFailed(db); err != nil {
 			logger.Errorw("failed to set status failed", "error", err)
-			return
 		}
+		return
 	}
 
 	logger.Infof("done uploading %s", filename)
@@ -387,6 +436,10 @@ func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInte
 		logger.Errorw("failed updating model status", "error", err)
 		return
 	}
+}
+
+func (c *Compressor) compressPayload(logger *zap.SugaredLogger, db models.DBInterface, payload *models.ExportPayload) {
+	compressAndSetStatus(c.Compress, c.Cfg.StorageConfig.CompressTimeout, logger, db, payload)
 }
 
 func (c *Compressor) ProcessSources(db models.DBInterface, uid uuid.UUID) {

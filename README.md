@@ -14,15 +14,15 @@ For more information on integrating with the export service, see the [integratio
 - ginkgo
 
 ## Starting the service locally
-You can start the database, minio, and the api using `make run`. 
+You can start the database, the S3 server ([moto](https://github.com/getmoto/moto)), and the api using `make run`. 
 
 Ports now exposed:
 - public api on localhost:8000
 - metrics on localhost:9090
 - internal api on localhost:10010
-- minio on localhost:9099
+- S3 API on localhost:9099 (moto dashboard at http://localhost:9099/moto-api/)
 - psql on localhost:5432
-(use `minio` as the access key and `minioadmin` as the secret key to view the dashboard)
+(moto accepts any credentials and keeps data in memory, so buckets and objects reset when the `s3` container restarts. MinIO was used here before, but MinIO no longer publishes its images on Docker Hub.)
 (use `psql -h localhost -p 5432 -U postgres` and the pass `postgres` to connect to the db)
 
 To test local changes, you can restart the api server using `make run-api`.

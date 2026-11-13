@@ -43,28 +43,25 @@ services:
       - log_statement=all
 
   s3:
-    image: minio/minio
+    # MinIO no longer publishes images on Docker Hub, so this runs the moto S3 server.
+    # moto keeps data in memory, so buckets and objects reset when the container restarts.
+    image: motoserver/moto:latest
     ports:
-      - 9099:9099
-      - 9990:9990
-    volumes:
-      - ./tmp/minio:/data:Z
-    environment:
-      - MINIO_ROOT_USER=${AWS_ACCESS_KEY-minio}
-      - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY-minioadmin}
-    command: server --address 0.0.0.0:9099 --console-address 0.0.0.0:9990 /data
+      - 9099:5000
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:5000/moto-api/"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   s3-createbucket:
-    image: minio/mc
+    image: motoserver/moto:latest
     depends_on:
-      - s3
+      s3:
+        condition: service_healthy
     restart: on-failure
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc config host add myminio http://s3:9099 ${AWS_ACCESS_KEY-minio} ${AWS_SECRET_ACCESS_KEY-minioadmin} || exit 1;
-      /usr/bin/mc mb --ignore-existing myminio/exports-bucket;
-      /usr/bin/mc policy set public myminio/exports-bucket;
-      "
+    # moto accepts unsigned requests, so a plain PUT creates the bucket and fails loudly if it can't.
+    entrypoint: ["curl", "-fsS", "-X", "PUT", "http://s3:5000/exports-bucket"]
 
   zookeeper:
     container_name: zookeeper
@@ -75,7 +72,8 @@ services:
 
   kafka:
     container_name: kafka
-    image: confluentinc/cp-kafka
+    # Kafka 4 (cp-kafka 8.x, the current latest tag) dropped ZooKeeper, which this config uses
+    image: confluentinc/cp-kafka:7.9.2
     ports:
       - 9092:9092
       - 29092:29092

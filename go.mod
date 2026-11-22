@@ -6,13 +6,13 @@ require (
 	github.com/RedHatInsights/cloudwatch-v2 v0.0.0-20260421143546-03c50d49af21
 	github.com/RedHatInsights/event-schemas-go v1.0.6
 	github.com/aws/aws-sdk-go-v2 v1.48.0
-	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.5.9
+	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.5.10
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.92.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.115.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.116.0
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fergusstrange/embedded-postgres v1.34.0
 	github.com/go-chi/chi/v5 v5.5.0
-	github.com/go-openapi/runtime/server-middleware v0.33.4
+	github.com/go-openapi/runtime/server-middleware v0.33.5
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0

@@ -36,7 +36,7 @@ RUN GO111MODULE=on go build -ldflags "-w -s" -o export-service cmd/export-servic
 ############################
 # STEP 2 build a small image
 ############################
-FROM registry.access.redhat.com/hi/go:latest-fips@sha256:0a96fb2697255ae152f4f1baac232ba4bb3504152eb1804096ec713311cc1dad
+FROM registry.access.redhat.com/hi/go:latest-fips@sha256:09bb6f946265bd6689f424c68827fa3719b09bb161db15e20aa28c3773f94389
 
 WORKDIR /
 

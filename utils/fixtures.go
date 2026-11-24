@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
+	embeddedpostgres "github.com/fergusstrange/embedded-postgres/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 

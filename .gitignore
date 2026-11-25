@@ -22,3 +22,6 @@ tmp/
 .env
 export
 .envrc
+
+# fullsend lint/run cache
+/.fullsend/.fullsend-cache/
